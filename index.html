@@ -15,8 +15,9 @@
   --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.14);
   --tx:#f0f0f5;--mu:#7a7a8c;--di:#3a3a4a;
   --gr:#1D9E75;--gr-bg:rgba(29,158,117,0.12);--gr-bd:rgba(29,158,117,0.28);
-  --bl:#378ADD;--bl-bg:rgba(55,138,221,0.12);
-  --pu:#7f77dd;--am:#EF9F27;--am-bg:rgba(239,159,39,0.12);
+  --bl:#378ADD;--bl-bg:rgba(55,138,221,0.12);--bl-bd:rgba(55,138,221,0.28);
+  --pu:#7f77dd;--pu-bg:rgba(127,119,221,0.12);
+  --am:#EF9F27;--am-bg:rgba(239,159,39,0.12);--am-bd:rgba(239,159,39,0.28);
   --rd:#E24B4A;--rd-bg:rgba(226,75,74,0.12);--rd-bd:rgba(226,75,74,0.28);
   --safe:env(safe-area-inset-bottom,0px);
   --nh:76px;--r:16px;--rs:10px;
@@ -24,60 +25,39 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Syne',sans-serif;overscroll-behavior:none}
 body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
-
-/* HEADER */
 .hdr{padding:50px 18px 12px;background:var(--bg);border-bottom:0.5px solid var(--bd);display:flex;align-items:flex-end;justify-content:space-between;flex-shrink:0}
 .hdr-name{font-size:20px;font-weight:700;letter-spacing:-.5px;cursor:pointer}
-.hdr-name:active{opacity:.7}
 .hdr-sub{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px}
 .hdr-nw{text-align:right}
 .hdr-val{font-size:18px;font-weight:700;color:var(--gr);letter-spacing:-.5px}
 .hdr-lbl{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace}
-
-/* SCROLL */
 .scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 12px calc(var(--nh) + var(--safe) + 120px);overscroll-behavior:none}
-
-/* NAV */
 .nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nh)+var(--safe));padding-bottom:var(--safe);background:rgba(10,10,15,0.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:0.5px solid var(--bd);display:flex;align-items:flex-start;padding-top:6px;z-index:200}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8px;font-weight:600;color:var(--di);cursor:pointer;padding:2px 1px;font-family:'Syne',sans-serif;transition:color .15s;letter-spacing:0}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8px;font-weight:600;color:var(--di);cursor:pointer;padding:2px 0;font-family:'Syne',sans-serif;transition:color .15s}
 .nb.active{color:var(--gr)}
+.nb.off{opacity:.3;pointer-events:none}
 .nb svg{width:18px;height:18px;stroke-width:1.5;flex-shrink:0}
-
-/* CARDS */
 .card{background:var(--sf);border:0.5px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:10px}
-
-/* GRIDS */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:7px}
-.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:7px}
 .met{background:var(--sf2);border-radius:var(--rs);padding:11px;border:0.5px solid var(--bd)}
 .ml{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
 .mv{font-size:15px;font-weight:700;letter-spacing:-.4px;line-height:1}
-.ms{font-size:9px;color:var(--mu);margin-top:3px;font-family:'DM Mono',monospace}
-
-/* SECTION HEADERS */
+.mss{font-size:9px;color:var(--mu);margin-top:3px;font-family:'DM Mono',monospace}
 .sec{font-size:9px;font-weight:600;color:var(--mu);letter-spacing:.08em;text-transform:uppercase;font-family:'DM Mono',monospace;margin:14px 0 8px}
 .sec:first-child{margin-top:0}
-.sec-hint{color:var(--di);font-weight:400;letter-spacing:.02em}
-
-/* CHART */
+.sec-hint{color:var(--di);font-weight:400;letter-spacing:.02em;text-transform:none}
 .ch{position:relative;width:100%;height:185px;margin:8px 0}
-
-/* EDITABLE FIELD ROW */
-.ef{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--bd);cursor:pointer;transition:background .1s}
+.ef{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--bd);cursor:pointer}
 .ef:last-child{border-bottom:none}
 .ef:active{background:rgba(29,158,117,0.06);border-radius:8px;margin:0 -4px;padding:12px 4px}
 .ef-lbl{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;flex:1;padding-right:8px;line-height:1.4}
 .ef-val{font-size:13px;font-weight:700;color:var(--gr);font-family:'DM Mono',monospace}
-.ef-pen{color:var(--gr);opacity:.4;font-size:12px;margin-left:5px}
-
-/* STATIC INFO ROW */
+.ef-pen{color:var(--gr);opacity:.4;font-size:12px;margin-left:4px}
 .ir{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:0.5px solid var(--bd)}
 .ir:last-child{border-bottom:none}
 .ir-l{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
 .ir-v{font-size:12px;font-weight:600}
-
-/* NUMPAD MODAL */
 .mb{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:600;display:none;align-items:flex-end}
 .mb.open{display:flex}
 .modal{background:var(--sf);border:0.5px solid var(--bd2);border-radius:22px 22px 0 0;padding:20px 18px calc(var(--safe)+20px);width:100%}
@@ -93,10 +73,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .nk:active{border-color:var(--gr);color:var(--gr);background:var(--gr-bg)}
 .nk.del{font-size:16px;color:var(--mu)}
 .nk.ok{background:var(--gr);border-color:var(--gr);color:#fff;font-size:13px;font-weight:700;font-family:'Syne',sans-serif}
-.nk.ok:active{background:#17855f}
 .nk.can{background:transparent;border-color:var(--bd);color:var(--mu);font-size:12px;font-family:'Syne',sans-serif}
-
-/* TOGGLE */
 .tr{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--bd)}
 .tr:last-child{border-bottom:none}
 .ti{flex:1;padding-right:11px}
@@ -106,13 +83,11 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .tog.on{background:var(--gr);border-color:var(--gr)}
 .tog-k{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .tog.on .tog-k{transform:translateX(17px)}
-
-/* MISC */
 .leg{display:flex;flex-wrap:wrap;gap:7px;margin:5px 0}
 .li{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--mu);font-family:'DM Mono',monospace}
 .ld{width:7px;height:7px;border-radius:2px;flex-shrink:0}
 .tbl{width:100%;border-collapse:collapse;font-size:10px;font-family:'DM Mono',monospace}
-.tbl th{color:var(--mu);font-weight:500;padding:6px 3px;border-bottom:0.5px solid var(--bd);text-align:right;font-size:9px;letter-spacing:.03em}
+.tbl th{color:var(--mu);font-weight:500;padding:6px 3px;border-bottom:0.5px solid var(--bd);text-align:right;font-size:9px}
 .tbl th:first-child{text-align:left}
 .tbl td{padding:8px 3px;border-bottom:0.5px solid var(--bd);text-align:right;color:var(--tx)}
 .tbl td:first-child{text-align:left;color:var(--mu)}
@@ -130,63 +105,79 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .dep-ok{background:var(--gr-bg);border:0.5px solid var(--gr-bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:9px;display:flex;align-items:center;justify-content:space-between}
 .dep-ok span{font-size:11px;color:var(--gr);font-family:'DM Mono',monospace}
 .dep-ok strong{font-size:13px;font-weight:700;color:var(--gr)}
-
-/* HOLDING CARD */
 .holding{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:12px;margin-bottom:8px}
 .hh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.h-ticker{font-size:15px;font-weight:700}
 .hdel{width:28px;height:28px;border-radius:50%;background:var(--rd-bg);border:0.5px solid var(--rd-bd);color:var(--rd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px}
 .h-tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-.h-tile{background:var(--sf3);border-radius:var(--rs);padding:8px;cursor:pointer;border:0.5px solid var(--bd);transition:border-color .15s}
+.h-tile{background:var(--sf3);border-radius:var(--rs);padding:8px;cursor:pointer;border:0.5px solid var(--bd)}
 .h-tile:active{border-color:var(--gr)}
-.h-tile-l{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:3px;letter-spacing:.04em}
+.h-tile-l{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:3px}
 .h-tile-v{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
 .h-tile-hint{font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:2px}
-
-/* ADD BUTTON */
+.prop-card{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:13px;margin-bottom:9px}
+.prop-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.prop-name{font-size:14px;font-weight:700}
+.prop-badge{font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;font-weight:600;margin-top:3px;display:inline-block}
+.prop-badge.inv{background:var(--am-bg);color:var(--am);border:0.5px solid var(--am-bd)}
+.prop-badge.ppor{background:var(--bl-bg);color:var(--bl);border:0.5px solid var(--bl-bd)}
+.prop-del{font-size:13px;color:var(--rd);cursor:pointer;padding:2px 7px}
+.prop-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.prop-met{background:var(--sf3);border-radius:var(--rs);padding:8px;border:0.5px solid var(--bd)}
+.prop-met-l{font-size:8px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.prop-met-v{font-size:12px;font-weight:700;font-family:'DM Mono',monospace}
 .add-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--gr-bg);border:0.5px dashed var(--gr-bd);border-radius:var(--rs);padding:13px;cursor:pointer;font-size:12px;font-weight:600;color:var(--gr);font-family:'DM Mono',monospace;margin-top:4px}
 .add-btn:active{background:rgba(29,158,117,0.2)}
-
-/* MILESTONE ROW */
 .ms-row{display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border-radius:var(--rs);padding:10px 11px;border:0.5px solid var(--bd);margin-bottom:6px}
 .ms-l{display:flex;align-items:center;gap:8px}
 .ms-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .ms-age{font-size:13px;font-weight:700}
 .ms-desc{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:1px}
 .ms-val{font-size:12px;font-weight:700;font-family:'DM Mono',monospace}
-
-/* PANEL */
-.panel{display:none}.panel.active{display:block}
-@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.panel.active .card{animation:fu .2s ease both}
-.panel.active .card:nth-child(2){animation-delay:.04s}
-.panel.active .card:nth-child(3){animation-delay:.08s}
-.panel.active .card:nth-child(4){animation-delay:.12s}
-.panel.active .card:nth-child(5){animation-delay:.15s}
-
-/* HERO */
-.hero{text-align:center;padding:16px 0 4px}
-.hero-val{font-size:34px;font-weight:700;letter-spacing:-2px;color:var(--gr)}
-.hero-lbl{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px;letter-spacing:.08em;text-transform:uppercase}
-
-/* DONUT */
-.dw{display:flex;align-items:center;gap:11px;margin:8px 0}
-.dl{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:0.5px solid var(--bd)}
-.dl:last-child{border-bottom:none}
-.dll{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mu);font-family:'DM Mono',monospace}
-.dlv{font-size:10px;font-weight:600;font-family:'DM Mono',monospace}
-
-/* SCENARIO */
+.cf-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--bd)}
+.cf-row:last-child{border-bottom:none}
+.cf-lbl{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;flex:1}
+.cf-val{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
+.cf-pos{color:var(--gr)}.cf-neg{color:var(--rd)}.cf-neu{color:var(--am)}
+.plan-row{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:11px;margin-bottom:7px}
+.plan-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.plan-title{font-size:12px;font-weight:600}
+.plan-del{font-size:13px;color:var(--rd);cursor:pointer;padding:2px 6px}
+.plan-meta{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6}
+.lump-row{background:var(--am-bg);border:0.5px solid var(--am-bd);border-radius:var(--rs);padding:11px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+.log-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--bd)}
+.log-row:last-child{border-bottom:none}
+.log-date{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace}
+.log-val{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
+.log-del{font-size:13px;color:var(--di);cursor:pointer;padding:3px 7px}
+.log-add{width:100%;background:var(--gr-bg);border:0.5px solid var(--gr-bd);border-radius:var(--rs);padding:11px;font-size:12px;font-weight:600;color:var(--gr);font-family:'DM Mono',monospace;cursor:pointer;text-align:center;margin-top:9px}
+.rebal-row{background:var(--sf2);border-radius:var(--rs);padding:10px;border:0.5px solid var(--bd);margin-bottom:7px}
+.rebal-hdr{display:flex;justify-content:space-between;margin-bottom:6px}
+.rebal-ticker{font-size:12px;font-weight:700}
+.rebal-pcts{font-size:10px;font-family:'DM Mono',monospace;color:var(--mu)}
+.rebal-bar-bg{height:6px;background:var(--sf3);border-radius:3px;overflow:visible;position:relative;margin-bottom:4px}
+.rebal-bar-act{height:6px;border-radius:3px;position:absolute;top:0;left:0}
+.rebal-bar-tgt{width:2px;height:12px;background:var(--tx);position:absolute;top:-3px;border-radius:1px}
+.ptog{display:flex;gap:6px;margin-bottom:10px}
+.pt{flex:1;padding:8px;border-radius:var(--rs);font-size:11px;font-family:'DM Mono',monospace;font-weight:600;cursor:pointer;border:0.5px solid var(--bd);color:var(--mu);background:var(--sf2);text-align:center}
+.pt.active{background:var(--gr);color:#fff;border-color:var(--gr)}
+.po-box{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:12px;margin-bottom:9px}
+.po-box.good{border-color:var(--gr-bd);background:var(--gr-bg)}
+.po-box.warn{border-color:var(--rd-bd);background:var(--rd-bg)}
+.po-box.info{border-color:var(--bl-bd);background:var(--bl-bg)}
+.po-title{font-size:9px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;font-weight:600}
+.po-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0}
+.po-l{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
+.po-v{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
 .scen-bar{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
 .sb{flex:1;min-width:70px;padding:8px 4px;border-radius:var(--rs);font-size:10px;font-family:'DM Mono',monospace;font-weight:500;cursor:pointer;border:0.5px solid var(--bd);color:var(--mu);background:var(--sf2);text-align:center;line-height:1.4}
-.sb.active{background:var(--bl-bg);color:var(--bl);border-color:rgba(55,138,221,0.35)}
-
-/* COLOUR PICKER */
+.sb.active{background:var(--bl-bg);color:var(--bl);border-color:var(--bl-bd)}
+.dis-section{background:var(--sf2);border:0.5px dashed var(--bd2);border-radius:var(--r);padding:28px;text-align:center;margin-bottom:10px}
+.dis-icon{font-size:30px;margin-bottom:8px}
+.dis-lbl{font-size:13px;font-weight:600;margin-bottom:4px}
+.dis-desc{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6}
 .color-opts{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px}
 .cd{width:27px;height:27px;border-radius:50%;cursor:pointer;border:2.5px solid transparent}
 .cd.sel{border-color:#fff}
-
-/* MODALS (add stock, rate, name) */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:550;display:none;align-items:flex-end}
 .sheet-bg.open{display:flex}
 .sheet{background:var(--sf);border:0.5px solid var(--bd2);border-radius:22px 22px 0 0;padding:18px 16px calc(var(--safe)+18px);width:100%;max-height:90vh;overflow-y:auto}
@@ -196,177 +187,97 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .field label{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;display:block;margin-bottom:5px}
 .field input,.field select{width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px 12px;font-size:14px;color:var(--tx);font-family:'DM Mono',monospace;outline:none;-webkit-appearance:none}
 .field input:focus,.field select:focus{border-color:var(--gr)}
-.field select option{background:var(--sf2);color:var(--tx)}
+.field select option{background:var(--sf2)}
 .ma{display:flex;gap:7px;margin-top:14px}
 .bp{flex:1;background:var(--gr);color:#fff;border:none;border-radius:var(--rs);padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif}
-.bs{flex:1;background:var(--sf2);color:var(--mu);border:0.5px solid var(--bd);border-radius:var(--rs);padding:13px;font-size:13px;cursor:pointer;font-family:'Syne',sans-serif}
-
-/* PERIOD TOGGLE */
-.ptog{display:flex;gap:6px;margin-bottom:10px}
-.pt{flex:1;padding:8px;border-radius:var(--rs);font-size:11px;font-family:'DM Mono',monospace;font-weight:600;cursor:pointer;border:0.5px solid var(--bd);color:var(--mu);background:var(--sf2);text-align:center}
-.pt.active{background:var(--gr);color:#fff;border-color:var(--gr)}
-
-/* PAYOFF RESULT BOX */
-.po-box{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:12px;margin-bottom:9px}
-.po-box.good{border-color:var(--gr-bd);background:var(--gr-bg)}
-.po-box.warn{border-color:var(--rd-bd);background:var(--rd-bg)}
-.po-title{font-size:9px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;font-weight:600}
-.po-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0}
-.po-l{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
-.po-v{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
-
-/* NW / RATE LOG */
-.log-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--bd)}
-.log-row:last-child{border-bottom:none}
-.log-date{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace}
-.log-val{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
-.log-del{font-size:13px;color:var(--di);cursor:pointer;padding:3px 7px}
-.log-add-btn{width:100%;background:var(--gr-bg);border:0.5px solid var(--gr-bd);border-radius:var(--rs);padding:11px;font-size:12px;font-weight:600;color:var(--gr);font-family:'DM Mono',monospace;cursor:pointer;text-align:center;margin-top:9px}
-
-/* PLAN ROW */
-.plan-row{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:11px;margin-bottom:7px}
-.plan-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.plan-title{font-size:12px;font-weight:600}
-.plan-del{font-size:13px;color:var(--rd);cursor:pointer;padding:2px 6px}
-.plan-meta{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6}
-
-/* LUMP ROW */
-.lump-row{background:var(--am-bg);border:0.5px solid rgba(239,159,39,0.28);border-radius:var(--rs);padding:11px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
-.lump-info{flex:1}
-.lump-ticker{font-size:12px;font-weight:600;color:var(--am)}
-.lump-detail{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px}
-.lump-del{font-size:13px;color:var(--di);cursor:pointer;padding:2px 7px}
-
-/* SAVE BANNER */
+.bss{flex:1;background:var(--sf2);color:var(--mu);border:0.5px solid var(--bd);border-radius:var(--rs);padding:13px;font-size:13px;cursor:pointer;font-family:'Syne',sans-serif}
 .save-banner{position:fixed;top:0;left:0;right:0;background:var(--gr);color:#fff;font-size:11px;font-family:'DM Mono',monospace;text-align:center;padding:8px;z-index:1000;transform:translateY(-100%);transition:transform .3s}
 .save-banner.show{transform:translateY(0)}
-
-/* RESET BUTTON */
 .reset-btn{background:var(--rd-bg);border:0.5px solid var(--rd-bd);color:var(--rd);border-radius:var(--rs);padding:12px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;font-family:'DM Mono',monospace;width:100%;margin-top:4px}
-
-/* COLOUR HELPERS */
+.panel{display:none}.panel.active{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel.active .card{animation:fu .2s ease both}
+.panel.active .card:nth-child(2){animation-delay:.04s}
+.panel.active .card:nth-child(3){animation-delay:.08s}
+.panel.active .card:nth-child(4){animation-delay:.12s}
+.hero{text-align:center;padding:16px 0 4px}
+.hero-val{font-size:34px;font-weight:700;letter-spacing:-2px;color:var(--gr)}
+.hero-lbl{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px;letter-spacing:.08em;text-transform:uppercase}
+.dw{display:flex;align-items:center;gap:11px;margin:8px 0}
+.dl{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:0.5px solid var(--bd)}
+.dl:last-child{border-bottom:none}
+.dll{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mu);font-family:'DM Mono',monospace}
+.dlv{font-size:10px;font-weight:600;font-family:'DM Mono',monospace}
 .gr{color:var(--gr)}.bl{color:var(--bl)}.pu{color:var(--pu)}.am{color:var(--am)}.rd{color:var(--rd)}
 </style>
 </head>
 <body>
-
 <div class="save-banner" id="save-banner">💾 Saved</div>
-
 <div class="hdr">
-  <div>
-    <div class="hdr-name" id="hdr-name" onclick="openNameModal()">Ned's Finance</div>
-    <div class="hdr-sub" id="hdr-date"></div>
-  </div>
-  <div class="hdr-nw">
-    <div class="hdr-val" id="hdr-total">—</div>
-    <div class="hdr-lbl">net worth</div>
-  </div>
+  <div><div class="hdr-name" id="hdr-name" onclick="openNameModal()">Finance</div><div class="hdr-sub" id="hdr-date"></div></div>
+  <div class="hdr-nw"><div class="hdr-val" id="hdr-total">—</div><div class="hdr-lbl">net worth</div></div>
 </div>
-
 <div class="scroll" id="scroll">
 
   <!-- HOME -->
   <div class="panel active" id="p-home">
     <div class="card">
       <div class="hero"><div class="hero-val" id="ov-nw">—</div><div class="hero-lbl">Total net worth · Age <span id="ov-age">29</span></div></div>
-      <div class="dw">
-        <svg width="90" height="90" viewBox="0 0 90 90" id="donut" style="flex-shrink:0"></svg>
-        <div style="flex:1" id="donut-leg"></div>
-      </div>
+      <div class="dw"><svg width="90" height="90" viewBox="0 0 90 90" id="donut" style="flex-shrink:0"></svg><div style="flex:1" id="donut-leg"></div></div>
     </div>
-    <div class="card">
-      <div class="sec">Snapshot <span class="sec-hint">— tap green values to edit</span></div>
-      <div id="ov-facts"></div>
-    </div>
-    <div class="card">
-      <div class="sec">Assets</div>
-      <div class="g2" id="ov-met"></div>
-    </div>
+    <div class="card"><div class="sec">Snapshot <span class="sec-hint">— tap green values to edit</span></div><div id="ov-facts"></div></div>
+    <div class="card"><div class="sec">Assets</div><div class="g2" id="ov-met"></div></div>
     <div class="card"><div class="sec">Milestones</div><div id="ov-ms"></div></div>
-    <div class="card">
-      <div class="sec">App settings</div>
+    <div class="card"><div class="sec">Section toggles</div><div id="section-toggles"></div></div>
+    <div class="card"><div class="sec">App settings</div>
       <div class="ef" onclick="openNameModal()"><span class="ef-lbl">Dashboard name</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val" id="settings-name-val">—</span><span class="ef-pen">✎</span></span></div>
-      <div style="margin-top:10px">
-        <div class="reset-btn" onclick="confirmReset()">⚠ Reset all data to defaults</div>
-      </div>
+      <div style="margin-top:10px"><div class="reset-btn" onclick="confirmReset()">⚠ Reset all data to defaults</div></div>
     </div>
   </div>
 
   <!-- STOCKS -->
   <div class="panel" id="p-stocks">
-    <div class="card">
-      <div class="sec">Holdings <span class="sec-hint">— tap tiles to edit</span></div>
-      <div id="holdings-list"></div>
-      <div class="add-btn" onclick="openAddStock()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add holding
+    <div id="stocks-dis"></div>
+    <div id="stocks-content">
+      <div class="card"><div class="sec">Holdings <span class="sec-hint">— tap tiles to edit</span></div><div id="holdings-list"></div><div class="add-btn" onclick="openAddStock()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add holding</div></div>
+      <div class="card">
+        <div class="sec">Portfolio rebalancing</div>
+        <div id="rebal-section"></div>
+        <div class="ef" onclick="openRebalModal()" style="margin-top:6px"><span class="ef-lbl">Set target allocation %</span><span class="ef-pen">✎</span></div>
       </div>
-    </div>
-    <div class="card">
-      <div class="sec">Monthly contribution plans</div>
-      <div id="contrib-plans"></div>
-      <div class="add-btn" onclick="openAddPlan()" style="margin-top:4px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add contribution plan
-      </div>
-    </div>
-    <div class="card">
-      <div class="sec">Lump sum / excess contributions</div>
-      <div id="lump-list"></div>
-      <div class="add-btn" onclick="openAddLump()" style="margin-top:4px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add lump sum
-      </div>
-    </div>
-    <div class="card">
-      <div class="sec">Portfolio growth</div>
-      <div class="g2" id="st-met"></div>
-      <div class="ch"><canvas id="stChart"></canvas></div>
-      <div class="leg" id="st-leg"></div>
-    </div>
-    <div class="card">
-      <div class="sec">Projections</div>
-      <div class="pills"><div class="pill active" onclick="stTab(10,this)">10 yr</div><div class="pill" onclick="stTab(20,this)">20 yr</div><div class="pill" onclick="stTab(30,this)">30 yr</div></div>
-      <div id="st-proj"></div>
-    </div>
-    <div class="card">
-      <div class="sec">Settings</div>
-      <div id="st-settings"></div>
+      <div class="card"><div class="sec">Monthly contribution plans</div><div id="contrib-plans"></div><div class="add-btn" onclick="openAddPlan()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add plan</div></div>
+      <div class="card"><div class="sec">Lump sum / excess contributions</div><div id="lump-list"></div><div class="add-btn" onclick="openAddLump()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add lump sum</div></div>
+      <div class="card"><div class="sec">Portfolio growth</div><div class="g2" id="st-met"></div><div class="ch"><canvas id="stChart"></canvas></div><div class="leg" id="st-leg"></div></div>
+      <div class="card"><div class="sec">Projections</div><div class="pills"><div class="pill active" onclick="stTab(10,this)">10 yr</div><div class="pill" onclick="stTab(20,this)">20 yr</div><div class="pill" onclick="stTab(30,this)">30 yr</div></div><div id="st-proj"></div></div>
+      <div class="card"><div class="sec">Settings</div><div id="st-settings"></div></div>
     </div>
   </div>
 
-  <!-- MORTGAGE -->
-  <div class="panel" id="p-mortgage">
-    <div class="card">
-      <div class="sec">Current home</div>
-      <div class="g3" id="mort-met"></div>
-      <div class="ch"><canvas id="mortChart"></canvas></div>
-      <div class="leg"><div class="li"><div class="ld" style="background:var(--rd)"></div>Balance</div><div class="li"><div class="ld" style="background:var(--gr)"></div>Offset</div><div class="li"><div class="ld" style="background:var(--bl)"></div>Equity</div></div>
+  <!-- PROPERTIES -->
+  <div class="panel" id="p-properties">
+    <div id="props-dis"></div>
+    <div id="props-content">
+      <div class="card"><div class="sec">Your properties</div><div id="prop-list"></div><div class="add-btn" onclick="openAddProp()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add property</div></div>
+      <div class="card"><div class="sec">Combined summary</div><div class="g2" id="prop-summary"></div></div>
+      <div class="card"><div class="sec">Equity over time</div><div class="ch"><canvas id="propChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--gr)"></div>Total equity</div><div class="li"><div class="ld" style="background:var(--rd)"></div>Total debt</div></div></div>
     </div>
-    <div class="card"><div class="sec">Payoff progress</div><div id="mort-prog"></div></div>
-    <div class="card">
-      <div class="sec">Loan details <span class="sec-hint">— tap to edit · minimum auto-calculated</span></div>
-      <div id="mort-ctrl"></div>
-    </div>
-    <div class="card">
-      <div class="sec">Rate history <span class="sec-hint">— only affects future payments</span></div>
-      <div id="rate-hist"></div>
-      <div class="log-add-btn" onclick="openRateModal()" style="margin-top:9px">+ Log rate change</div>
-    </div>
-    <div class="card"><div class="sec">Options</div><div id="mort-togs"></div></div>
   </div>
 
-  <!-- PAYOFF SIMULATOR -->
+  <!-- PAYOFF -->
   <div class="panel" id="p-payoff">
-    <div class="card">
-      <div class="sec">Payment period</div>
-      <div class="ptog">
-        <div class="pt active" id="pt-fn" onclick="setPeriod('fortnightly',this)">Fortnightly</div>
-        <div class="pt" id="pt-mo" onclick="setPeriod('monthly',this)">Monthly</div>
-      </div>
-      <div class="sec" style="margin-top:0">Loan parameters <span class="sec-hint">— auto-filled from Mortgage tab</span></div>
-      <div id="po-setup"></div>
-    </div>
-    <div class="card"><div class="sec">Extra payments <span class="sec-hint">— tap to edit</span></div><div id="po-extra"></div></div>
-    <div class="card"><div class="sec">Comparison results</div><div id="po-result"></div></div>
-    <div class="card"><div class="sec">Balance over time</div><div class="ch" style="height:200px"><canvas id="payoffChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--mu)"></div>Min only</div><div class="li"><div class="ld" style="background:var(--am)"></div>Current plan</div><div class="li"><div class="ld" style="background:var(--gr)"></div>With lump sum</div></div></div>
+    <div class="card"><div class="sec">Payment period</div><div class="ptog"><div class="pt active" id="pt-fn" onclick="setPeriod('fortnightly',this)">Fortnightly</div><div class="pt" id="pt-mo" onclick="setPeriod('monthly',this)">Monthly</div></div><div class="sec" style="margin-top:0">Select property</div><div id="po-prop-sel"></div><div class="sec" style="margin-top:8px">Parameters <span class="sec-hint">— auto-filled from property</span></div><div id="po-setup"></div></div>
+    <div class="card"><div class="sec">Extra payment <span class="sec-hint">— tap to edit</span></div><div id="po-extra"></div></div>
+    <div class="card"><div class="sec">Comparison</div><div id="po-result"></div></div>
+    <div class="card"><div class="sec">Balance over time</div><div class="ch" style="height:200px"><canvas id="payoffChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--mu)"></div>Min only</div><div class="li"><div class="ld" style="background:var(--am)"></div>Current plan</div><div class="li"><div class="ld" style="background:var(--gr)"></div>With lump</div></div></div>
+  </div>
+
+  <!-- CASH FLOW -->
+  <div class="panel" id="p-cashflow">
+    <div class="card"><div class="sec">Monthly summary</div><div class="g2" id="cf-summary"></div></div>
+    <div class="card"><div class="sec">Income <span class="sec-hint">— tap to edit</span></div><div id="cf-income"></div></div>
+    <div class="card"><div class="sec">Commitments</div><div id="cf-commitments"></div></div>
+    <div class="card"><div class="sec">Investments</div><div id="cf-investments"></div></div>
+    <div class="card"><div class="sec">Surplus / shortfall</div><div id="cf-surplus"></div></div>
   </div>
 
   <!-- SUPER -->
@@ -377,46 +288,34 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="card"><div class="sec">Adjust <span class="sec-hint">— tap to edit</span></div><div id="sup-ctrl"></div></div>
   </div>
 
-  <!-- PPOR -->
-  <div class="panel" id="p-ppor">
-    <div class="card"><div class="sec">Deposit position</div><div id="ppor-dep"></div><div class="g2" id="ppor-dep-met"></div></div>
-    <div class="card"><div class="sec">New purchase <span class="sec-hint">— tap to edit</span></div><div class="g2" id="ppor-calc"></div><div class="ch"><canvas id="pporChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--bl)"></div>Value</div><div class="li"><div class="ld" style="background:var(--rd)"></div>Loan</div><div class="li"><div class="ld" style="background:var(--gr)"></div>Equity</div></div></div>
-    <div class="card"><div class="sec">Adjust <span class="sec-hint">— tap to edit</span></div><div id="ppor-ctrl"></div></div>
-  </div>
-
   <!-- HISTORY -->
   <div class="panel" id="p-history">
     <div class="card"><div class="sec">Net worth over time</div><div class="ch"><canvas id="histChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--gr)"></div>Actual</div><div class="li"><div class="ld" style="background:var(--bl)"></div>Projected</div></div></div>
-    <div class="card"><div class="sec">Log entries</div><div id="nw-entries"></div><div class="log-add-btn" onclick="logNW()">+ Log today's net worth</div></div>
+    <div class="card"><div class="sec">Log entries</div><div id="nw-entries"></div><div class="log-add" onclick="logNW()">+ Log today's net worth</div></div>
   </div>
 
   <!-- PROJECTION -->
   <div class="panel" id="p-proj">
-    <div class="card">
-      <div class="sec">Scenario</div>
-      <div class="scen-bar"><div class="sb active" onclick="setScen(0,this)">📈 Current</div><div class="sb" onclick="setScen(1,this)">🏠 Buy PPOR</div><div class="sb" onclick="setScen(2,this)">🛡 Conservative</div></div>
-      <div id="scen-desc" style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6;padding:9px;background:var(--sf2);border-radius:var(--rs);border:0.5px solid var(--bd)"></div>
-    </div>
+    <div class="card"><div class="sec">Scenario</div><div class="scen-bar"><div class="sb active" onclick="setScen(0,this)">📈 Current</div><div class="sb" onclick="setScen(1,this)">📈 Optimistic</div><div class="sb" onclick="setScen(2,this)">🛡 Conservative</div></div><div id="scen-desc" style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6;padding:9px;background:var(--sf2);border-radius:var(--rs);border:0.5px solid var(--bd)"></div></div>
     <div class="card"><div class="sec">Options</div><div id="proj-togs"></div></div>
-    <div class="card"><div class="sec">Total net worth</div><div class="g2" id="proj-met"></div><div class="ch" style="height:200px"><canvas id="projChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--bl)"></div>ETFs</div><div class="li"><div class="ld" style="background:var(--pu)"></div>Super</div><div class="li"><div class="ld" style="background:var(--rd)"></div>Inv.prop</div><div class="li"><div class="ld" style="background:var(--gr)"></div>PPOR</div></div></div>
+    <div class="card"><div class="sec">Total net worth</div><div class="g2" id="proj-met"></div><div class="ch" style="height:200px"><canvas id="projChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--bl)"></div>ETFs</div><div class="li"><div class="ld" style="background:var(--pu)"></div>Super</div><div class="li"><div class="ld" style="background:var(--gr)"></div>Properties</div></div></div>
     <div class="card"><div class="sec">Full table</div><div style="overflow-x:auto"><table class="tbl" id="proj-tbl"></table></div></div>
   </div>
 
 </div><!-- end scroll -->
 
-<!-- NAV -->
-<nav class="nav">
+<nav class="nav" id="main-nav">
   <div class="nb active" onclick="show('home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Home</div>
-  <div class="nb" onclick="show('stocks',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stocks</div>
-  <div class="nb" onclick="show('mortgage',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Mortgage</div>
+  <div class="nb" id="nav-stocks" onclick="show('stocks',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stocks</div>
+  <div class="nb" id="nav-properties" onclick="show('properties',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Properties</div>
   <div class="nb" onclick="show('payoff',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Payoff</div>
+  <div class="nb" onclick="show('cashflow',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</div>
   <div class="nb" onclick="show('super',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Super</div>
-  <div class="nb" onclick="show('ppor',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><line x1="12" y1="7" x2="12" y2="17"/></svg>PPOR</div>
-  <div class="nb" onclick="show('history',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>History</div>
+  <div class="nb" onclick="show('history',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>History</div>
   <div class="nb" onclick="show('proj',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Proj.</div>
 </nav>
 
-<!-- NUMPAD MODAL -->
+<!-- NUMPAD -->
 <div class="mb" id="edit-modal">
   <div class="modal">
     <div class="m-lbl" id="edit-lbl">—</div>
@@ -436,12 +335,22 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   </div>
 </div>
 
-<!-- TEXT INPUT MODAL (for name) -->
+<!-- TEXT EDIT -->
+<div class="sheet-bg" id="text-modal" onclick="if(event.target===this)closeText()">
+  <div class="sheet">
+    <div class="sheet-title"><span id="text-lbl">Edit</span><div class="mx" onclick="closeText()">×</div></div>
+    <input type="hidden" id="text-key"><input type="hidden" id="text-prop-id">
+    <div class="field"><input id="text-inp" autocomplete="off" autocorrect="off" spellcheck="false" style="font-size:18px;padding:14px"></div>
+    <div class="ma"><button class="bss" onclick="closeText()">Cancel</button><button class="bp" onclick="saveText()">Save</button></div>
+  </div>
+</div>
+
+<!-- NAME -->
 <div class="sheet-bg" id="name-modal" onclick="if(event.target===this)closeNameModal()">
   <div class="sheet">
     <div class="sheet-title">Dashboard name <div class="mx" onclick="closeNameModal()">×</div></div>
-    <div class="field"><label>Name</label><input id="name-input" placeholder="e.g. Ned's Finance" autocomplete="off"></div>
-    <div class="ma"><button class="bs" onclick="closeNameModal()">Cancel</button><button class="bp" onclick="saveName()">Save</button></div>
+    <div class="field"><label>Name</label><input id="name-inp" placeholder="e.g. Ned's Finance" autocomplete="off"></div>
+    <div class="ma"><button class="bss" onclick="closeNameModal()">Cancel</button><button class="bp" onclick="saveName()">Save</button></div>
   </div>
 </div>
 
@@ -449,35 +358,65 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 <div class="sheet-bg" id="add-stock-modal" onclick="if(event.target===this)closeAddStock()">
   <div class="sheet">
     <div class="sheet-title">Add holding <div class="mx" onclick="closeAddStock()">×</div></div>
-    <div class="field"><label>Ticker / Name</label><input id="m-ticker" placeholder="e.g. VGS, NDQ, A200" style="text-transform:uppercase" autocomplete="off"></div>
+    <div class="field"><label>Ticker</label><input id="m-ticker" placeholder="e.g. VGS, NDQ" style="text-transform:uppercase" autocomplete="off"></div>
     <div class="field"><label>Current value ($)</label><input id="m-val" type="number" inputmode="decimal" placeholder="45500"></div>
     <div class="field"><label>Colour</label><div class="color-opts" id="color-opts"></div></div>
-    <div class="ma"><button class="bs" onclick="closeAddStock()">Cancel</button><button class="bp" onclick="addStock()">Add</button></div>
+    <div class="ma"><button class="bss" onclick="closeAddStock()">Cancel</button><button class="bp" onclick="addStock()">Add</button></div>
   </div>
 </div>
 
-<!-- ADD CONTRIBUTION PLAN -->
+<!-- ADD PROPERTY -->
+<div class="sheet-bg" id="add-prop-modal" onclick="if(event.target===this)closeAddProp()">
+  <div class="sheet">
+    <div class="sheet-title">Add property <div class="mx" onclick="closeAddProp()">×</div></div>
+    <div class="field"><label>Name / address</label><input id="p-name" placeholder="e.g. 12 Smith St" autocomplete="off"></div>
+    <div class="field"><label>Type</label><select id="p-type"><option value="ppor">Primary residence (PPOR)</option><option value="investment">Investment property</option></select></div>
+    <div class="field"><label>Current value ($)</label><input id="p-val" type="number" inputmode="decimal" placeholder="255000"></div>
+    <div class="field"><label>Loan balance ($)</label><input id="p-loan" type="number" inputmode="decimal" placeholder="158500"></div>
+    <div class="field"><label>Original loan amount ($)</label><input id="p-orig" type="number" inputmode="decimal" placeholder="205000"></div>
+    <div class="field"><label>Offset account ($)</label><input id="p-offset" type="number" inputmode="decimal" placeholder="60000"></div>
+    <div class="field"><label>Interest rate (%)</label><input id="p-rate" type="number" inputmode="decimal" placeholder="5.88" step="0.01"></div>
+    <div class="field"><label>Loan term (years)</label><input id="p-term" type="number" inputmode="decimal" placeholder="30"></div>
+    <div class="field"><label>Loan start date (DD/MM/YY)</label><input id="p-start" placeholder="01/07/23" autocomplete="off"></div>
+    <div class="field"><label>Weekly rental income ($)</label><input id="p-rent" type="number" inputmode="decimal" placeholder="325"></div>
+    <div class="field"><label>Annual growth (%)</label><input id="p-growth" type="number" inputmode="decimal" placeholder="4" step="0.5"></div>
+    <div class="field"><label>Bank fortnightly minimum (0 = auto-calc)</label><input id="p-minfn" type="number" inputmode="decimal" placeholder="571"></div>
+    <div class="field"><label>Extra fortnightly ($)</label><input id="p-extra" type="number" inputmode="decimal" placeholder="693"></div>
+    <div class="ma"><button class="bss" onclick="closeAddProp()">Cancel</button><button class="bp" onclick="addProp()">Add property</button></div>
+  </div>
+</div>
+
+<!-- ADD PLAN -->
 <div class="sheet-bg" id="plan-modal" onclick="if(event.target===this)closePlanModal()">
   <div class="sheet">
     <div class="sheet-title">Contribution plan <div class="mx" onclick="closePlanModal()">×</div></div>
-    <div class="field"><label>Plan name</label><input id="plan-name" placeholder="e.g. Monthly DCA" autocomplete="off"></div>
-    <div class="field"><label>Start date (DD/MM/YY)</label><input id="plan-date" placeholder="08/06/26" autocomplete="off"></div>
+    <div class="field"><label>Plan name</label><input id="plan-name" placeholder="Monthly DCA" autocomplete="off"></div>
+    <div class="field"><label>Start date (DD/MM/YY)</label><input id="plan-date" autocomplete="off"></div>
     <div id="plan-allocs" style="margin-bottom:10px"></div>
-    <div class="add-btn" onclick="addPlanAlloc()" style="margin-bottom:10px">+ Add ETF allocation</div>
-    <div class="ma"><button class="bs" onclick="closePlanModal()">Cancel</button><button class="bp" onclick="savePlan()">Save plan</button></div>
+    <div class="add-btn" onclick="addPlanAlloc()">+ Add ETF allocation</div>
+    <div class="ma"><button class="bss" onclick="closePlanModal()">Cancel</button><button class="bp" onclick="savePlan()">Save plan</button></div>
   </div>
 </div>
 
-<!-- ADD LUMP SUM -->
+<!-- ADD LUMP -->
 <div class="sheet-bg" id="lump-modal" onclick="if(event.target===this)closeLumpModal()">
   <div class="sheet">
     <div class="sheet-title">Lump sum <div class="mx" onclick="closeLumpModal()">×</div></div>
-    <div class="field"><label>ETF / Holding</label>
-      <select id="lump-ticker"></select>
-    </div>
+    <div class="field"><label>ETF / Holding</label><select id="lump-ticker"></select></div>
     <div class="field"><label>Amount ($)</label><input id="lump-amount" type="number" inputmode="decimal" placeholder="5000"></div>
-    <div class="field"><label>Date (DD/MM/YY)</label><input id="lump-date" placeholder="22/05/26" autocomplete="off"></div>
-    <div class="ma"><button class="bs" onclick="closeLumpModal()">Cancel</button><button class="bp" onclick="saveLump()">Add lump sum</button></div>
+    <div class="field"><label>Date (DD/MM/YY)</label><input id="lump-date" autocomplete="off"></div>
+    <div class="ma"><button class="bss" onclick="closeLumpModal()">Cancel</button><button class="bp" onclick="saveLump()">Add</button></div>
+  </div>
+</div>
+
+<!-- TARGET ALLOCATION -->
+<div class="sheet-bg" id="rebal-modal" onclick="if(event.target===this)closeRebalModal()">
+  <div class="sheet">
+    <div class="sheet-title">Target allocation <div class="mx" onclick="closeRebalModal()">×</div></div>
+    <div style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:12px;line-height:1.6">Set your target % for each holding. Total should equal 100%.</div>
+    <div id="rebal-inputs"></div>
+    <div id="rebal-total" style="font-size:12px;font-family:'DM Mono',monospace;margin-top:8px;text-align:right"></div>
+    <div class="ma"><button class="bss" onclick="closeRebalModal()">Cancel</button><button class="bp" onclick="saveRebal()">Save</button></div>
   </div>
 </div>
 
@@ -486,249 +425,124 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   <div class="sheet">
     <div class="sheet-title">Rate change <div class="mx" onclick="closeRateModal()">×</div></div>
     <div class="field"><label>New rate (%)</label><input id="r-rate" type="number" inputmode="decimal" placeholder="6.13" step="0.01"></div>
-    <div class="field"><label>Effective date (DD/MM/YY)</label><input id="r-date" placeholder="01/06/26" autocomplete="off"></div>
-    <div class="ma"><button class="bs" onclick="closeRateModal()">Cancel</button><button class="bp" onclick="addRate()">Save</button></div>
+    <div class="field"><label>Effective date (DD/MM/YY)</label><input id="r-date" autocomplete="off"></div>
+    <div class="field"><label>Property</label><select id="r-prop"></select></div>
+    <div class="ma"><button class="bss" onclick="closeRateModal()">Cancel</button><button class="bp" onclick="addRate()">Save</button></div>
   </div>
 </div>
 
-
-<!-- TEXT EDIT MODAL -->
-<div class="sheet-bg" id="text-edit-modal" onclick="if(event.target===this)closeTextEdit()">
-  <div class="sheet">
-    <div class="sheet-title"><span id="text-edit-label">Edit</span><div class="mx" onclick="closeTextEdit()">×</div></div>
-    <input type="hidden" id="text-edit-key">
-    <div class="field">
-      <input id="text-edit-input" autocomplete="off" autocorrect="off" spellcheck="false" style="font-size:18px;padding:14px">
-    </div>
-    <div class="ma">
-      <button class="bs" onclick="closeTextEdit()">Cancel</button>
-      <button class="bp" onclick="saveTextEdit()">Save</button>
-    </div>
-  </div>
-</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════════
-// STORAGE
-// ═══════════════════════════════════════════════════════════
-const STORE='ned_finance_v10';
-
+const STORE='ned_fin_v15';
 const DEFAULTS={
-  appName:"Ned's Finance",
-  age:29,
-  // Holdings: value updated by scheduled plans + lumps automatically
+  appName:"Ned's Finance",age:29,
+  stocksEnabled:true,propertiesEnabled:true,
   holdings:[
     {id:1,ticker:'VGS',val:45500,ret:10,color:'#378ADD'},
     {id:2,ticker:'VAS',val:23420,ret:8.5,color:'#EF9F27'},
     {id:3,ticker:'VDHG',val:35300,ret:7.5,color:'#7a7a8c'},
   ],
-  nextHoldingId:4,
-  // Contribution plans: {id, name, startDate(dd/mm/yy), allocs:[{ticker,amount}]}
-  contribPlans:[
-    {id:1,name:'Monthly DCA',startDate:'08/06/26',allocs:[{ticker:'VGS',amount:1500},{ticker:'VAS',amount:500}]}
-  ],
+  nextHId:4,
+  rebalTargets:{VGS:70,VAS:30},
+  contribPlans:[{id:1,name:'Monthly DCA',startDate:'08/06/26',allocs:[{ticker:'VGS',amount:1500},{ticker:'VAS',amount:500}]}],
   nextPlanId:2,
-  // Lump sums: {id, ticker, amount, date(dd/mm/yy)}
-  lumpSums:[],
-  nextLumpId:1,
-  // Inflation toggle
-  inflationAdj:false,
-  inflationRate:3,
-  // Mortgage
-  mLoanAmount:205000,
-  mBalance:158500,
-  mOffset:60000,
-  mRate:5.88,
-  mTerm:30,
-  mStartDate:'01/07/23',  // dd/mm/yy — loan settlement date
-  mPropVal:255000,
-  mOffsetGrowth:false,
-  mOffsetGrowthAmt:500,
-  mMinFort:0,            // bank fortnightly minimum (0=use auto-calc)
-  mMinMonthly:0,        // bank monthly minimum (0=use auto-calc)
-  mExtraFort:693,         // salary packaged extra fortnightly
-  rateHistory:[{rate:6.13,date:"01/06/26",ts:new Date(2026,5,1).getTime()}], // [{rate, date(dd/mm/yy), ts}]
-  mortPayoffDate:'',
-  // Payoff simulator
-  poPeriod:'fortnightly',
-  poExtraLump:0,
-  // Super
-  sBalance:172000,
-  sExtra:550,
-  sEmployer:1400,
-  sReturn:7.5,
-  sSalaryRise:false,
-  sSalaryRisePct:3,
-  // PPOR
-  pPrice:925000,
-  pDeposit:185000,
-  pRate:6.2,
-  pTerm:30,
-  pRent:325,
-  pGrowth:4,
-  cashSavings:120000,
-  emergency:20000,
-  // Projection
-  pporIncluded:true,
+  lumpSums:[],nextLumpId:1,
+  properties:[{
+    id:1,name:'Current home',type:'ppor',
+    val:255000,loan:158500,origLoan:205000,offset:60000,
+    rate:5.88,term:30,startDate:'01/07/23',
+    rentWk:0,growth:4,minFort:0,extraFort:693,
+    rateHistory:[{rate:6.13,date:'01/06/26',ts:new Date(2026,5,1).getTime()}]
+  }],
+  nextPropId:2,
+  poPeriod:'fortnightly',poActivePropId:1,poExtraLump:0,
+  sBalance:172000,sExtra:550,sEmployer:1400,sReturn:7.5,
+  sSalaryRise:false,sSalaryRisePct:3,
+  cf:{grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000},
+  inflationAdj:false,inflationRate:3,
   scenario:0,
-  // History
   nwHistory:[],
+  cashSavings:120000,emergency:20000,
 };
 
 function loadState(){
-  try{const r=localStorage.getItem(STORE);if(r)return deepMerge(JSON.parse(JSON.stringify(DEFAULTS)),JSON.parse(r));}catch(e){}
+  try{const r=localStorage.getItem(STORE);if(r){const s=JSON.parse(r);return Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),s);}}catch(e){}
   return JSON.parse(JSON.stringify(DEFAULTS));
 }
-function deepMerge(base,override){
-  const out=Object.assign({},base);
-  for(const k in override){
-    if(override[k]!==null&&typeof override[k]==='object'&&!Array.isArray(override[k])){
-      out[k]=deepMerge(base[k]||{},override[k]);
-    } else {
-      out[k]=override[k];
-    }
-  }
-  return out;
-}
-function saveState(){
-  try{localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){console.error('Save failed',e);}
-}
-function showSave(){
-  const b=document.getElementById('save-banner');
-  b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);
-}
-function confirmReset(){
-  if(confirm('Reset ALL data to defaults? This cannot be undone.')){
-    localStorage.removeItem(STORE);
-    Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)));
-    refresh();
-    show('home',document.querySelector('.nb'));
-  }
-}
+function saveState(){try{localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
+function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
+function confirmReset(){if(confirm('Reset ALL data to defaults?')){localStorage.removeItem(STORE);location.reload();}}
 
 const S=loadState();
 const COLORS=['#1D9E75','#378ADD','#7f77dd','#EF9F27','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
 let selColor=COLORS[0];
 
-// ═══════════════════════════════════════════════════════════
-// DATE HELPERS
-// ═══════════════════════════════════════════════════════════
-// All dates stored as dd/mm/yy strings
-function parseDMY(str){
-  if(!str) return null;
-  const [d,m,y]=str.split('/').map(Number);
-  const fullY=y<100?(y>=50?1900+y:2000+y):y;
-  return new Date(fullY,m-1,d);
+// DATES
+function parseDMY(s){
+  if(!s||typeof s!=='string')return null;
+  const p=s.split('/');if(p.length!==3)return null;
+  const[d,m,y]=p.map(Number);if([d,m,y].some(isNaN))return null;
+  const fy=y<100?(y>=50?1900+y:2000+y):y;
+  const dt=new Date(fy,m-1,d);return isNaN(dt.getTime())?null:dt;
 }
-function fmtDMY(date){
-  if(!date) return '—';
-  const d=String(date.getDate()).padStart(2,'0');
-  const m=String(date.getMonth()+1).padStart(2,'0');
-  const y=String(date.getFullYear()).slice(-2);
-  return `${d}/${m}/${y}`;
-}
+function fmtDMY(d){if(!d)return'—';return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);}
 function today(){return fmtDMY(new Date());}
-function tsFromDMY(str){const d=parseDMY(str);return d?d.getTime():0;}
+function tsFromDMY(s){const d=parseDMY(s);return d?d.getTime():0;}
 
-// ═══════════════════════════════════════════════════════════
 // FORMAT
-// ═══════════════════════════════════════════════════════════
 const fmt=v=>'$'+Math.round(v).toLocaleString('en-AU');
-const fmtK=v=>{if(v>=1e6)return '$'+(v/1e6).toFixed(2)+'M';if(v>=1000)return '$'+Math.round(v/1000)+'k';return '$'+Math.round(v);};
+const fmtK=v=>{if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';if(v>=1000)return'$'+Math.round(v/1000)+'k';return'$'+Math.round(v);};
 const real=(v,y)=>S.inflationAdj?v/Math.pow(1+S.inflationRate/100,y):v;
 
-// ═══════════════════════════════════════════════════════════
-// MORTGAGE CALCULATIONS (auto-computed)
-// ═══════════════════════════════════════════════════════════
-function calcMinPaymentAuto(period){
-  // Uses original loan amount + full term (matches how banks set the minimum)
-  // Recalculates whenever loan amount, rate, or term changes
-  const principal=S.mLoanAmount||S.mBalance;
-  const periodsPerYear=period==='fortnightly'?26:12;
-  const rPer=(S.mRate/100)/periodsPerYear;
-  const n=Math.max(1,S.mTerm*periodsPerYear);
-  if(rPer<=0) return principal/n;
+// PROPERTY HELPERS
+function propMinAuto(p,period){
+  const principal=p.origLoan||p.loan;
+  const ppy=period==='fortnightly'?26:12;
+  const rPer=(p.rate/100)/ppy;
+  const n=Math.max(1,p.term*ppy);
+  if(rPer<=0)return principal/n;
   return principal*(rPer*Math.pow(1+rPer,n))/(Math.pow(1+rPer,n)-1);
 }
-function calcMinPayment(period='fortnightly'){
-  // Prioritise bank-entered figure if non-zero, else use formula
-  if(period==='fortnightly'&&S.mMinFort>0) return S.mMinFort;
-  if(period==='monthly'&&S.mMinMonthly>0) return S.mMinMonthly;
-  return calcMinPaymentAuto(period);
+function propMin(p,period){
+  if(period==='fortnightly'&&p.minFort>0)return p.minFort;
+  return propMinAuto(p,period);
 }
-function calcEffective(){return Math.max(0,S.mBalance-S.mOffset);}
+function propEff(p){return Math.max(0,p.loan-p.offset);}
+function propCurrentRate(p){
+  const now=Date.now();let r=p.rate;
+  if(p.rateHistory&&p.rateHistory.length){
+    const past=p.rateHistory.filter(x=>x.ts<=now).sort((a,b)=>a.ts-b.ts);
+    if(past.length)r=past[past.length-1].rate;
+  }
+  return r;
+}
+function totalEquity(){return S.properties.reduce((a,p)=>a+Math.max(0,p.val-p.loan),0);}
+function totalDebt(){return S.properties.reduce((a,p)=>a+p.loan,0);}
+function netRentalMonthly(){return S.properties.filter(p=>p.type==='investment').reduce((a,p)=>a+(p.rentWk*52/12)*0.75,0);}
 
-// ═══════════════════════════════════════════════════════════
-// STOCK PROJECTIONS (incorporating plans & lumps)
-// ═══════════════════════════════════════════════════════════
-function calcMonthlyContribs(){
-  // Returns {ticker: monthlyAmount} from all active plans
-  const now=new Date();
-  const result={};
+// STOCK HELPERS
+function monthlyContribs(){
+  const now=new Date();const res={};
   for(const plan of S.contribPlans){
     const start=parseDMY(plan.startDate);
-    if(start&&start<=now){
-      for(const alloc of plan.allocs){
-        result[alloc.ticker]=(result[alloc.ticker]||0)+alloc.amount;
-      }
-    }
+    if(start&&start<=now)for(const a of plan.allocs)res[a.ticker]=(res[a.ticker]||0)+a.amount;
   }
-  return result;
+  return res;
 }
-
-function calcTotalMonthlyContrib(){
-  const c=calcMonthlyContribs();
-  return Object.values(c).reduce((a,b)=>a+b,0);
-}
-
+function totalMonthly(){return Object.values(monthlyContribs()).reduce((a,b)=>a+b,0);}
+</script>
+<script>
+// PROJECTIONS
 function projStocks(yrs){
-  const now=new Date();
-  const nowTs=now.getTime();
-  const msPerMonth=30.44*24*3600*1000;
-
-  // Compute lump sum map: {holdingId: totalLump} from lumps on or before today
-  const lumpMap={};
-  for(const lump of S.lumpSums){
-    const lts=tsFromDMY(lump.date);
-    if(lts&&lts<=nowTs){
-      lumpMap[lump.ticker]=(lumpMap[lump.ticker]||0)+lump.amount;
-    }
-  }
-
-  // Future lumps: apply in year 0 as immediate boost
-  const futureLumps={};
-  for(const lump of S.lumpSums){
-    const lts=tsFromDMY(lump.date);
-    if(lts&&lts>nowTs){
-      futureLumps[lump.ticker]=(futureLumps[lump.ticker]||0)+lump.amount;
-    }
-  }
-
-  // Current plan monthly contribs
-  const contribs=calcMonthlyContribs();
-
-  // Build state — include past lumps in current value
-  const state=S.holdings.map(h=>({
-    ...h,
-    cur:h.val+(lumpMap[h.ticker]||0),
-  }));
-
+  if(!S.stocksEnabled)return Array.from({length:yrs+1},(_,y)=>({y,total:0}));
+  const now=Date.now();const lumpMap={};const futLumps={};
+  for(const l of S.lumpSums){const lt=tsFromDMY(l.date);if(lt<=now)lumpMap[l.ticker]=(lumpMap[l.ticker]||0)+l.amount;else futLumps[l.ticker]=(futLumps[l.ticker]||0)+l.amount;}
+  const contribs=monthlyContribs();
+  const state=S.holdings.map(h=>({...h,cur:h.val+(lumpMap[h.ticker]||0)}));
   const res=[];
   for(let y=0;y<=yrs;y++){
-    const snap={y,total:0};
-    state.forEach(h=>{snap[h.ticker]=Math.round(h.cur);snap.total+=h.cur;});
-    snap.total=Math.round(snap.total);
-    res.push(snap);
-    // Compound monthly
-    state.forEach(h=>{
-      const r=h.ret/100/12;
-      const monthly=contribs[h.ticker]||0;
-      for(let m=0;m<12;m++){
-        // Apply future lump sums in first month of year 0
-        const futureLump=(y===0&&m===0)?(futureLumps[h.ticker]||0):0;
-        h.cur+=h.cur*r+monthly+futureLump;
-      }
-    });
+    const snap={y,total:0};state.forEach(h=>{snap[h.ticker]=Math.round(h.cur);snap.total+=h.cur;});snap.total=Math.round(snap.total);res.push(snap);
+    state.forEach(h=>{const r=h.ret/100/12,mo=contribs[h.ticker]||0;for(let m=0;m<12;m++){const fl=(y===0&&m===0)?(futLumps[h.ticker]||0):0;h.cur+=h.cur*r+mo+fl;}});
   }
   return res;
 }
@@ -744,177 +558,110 @@ function projSuper(yrs){
   return res;
 }
 
-function projMort(yrs){
-  let b=S.mBalance,off=S.mOffset;
-  const nowTs=Date.now();
-  const pv=S.mPropVal;
-
-  function rateAt(ts){
-    let r=S.mRate;
-    if(S.rateHistory&&S.rateHistory.length){
-      const sorted=[...S.rateHistory].sort((a,c)=>a.ts-c.ts);
-      for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}
-    }
-    return r;
-  }
-
-  const totalFort=(calcMinPayment('fortnightly')+S.mExtraFort);
+function projProp(prop,yrs){
+  let loan=prop.loan;const g=prop.growth/100;const nowTs=Date.now();
+  function rateAt(ts){let r=prop.rate;if(prop.rateHistory&&prop.rateHistory.length){const sorted=[...prop.rateHistory].sort((a,b)=>a.ts-b.ts);for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}}return r;}
+  const minFn=propMin(prop,'fortnightly');const total=minFn+prop.extraFort;
   const res=[];
   for(let y=0;y<=yrs;y++){
-    const eq=Math.max(pv*Math.pow(1.04,y)-Math.max(b,0),0);
-    res.push({y,b:Math.round(Math.max(b,0)),off:Math.round(off),eq:Math.round(eq)});
+    const val=prop.val*Math.pow(1+g,y);
+    res.push({y,val:Math.round(val),loan:Math.round(Math.max(loan,0)),eq:Math.round(real(Math.max(val-loan,0),y))});
     for(let f=0;f<26;f++){
-      if(b<=0)break;
+      if(loan<=0)break;
       const ts=nowTs+(y*26+f)*14*24*3600*1000;
       const r=rateAt(ts)/100/26;
-      b-=(totalFort/26-Math.max(b-off,0)*r);
+      const eff=Math.max(0,loan-prop.offset);
+      loan-=(total/26-eff*r);
     }
-    if(S.mOffsetGrowth)off+=S.mOffsetGrowthAmt*12;
   }
   return res;
 }
 
-function projPPOR(yrs){
-  if(!S.pporIncluded)return Array.from({length:yrs+1},(_,y)=>({y,val:0,loan:0,eq:0}));
-  const price=S.pPrice,dep=S.pDeposit;let loan=price-dep;
-  const r=S.pRate/100/12,n=S.pTerm*12;
-  const mo=loan>0&&r>0?loan*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1):loan/n;
-  const g=S.pGrowth/100;const res=[];
-  for(let y=0;y<=yrs;y++){
-    const val=price*Math.pow(1+g,y);
-    res.push({y,val:Math.round(val),loan:Math.round(Math.max(loan,0)),eq:Math.round(real(Math.max(val-loan,0),y))});
-    for(let m=0;m<12;m++){if(loan<=0)break;loan-=(mo-loan*r);}
-  }
-  return res;
+function projAllProps(yrs){
+  if(!S.propertiesEnabled)return Array.from({length:yrs+1},(_,y)=>({y,equity:0,debt:0,val:0}));
+  const projections=S.properties.map(p=>projProp(p,yrs));
+  return Array.from({length:yrs+1},(_,y)=>({y,equity:projections.reduce((a,pr)=>a+pr[y].eq,0),debt:projections.reduce((a,pr)=>a+pr[y].loan,0),val:projections.reduce((a,pr)=>a+pr[y].val,0)}));
 }
 
-// ═══════════════════════════════════════════════════════════
-// PAYOFF SIMULATOR
-// ═══════════════════════════════════════════════════════════
+// PAYOFF SIMULATION
 let poPeriod=S.poPeriod||'fortnightly';
+function setPeriod(p,el){poPeriod=p;S.poPeriod=p;saveState();document.querySelectorAll('.pt').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPayoff();}
 
-function setPeriod(p,el){
-  poPeriod=p;S.poPeriod=p;saveState();
-  document.querySelectorAll('.pt').forEach(x=>x.classList.remove('active'));
-  el.classList.add('active');
-  renderPayoff();
-}
-
-function poSimulate(balance,offset,rate,termYrs,startDMY,minPerPeriod,extraPerPeriod,lumpNow,period,rateHistory){
-  const periodsPerYear=period==='fortnightly'?26:12;
-  const msPerPeriod=period==='fortnightly'?14*24*3600*1000:30.44*24*3600*1000;
+function poSimulate(prop,extraLump,period){
+  const ppy=period==='fortnightly'?26:12;
+  const msPer=period==='fortnightly'?14*24*3600*1000:30.44*24*3600*1000;
   const now=new Date();
-
-  function rateAt(ts){
-    let r=rate;
-    if(rateHistory&&rateHistory.length){
-      const sorted=[...rateHistory].sort((a,b)=>a.ts-b.ts);
-      for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}
-    }
-    return r;
-  }
-
+  function rateAt(ts){let r=prop.rate;if(prop.rateHistory&&prop.rateHistory.length){const sorted=[...prop.rateHistory].sort((a,b)=>a.ts-b.ts);for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}}return r;}
+  const minPer=propMin(prop,period);
+  const extraPer=period==='fortnightly'?prop.extraFort:prop.extraFort*26/12;
   function run(extra,lump){
-    let b=balance-lump;
-    if(b<=0)return{months:0,interest:0,payoffDate:new Date(),byYear:[]};
+    let b=prop.loan-lump;
+    if(b<=0)return{months:0,interest:0,payoffDate:new Date(),byYear:[{y:0,b:0}]};
     let periods=0;let interest=0;let ts=now.getTime();
-    const byYear=[{y:0,b:Math.round(Math.max(b,0))}];let prevY=0;
-    const maxPeriods=termYrs*periodsPerYear*2;
-    while(b>0.01&&periods<maxPeriods){
-      const r=rateAt(ts)/100/periodsPerYear;
-      // Interest charged only on effective balance (loan minus offset)
-      const effective=Math.max(0,b-offset);
-      const intChg=effective*r;
-      const payment=minPerPeriod+extra;
-      const prin=payment-intChg;
-      if(prin<=0){
-        return{months:Math.round(termYrs*12),interest:Math.round(interest),payoffDate:new Date(now.getTime()+termYrs*365.25*24*3600*1000),byYear};
-      }
-      interest+=intChg;
-      b=Math.max(0,b-prin);
-      periods++;
-      ts+=msPerPeriod;
-      const yr=Math.floor(periods/periodsPerYear);
-      if(yr>prevY){byYear.push({y:yr,b:Math.round(Math.max(b,0))});prevY=yr;}
+    const byYear=[{y:0,b:Math.round(b)}];let prevY=0;
+    const maxP=prop.term*ppy*2;
+    while(b>0.01&&periods<maxP){
+      const r=rateAt(ts)/100/ppy;
+      const eff=Math.max(0,b-prop.offset);
+      const intChg=eff*r;
+      const prin=(minPer+extra)-intChg;
+      if(prin<=0)return{months:Math.round(prop.term*12),interest:Math.round(interest),payoffDate:new Date(now.getTime()+prop.term*365.25*24*3600*1000),byYear};
+      interest+=intChg;b=Math.max(0,b-prin);periods++;ts+=msPer;
+      const yr=Math.floor(periods/ppy);
+      if(yr>prevY){byYear.push({y:yr,b:Math.round(b)});prevY=yr;}
     }
-    const payoffDate=new Date(now.getTime()+periods*msPerPeriod);
-    return{months:Math.round(periods/periodsPerYear*12),interest:Math.round(interest),payoffDate,byYear};
+    return{months:Math.round(periods/ppy*12),interest:Math.round(interest),payoffDate:new Date(now.getTime()+periods*msPer),byYear};
   }
-
-  const base=run(0,0);
-  const current=run(extraPerPeriod,0);
-  const withLump=lumpNow>0?run(extraPerPeriod,lumpNow):null;
-  return{base,current,withLump};
+  return{base:run(0,0),current:run(extraPer,0),withLump:extraLump>0?run(extraPer,extraLump):null,minPer,extraPer};
 }
 
-// ═══════════════════════════════════════════════════════════
+// CASH FLOW
+function calcCF(){
+  const cf=S.cf;
+  const taxable=cf.grossIncome-cf.salaryPackaging;
+  let tax=0;
+  if(taxable>190000)tax=51667+(taxable-190000)*0.45;
+  else if(taxable>135000)tax=31288+(taxable-135000)*0.37;
+  else if(taxable>45000)tax=5092+(taxable-45000)*0.325;
+  else if(taxable>18200)tax=(taxable-18200)*0.19;
+  const medicare=taxable*0.02;
+  const monthlyNet=(taxable-tax-medicare+cf.salaryPackaging)/12;
+  const mortMonthly=S.properties.reduce((a,p)=>{const mf=propMin(p,'fortnightly');return a+(mf+p.extraFort)*26/12;},0);
+  const rentalInc=netRentalMonthly();
+  const etfMo=totalMonthly();
+  const superExtra=S.sExtra*26/12;
+  const living=cf.livingExpenses;
+  const otherInc=cf.otherIncome;
+  const totalInc=monthlyNet+rentalInc+otherInc;
+  const totalOut=mortMonthly+living+etfMo+superExtra;
+  return{monthlyNet,rentalInc,otherInc,totalInc,mortMonthly,living,etfMo,superExtra,totalOut,surplus:totalInc-totalOut,taxable,tax,medicare};
+}
+</script>
+<script>
 // NUMPAD ENGINE
-// ═══════════════════════════════════════════════════════════
-const EFR={};let efc=0;
+const EFR={};
 let editKey=null,editCfg=null,numStr='';
 
-function ef(label,key,cfg){
-  const v=S[key];
+function ef(label,key,cfg,obj){
+  const src=obj||S;const v=src[key];
   const display=cfg.pre+(cfg.dec>0?parseFloat(v).toFixed(cfg.dec):Math.round(v).toLocaleString('en-AU'))+cfg.suf;
-  // Use stable key-based rid so re-renders don't break onclick
-  const rid='ef_'+key;
-  EFR[rid]={key,label,cfg,type:'state'};
+  const rid='ef_'+(obj?key+'_'+Math.random().toString(36).slice(2,6):key);
+  EFR[rid]={key,label,cfg,obj:obj||null};
   return `<div class="ef" onclick="openById('${rid}')"><span class="ef-lbl">${label}</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${display}</span><span class="ef-pen">✎</span></span></div>`;
 }
-// Text field editor — for string values like dates
-function efText(label,key,placeholder){
-  const v=S[key]||'';
-  return `<div class="ef" onclick="openTextEdit('${key}','${label}','${placeholder}')">
-    <span class="ef-lbl">${label}</span>
-    <span style="display:flex;align-items:center;gap:5px">
-      <span class="ef-val">${v||'—'}</span>
-      <span class="ef-pen">✎</span>
-    </span>
-  </div>`;
-}
-function openTextEdit(key,label,placeholder){
-  document.getElementById('text-edit-label').textContent=label;
-  document.getElementById('text-edit-input').value=S[key]||'';
-  document.getElementById('text-edit-input').placeholder=placeholder||'';
-  document.getElementById('text-edit-key').value=key;
-  document.getElementById('text-edit-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('text-edit-input').focus(),100);
-}
-function closeTextEdit(){document.getElementById('text-edit-modal').classList.remove('open');}
-function saveTextEdit(){
-  const key=document.getElementById('text-edit-key').value;
-  const val=document.getElementById('text-edit-input').value.trim();
-  // Validate date format dd/mm/yy or dd/mm/yyyy
-  if(key==='mStartDate'){
-    const parts=val.split('/');
-    if(parts.length!==3||parts.some(p=>isNaN(parseInt(p)))){
-      alert('Enter date as DD/MM/YY e.g. 01/07/23');return;
-    }
-  }
-  S[key]=val;
-  const dispEl=document.getElementById('eftext_'+key);
-  if(dispEl)dispEl.textContent=val||'—';
-  saveState();closeTextEdit();refresh();
-}
-
 function openById(rid){
   const r=EFR[rid];if(!r)return;
-  editKey=rid;editCfg=r.cfg;numStr=String(r.type==='holding'?r.holdingObj[r.field]:S[r.key]);
+  const src=r.obj||S;editKey=rid;editCfg=r.cfg;
+  numStr=String(src[r.key]);
   document.getElementById('edit-lbl').textContent=r.label;
-  const curVal=r.type==='holding'?r.holdingObj[r.field]:S[r.key];
-  document.getElementById('edit-cur').textContent='Now: '+r.cfg.pre+(r.cfg.dec>0?parseFloat(curVal).toFixed(r.cfg.dec):Math.round(curVal).toLocaleString('en-AU'))+r.cfg.suf;
-  document.getElementById('range-hint').textContent=r.cfg.hint||('Range: '+r.cfg.min+' – '+r.cfg.max);
+  const cv=src[r.key];
+  document.getElementById('edit-cur').textContent='Now: '+r.cfg.pre+(r.cfg.dec>0?parseFloat(cv).toFixed(r.cfg.dec):Math.round(cv).toLocaleString('en-AU'))+r.cfg.suf;
+  document.getElementById('range-hint').textContent=r.cfg.hint||(r.cfg.min+' – '+r.cfg.max);
   document.getElementById('range-hint').style.color='var(--di)';
-  updateDisplay();
-  document.getElementById('edit-modal').classList.add('open');
+  updateDisplay();document.getElementById('edit-modal').classList.add('open');
 }
-
 function closeEdit(){document.getElementById('edit-modal').classList.remove('open');editKey=null;}
-function updateDisplay(){
-  const el=document.getElementById('num-text');
-  el.textContent=numStr===''?'0':numStr;
-  el.parentElement.classList.toggle('hv',numStr!=='');
-}
+function updateDisplay(){const el=document.getElementById('num-text');el.textContent=numStr===''?'0':numStr;el.parentElement.classList.toggle('hv',numStr!=='');}
 function nk(c){if(c==='.'&&numStr.includes('.'))return;if(numStr==='0'&&c!=='.')numStr=c;else numStr+=c;updateDisplay();}
 function nkDel(){numStr=numStr.slice(0,-1);updateDisplay();}
 function nkOk(){
@@ -923,23 +670,44 @@ function nkOk(){
   const v=parseFloat(numStr);
   if(isNaN(v)||v<r.cfg.min||v>r.cfg.max){
     document.getElementById('range-hint').textContent='⚠ Enter '+r.cfg.min+' – '+r.cfg.max;
-    document.getElementById('range-hint').style.color='var(--rd)';
-    return;
+    document.getElementById('range-hint').style.color='var(--rd)';return;
   }
-  if(r.type==='holding') r.holdingObj[r.field]=v;
-  else S[r.key]=v;
+  const src=r.obj||S;src[r.key]=v;
   saveState();closeEdit();refresh();
 }
 
 function mkTog(lbl,desc,key,cb){
   return `<div class="tr"><div class="ti"><div class="tl">${lbl}</div><div class="td">${desc}</div></div>
-    <div class="tog ${S[key]?'on':''}" onclick="S['${key}']=!S['${key}'];this.classList.toggle('on');saveState();${cb||'refresh()'}"><div class="tog-k"></div></div>
-  </div>`;
+    <div class="tog ${S[key]?'on':''}" onclick="S['${key}']=!S['${key}'];this.classList.toggle('on');saveState();${cb||'refresh()'}"><div class="tog-k"></div></div></div>`;
 }
 
-// ═══════════════════════════════════════════════════════════
+function efText(label,key,placeholder,propId){
+  const src=propId!=null?S.properties.find(p=>p.id===propId):S;
+  const v=src?src[key]||'':'';
+  return `<div class="ef" onclick="openText('${key}','${label}','${placeholder||''}',${propId!=null?propId:'null'})">
+    <span class="ef-lbl">${label}</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${v||'—'}</span><span class="ef-pen">✎</span></span></div>`;
+}
+function openText(key,label,placeholder,propId){
+  const src=propId!=null?S.properties.find(p=>p.id===propId):S;
+  document.getElementById('text-lbl').textContent=label;
+  document.getElementById('text-inp').value=src?src[key]||'':'';
+  document.getElementById('text-inp').placeholder=placeholder||'';
+  document.getElementById('text-key').value=key;
+  document.getElementById('text-prop-id').value=propId!=null?propId:'';
+  document.getElementById('text-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('text-inp').focus(),100);
+}
+function closeText(){document.getElementById('text-modal').classList.remove('open');}
+function saveText(){
+  const key=document.getElementById('text-key').value;
+  const pid=document.getElementById('text-prop-id').value;
+  const val=document.getElementById('text-inp').value.trim();
+  if(pid!==''){const p=S.properties.find(x=>x.id===parseInt(pid));if(p)p[key]=val;}
+  else S[key]=val;
+  saveState();closeText();refresh();
+}
+
 // CHARTS
-// ═══════════════════════════════════════════════════════════
 const CH={};
 function mkChart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(el)CH[id]=new Chart(el,cfg);}
 const pt0={elements:{point:{radius:0}}};
@@ -951,17 +719,14 @@ const bOpts={responsive:true,maintainAspectRatio:false,...pt0,
   }
 };
 
-// ═══════════════════════════════════════════════════════════
 // DONUT
-// ═══════════════════════════════════════════════════════════
 function drawDonut(vals,colors,total){
   const svg=document.getElementById('donut');
   const cx=45,cy=45,r=33,sw=12;let ang=-Math.PI/2,out='';
   vals.forEach((v,i)=>{
     if(v<=0)return;
     const pct=v/total,a2=ang+pct*2*Math.PI;
-    const x1=cx+r*Math.cos(ang),y1=cy+r*Math.sin(ang);
-    const x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);
+    const x1=cx+r*Math.cos(ang),y1=cy+r*Math.sin(ang),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);
     out+=`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 ${pct>.5?1:0} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${colors[i]}" stroke-width="${sw}"/>`;
     ang=a2;
   });
@@ -969,91 +734,42 @@ function drawDonut(vals,colors,total){
   svg.innerHTML=out;
 }
 
-// ═══════════════════════════════════════════════════════════
-// HOLDINGS UI
-// ═══════════════════════════════════════════════════════════
-function proj1(h,yrs){
-  const contribs=calcMonthlyContribs();
-  let v=h.val;const r=h.ret/100/12;const mo=contribs[h.ticker]||0;
-  for(let m=0;m<yrs*12;m++)v+=v*r+mo;
-  return Math.round(v);
+// SECTION TOGGLES
+function renderSectionToggles(){
+  document.getElementById('section-toggles').innerHTML=`
+    <div class="tr"><div class="ti"><div class="tl">📈 Stocks & ETFs</div><div class="td">Include ETF portfolio in net worth and show Stocks tab</div></div>
+      <div class="tog ${S.stocksEnabled?'on':''}" onclick="S.stocksEnabled=!S.stocksEnabled;this.classList.toggle('on');saveState();updateNav();refresh()"><div class="tog-k"></div></div></div>
+    <div class="tr"><div class="ti"><div class="tl">🏠 Properties</div><div class="td">Include property equity in net worth and show Properties tab</div></div>
+      <div class="tog ${S.propertiesEnabled?'on':''}" onclick="S.propertiesEnabled=!S.propertiesEnabled;this.classList.toggle('on');saveState();updateNav();refresh()"><div class="tog-k"></div></div></div>`;
 }
+function updateNav(){
+  document.getElementById('nav-stocks').classList.toggle('off',!S.stocksEnabled);
+  document.getElementById('nav-properties').classList.toggle('off',!S.propertiesEnabled);
+}
+</script>
+<script>
+// HOLDINGS UI
+function proj1(h,yrs){const c=monthlyContribs();let v=h.val;const r=h.ret/100/12;const mo=c[h.ticker]||0;for(let m=0;m<yrs*12;m++)v+=v*r+mo;return Math.round(v);}
 
 function renderHoldings(){
   const el=document.getElementById('holdings-list');
   if(!S.holdings.length){el.innerHTML='<div style="text-align:center;color:var(--mu);font-size:12px;padding:14px;font-family:DM Mono">No holdings — add one below</div>';return;}
   el.innerHTML=S.holdings.map(h=>{
-    // register edit functions
-    const valRid='ef_holding_val_'+h.id;EFR[valRid]={key:null,label:'Value — '+h.ticker,cfg:{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Current market value'},type:'holding',holdingObj:h,field:'val'};
-    const retRid='ef_holding_ret_'+h.id;EFR[retRid]={key:null,label:'Annual return — '+h.ticker,cfg:{pre:'',suf:'%',dec:1,min:0,max:30,hint:'Expected annual return %'},type:'holding',holdingObj:h,field:'ret'};
-    const contribs=calcMonthlyContribs();
-    const mo=contribs[h.ticker]||0;
+    const vrid='ef_hval_'+h.id;EFR[vrid]={key:'val',label:'Value — '+h.ticker,cfg:{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Current market value'},obj:h};
+    const rrid='ef_hret_'+h.id;EFR[rrid]={key:'ret',label:'Return — '+h.ticker,cfg:{pre:'',suf:'%',dec:1,min:0,max:30,hint:'Expected annual return'},obj:h};
+    const mo=monthlyContribs()[h.ticker]||0;
     return `<div class="holding">
-      <div class="hh">
-        <span class="h-ticker" style="color:${h.color}">${h.ticker}</span>
-        <div class="hdel" onclick="delStock(${h.id})">×</div>
-      </div>
+      <div class="hh"><span style="font-size:15px;font-weight:700;color:${h.color}">${h.ticker}</span><div class="hdel" onclick="delStock(${h.id})">×</div></div>
       <div class="h-tiles">
-        <div class="h-tile" onclick="openById('${valRid}')">
-          <div class="h-tile-l">VALUE</div>
-          <div class="h-tile-v gr">${fmtK(h.val)}</div>
-          <div class="h-tile-hint">tap ✎</div>
-        </div>
-        <div class="h-tile" style="cursor:default;opacity:.7">
-          <div class="h-tile-l">/MONTH</div>
-          <div class="h-tile-v bl">+${fmtK(mo)}</div>
-          <div class="h-tile-hint">via plans</div>
-        </div>
-        <div class="h-tile" onclick="openById('${retRid}')">
-          <div class="h-tile-l">RETURN</div>
-          <div class="h-tile-v am">${h.ret.toFixed(1)}%</div>
-          <div class="h-tile-hint">tap ✎</div>
-        </div>
+        <div class="h-tile" onclick="openById('${vrid}')"><div class="h-tile-l">VALUE</div><div class="h-tile-v gr">${fmtK(h.val)}</div><div class="h-tile-hint">tap ✎</div></div>
+        <div class="h-tile"><div class="h-tile-l">/MONTH</div><div class="h-tile-v bl">+${fmtK(mo)}</div><div class="h-tile-hint">via plans</div></div>
+        <div class="h-tile" onclick="openById('${rrid}')"><div class="h-tile-l">RETURN</div><div class="h-tile-v am">${h.ret.toFixed(1)}%</div><div class="h-tile-hint">tap ✎</div></div>
       </div>
       <div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:7px">10yr → ${fmtK(proj1(h,10))}</div>
     </div>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════
-// CONTRIBUTION PLANS
-// ═══════════════════════════════════════════════════════════
-let planAllocCount=0;
-function renderContribPlans(){
-  const el=document.getElementById('contrib-plans');
-  if(!S.contribPlans.length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No plans yet</div>';return;}
-  el.innerHTML=S.contribPlans.map(plan=>{
-    const total=plan.allocs.reduce((a,x)=>a+x.amount,0);
-    const allocStr=plan.allocs.map(a=>`${a.ticker}: ${fmt(a.amount)}/mo`).join(' · ');
-    return `<div class="plan-row">
-      <div class="plan-hdr">
-        <span class="plan-title">${plan.name}</span>
-        <span class="plan-del" onclick="delPlan(${plan.id})">✕</span>
-      </div>
-      <div class="plan-meta">From ${plan.startDate} · ${fmt(total)}/mo total<br>${allocStr}</div>
-    </div>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════════════════
-// LUMP SUMS
-// ═══════════════════════════════════════════════════════════
-function renderLumps(){
-  const el=document.getElementById('lump-list');
-  if(!S.lumpSums.length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No lump sums recorded</div>';return;}
-  const sorted=[...S.lumpSums].sort((a,b)=>tsFromDMY(b.date)-tsFromDMY(a.date));
-  el.innerHTML=sorted.map(l=>`<div class="lump-row">
-    <div class="lump-info">
-      <div class="lump-ticker">${l.ticker} — ${fmt(l.amount)}</div>
-      <div class="lump-detail">${l.date}</div>
-    </div>
-    <span class="lump-del" onclick="delLump(${l.id})">✕</span>
-  </div>`).join('');
-}
-
-// ═══════════════════════════════════════════════════════════
-// ADD/DELETE OPERATIONS
-// ═══════════════════════════════════════════════════════════
 function openAddStock(){document.getElementById('m-ticker').value='';document.getElementById('m-val').value='';selColor=COLORS[0];renderColorPicker();document.getElementById('add-stock-modal').classList.add('open');}
 function closeAddStock(){document.getElementById('add-stock-modal').classList.remove('open');}
 function renderColorPicker(){document.getElementById('color-opts').innerHTML=COLORS.map(c=>`<div class="cd ${c===selColor?'sel':''}" style="background:${c}" onclick="selColor='${c}';renderColorPicker()"></div>`).join('');}
@@ -1061,18 +777,56 @@ function addStock(){
   const ticker=(document.getElementById('m-ticker').value||'').toUpperCase().trim();
   const val=parseFloat(document.getElementById('m-val').value)||0;
   if(!ticker){alert('Enter a ticker name');return;}
-  S.holdings.push({id:S.nextHoldingId++,ticker,val,ret:10,color:selColor});
+  S.holdings.push({id:S.nextHId++,ticker,val,ret:10,color:selColor});
   closeAddStock();saveState();renderStocks();
 }
 function delStock(id){if(!confirm('Remove this holding?'))return;S.holdings=S.holdings.filter(h=>h.id!==id);saveState();renderStocks();}
 
-let planAllocs=[];
-function openAddPlan(){
-  document.getElementById('plan-name').value='';
-  document.getElementById('plan-date').value=today();
-  planAllocs=[];renderPlanAllocs();
-  document.getElementById('plan-modal').classList.add('open');
+// REBALANCING
+function renderRebalancing(){
+  const el=document.getElementById('rebal-section');
+  if(!S.holdings.length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">No holdings yet</div>';return;}
+  const total=S.holdings.reduce((a,h)=>a+h.val,0);
+  if(!total){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">Add values to see rebalancing</div>';return;}
+  el.innerHTML=S.holdings.map(h=>{
+    const actual=h.val/total*100;const target=S.rebalTargets[h.ticker]||0;
+    const diff=actual-target;
+    const action=Math.abs(diff)<1?'✓ On target':diff>0?`Overweight ${diff.toFixed(1)}%`:`Underweight ${Math.abs(diff).toFixed(1)}%`;
+    const color=Math.abs(diff)<1?'var(--gr)':diff>0?'var(--am)':'var(--rd)';
+    const maxP=Math.max(actual,target,1);
+    return `<div class="rebal-row">
+      <div class="rebal-hdr"><span class="rebal-ticker" style="color:${h.color}">${h.ticker}</span><span class="rebal-pcts">Actual ${actual.toFixed(1)}% · Target ${target}%</span></div>
+      <div class="rebal-bar-bg"><div class="rebal-bar-act" style="width:${Math.min(100,actual/maxP*100).toFixed(1)}%;background:${h.color};opacity:.7"></div>${target>0?`<div class="rebal-bar-tgt" style="left:${Math.min(100,target/maxP*100).toFixed(1)}%"></div>`:''}</div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;margin-top:5px;color:${color}">${action}</div>
+    </div>`;
+  }).join('');
 }
+function openRebalModal(){
+  document.getElementById('rebal-inputs').innerHTML=S.holdings.map(h=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:700;color:${h.color};width:50px">${h.ticker}</span>
+      <input type="number" inputmode="decimal" placeholder="0" value="${S.rebalTargets[h.ticker]||0}"
+        oninput="S.rebalTargets['${h.ticker}']=parseFloat(this.value)||0;updateRebalTotal()"
+        style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">
+      <span style="color:var(--mu)">%</span>
+    </div>`).join('');
+  updateRebalTotal();document.getElementById('rebal-modal').classList.add('open');
+}
+function updateRebalTotal(){const tot=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');el.textContent='Total: '+tot.toFixed(1)+'%';el.style.color=Math.abs(tot-100)<0.1?'var(--gr)':'var(--rd)';}
+function closeRebalModal(){document.getElementById('rebal-modal').classList.remove('open');}
+function saveRebal(){saveState();closeRebalModal();renderStocks();}
+
+// PLANS & LUMPS
+let planAllocs=[];
+function renderContribPlans(){
+  const el=document.getElementById('contrib-plans');
+  if(!S.contribPlans.length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No plans yet</div>';return;}
+  el.innerHTML=S.contribPlans.map(plan=>`<div class="plan-row">
+    <div class="plan-hdr"><span class="plan-title">${plan.name}</span><span class="plan-del" onclick="delPlan(${plan.id})">✕</span></div>
+    <div class="plan-meta">From ${plan.startDate} · ${fmt(plan.allocs.reduce((a,x)=>a+x.amount,0))}/mo<br>${plan.allocs.map(a=>`${a.ticker}: ${fmt(a.amount)}/mo`).join(' · ')}</div>
+  </div>`).join('');
+}
+function openAddPlan(){document.getElementById('plan-name').value='';document.getElementById('plan-date').value=today();planAllocs=[];renderPlanAllocs();document.getElementById('plan-modal').classList.add('open');}
 function closePlanModal(){document.getElementById('plan-modal').classList.remove('open');}
 function renderPlanAllocs(){
   const tickers=S.holdings.map(h=>h.ticker);
@@ -1085,275 +839,233 @@ function renderPlanAllocs(){
       <span onclick="planAllocs.splice(${i},1);renderPlanAllocs()" style="color:var(--rd);cursor:pointer;font-size:18px;padding:4px">✕</span>
     </div>`).join('');
 }
-function addPlanAlloc(){
-  const ticker=S.holdings[0]?.ticker||'VGS';
-  planAllocs.push({ticker,amount:500});renderPlanAllocs();
-}
-function savePlan(){
-  const name=document.getElementById('plan-name').value.trim()||'DCA Plan';
-  const date=document.getElementById('plan-date').value.trim()||today();
-  if(!planAllocs.length){alert('Add at least one ETF allocation');return;}
-  S.contribPlans.push({id:S.nextPlanId++,name,startDate:date,allocs:JSON.parse(JSON.stringify(planAllocs))});
-  closePlanModal();saveState();renderStocks();
-}
-function delPlan(id){if(!confirm('Remove this plan?'))return;S.contribPlans=S.contribPlans.filter(p=>p.id!==id);saveState();renderStocks();}
+function addPlanAlloc(){planAllocs.push({ticker:S.holdings[0]?.ticker||'VGS',amount:500});renderPlanAllocs();}
+function savePlan(){if(!planAllocs.length){alert('Add at least one allocation');return;}S.contribPlans.push({id:S.nextPlanId++,name:document.getElementById('plan-name').value.trim()||'DCA Plan',startDate:document.getElementById('plan-date').value.trim()||today(),allocs:JSON.parse(JSON.stringify(planAllocs))});closePlanModal();saveState();renderStocks();}
+function delPlan(id){if(!confirm('Remove plan?'))return;S.contribPlans=S.contribPlans.filter(p=>p.id!==id);saveState();renderStocks();}
 
-function openAddLump(){
-  const tickers=S.holdings.map(h=>h.ticker);
-  document.getElementById('lump-ticker').innerHTML=tickers.map(t=>`<option value="${t}">${t}</option>`).join('');
-  document.getElementById('lump-amount').value='';
-  document.getElementById('lump-date').value=today();
-  document.getElementById('lump-modal').classList.add('open');
+function renderLumps(){
+  const el=document.getElementById('lump-list');
+  if(!S.lumpSums.length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No lump sums recorded</div>';return;}
+  el.innerHTML=[...S.lumpSums].sort((a,b)=>tsFromDMY(b.date)-tsFromDMY(a.date)).map(l=>`
+    <div class="lump-row"><div><div style="font-size:12px;font-weight:600;color:var(--am)">${l.ticker} — ${fmt(l.amount)}</div><div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px">${l.date}</div></div>
+    <span style="color:var(--di);cursor:pointer;padding:2px 7px;font-size:13px" onclick="delLump(${l.id})">✕</span></div>`).join('');
 }
+function openAddLump(){document.getElementById('lump-ticker').innerHTML=S.holdings.map(h=>`<option value="${h.ticker}">${h.ticker}</option>`).join('');document.getElementById('lump-amount').value='';document.getElementById('lump-date').value=today();document.getElementById('lump-modal').classList.add('open');}
 function closeLumpModal(){document.getElementById('lump-modal').classList.remove('open');}
-function saveLump(){
-  const ticker=document.getElementById('lump-ticker').value;
-  const amount=parseFloat(document.getElementById('lump-amount').value)||0;
-  const date=document.getElementById('lump-date').value.trim()||today();
-  if(!amount){alert('Enter an amount');return;}
-  S.lumpSums.push({id:S.nextLumpId++,ticker,amount,date});
-  closeLumpModal();saveState();renderStocks();
-}
+function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();saveState();renderStocks();}
 function delLump(id){S.lumpSums=S.lumpSums.filter(l=>l.id!==id);saveState();renderStocks();}
+</script>
+<script>
+// PROPERTIES
+function openAddProp(){['p-name','p-val','p-loan','p-orig','p-offset','p-rate','p-term','p-start','p-rent','p-minfn','p-extra'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-type').value='investment';document.getElementById('p-growth').value='4';document.getElementById('add-prop-modal').classList.add('open');}
+function closeAddProp(){document.getElementById('add-prop-modal').classList.remove('open');}
+function addProp(){
+  const prop={id:S.nextPropId++,name:document.getElementById('p-name').value.trim()||'Property',type:document.getElementById('p-type').value,
+    val:parseFloat(document.getElementById('p-val').value)||0,loan:parseFloat(document.getElementById('p-loan').value)||0,
+    origLoan:parseFloat(document.getElementById('p-orig').value)||parseFloat(document.getElementById('p-loan').value)||0,
+    offset:parseFloat(document.getElementById('p-offset').value)||0,rate:parseFloat(document.getElementById('p-rate').value)||5.88,
+    term:parseFloat(document.getElementById('p-term').value)||30,startDate:document.getElementById('p-start').value.trim()||today(),
+    rentWk:parseFloat(document.getElementById('p-rent').value)||0,growth:parseFloat(document.getElementById('p-growth').value)||4,
+    minFort:parseFloat(document.getElementById('p-minfn').value)||0,extraFort:parseFloat(document.getElementById('p-extra').value)||0,rateHistory:[]};
+  S.properties.push(prop);closeAddProp();saveState();renderProperties();
+}
+function delProp(id){if(!confirm('Remove this property?'))return;S.properties=S.properties.filter(p=>p.id!==id);saveState();renderProperties();}
 
-function openRateModal(){
-  document.getElementById('r-rate').value='';
-  document.getElementById('r-date').value=today();
+function openRateModal(){openRateForProp(S.properties[0]?.id);}
+function openRateForProp(propId){
+  document.getElementById('r-rate').value='';document.getElementById('r-date').value=today();
+  document.getElementById('r-prop').innerHTML=S.properties.map(p=>`<option value="${p.id}" ${p.id===propId?'selected':''}>${p.name}</option>`).join('');
   document.getElementById('rate-modal').classList.add('open');
 }
 function closeRateModal(){document.getElementById('rate-modal').classList.remove('open');}
 function addRate(){
-  const rate=parseFloat(document.getElementById('r-rate').value);
-  const date=document.getElementById('r-date').value.trim();
+  const rate=parseFloat(document.getElementById('r-rate').value);const date=document.getElementById('r-date').value.trim();const propId=parseInt(document.getElementById('r-prop').value);
   if(!rate||!date){alert('Enter rate and date');return;}
-  S.rateHistory=S.rateHistory||[];
-  S.rateHistory.push({rate,date,ts:tsFromDMY(date)||Date.now()});
-  S.rateHistory.sort((a,b)=>a.ts-b.ts);
-  // Update current rate to most recent entry
-  const now=Date.now();
-  const pastRates=S.rateHistory.filter(r=>r.ts<=now);
-  if(pastRates.length) S.mRate=pastRates[pastRates.length-1].rate;
-  closeRateModal();saveState();renderMortgage();
-  // Prompt user to update bank minimum if they have one set
-  if(S.mMinFort>0||S.mMinMonthly>0){
-    setTimeout(()=>{
-      if(confirm('Rate changed to '+rate+'%\n\nDo you want to update your bank minimum figures now?')){
-        show('mortgage',document.querySelector('.nb:nth-child(3)'));
-        setTimeout(()=>{
-          const el=document.getElementById('ef_mMinFort');
-          if(el)el.click();
-        },300);
-      }
-    },200);
-  }
+  const prop=S.properties.find(p=>p.id===propId);if(!prop)return;
+  prop.rateHistory=prop.rateHistory||[];prop.rateHistory.push({rate,date,ts:tsFromDMY(date)||Date.now()});prop.rateHistory.sort((a,b)=>a.ts-b.ts);
+  const now=Date.now();const past=prop.rateHistory.filter(r=>r.ts<=now);if(past.length)prop.rate=past[past.length-1].rate;
+  closeRateModal();saveState();renderProperties();
 }
-function delRate(ts){
-  S.rateHistory=S.rateHistory.filter(r=>r.ts!==ts);
-  if(S.rateHistory.length)S.mRate=S.rateHistory[S.rateHistory.length-1].rate;
-  saveState();renderMortgage();
-}
+function delPropRate(propId,ts){const prop=S.properties.find(p=>p.id===propId);if(!prop)return;prop.rateHistory=prop.rateHistory.filter(r=>r.ts!==ts);saveState();renderProperties();}
 
-// Name modal
-function openNameModal(){document.getElementById('name-input').value=S.appName||"Ned's Finance";document.getElementById('name-modal').classList.add('open');}
-function closeNameModal(){document.getElementById('name-modal').classList.remove('open');}
-function saveName(){
-  S.appName=document.getElementById('name-input').value.trim()||"Finance";
-  closeNameModal();saveState();
-  document.getElementById('hdr-name').textContent=S.appName;
-  document.getElementById('settings-name-val').textContent=S.appName;
+function renderPropCard(prop){
+  const eff=propEff(prop);const equity=Math.max(0,prop.val-prop.loan);const lvr=prop.val>0?Math.round(prop.loan/prop.val*100):0;
+  const minFn=propMin(prop,'fortnightly');const autoFn=propMinAuto(prop,'fortnightly');const cr=propCurrentRate(prop);
+  // Register ef fields for this property
+  const fields=[
+    {k:'val',l:'Current value',c:{pre:'$',suf:'',dec:0,min:0,max:10000000,hint:'Current property value'}},
+    {k:'loan',l:'Loan balance',c:{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Current outstanding loan'}},
+    {k:'origLoan',l:'Original loan (auto-calc basis)',c:{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Used to calculate minimum payment'}},
+    {k:'offset',l:'Offset account',c:{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Offset balance'}},
+    {k:'rate',l:'Interest rate',c:{pre:'',suf:'%',dec:2,min:0,max:20,hint:'Current rate (or log change below)'}},
+    {k:'term',l:'Loan term (years)',c:{pre:'',suf:' yrs',dec:0,min:1,max:40,hint:'Original loan term'}},
+    {k:'minFort',l:'Bank min. fortnightly (0=auto)',c:{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'0 uses auto-calc from original loan'}},
+    {k:'extraFort',l:'Extra fortnightly',c:{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'Extra fortnightly payment'}},
+    {k:'growth',l:'Annual growth %',c:{pre:'',suf:'%',dec:1,min:0,max:20,hint:'Expected annual capital growth'}},
+    ...(prop.type==='investment'?[{k:'rentWk',l:'Weekly rent',c:{pre:'$',suf:'/wk',dec:0,min:0,max:5000,hint:'Gross weekly rental income'}}]:[]),
+  ];
+  const efRows=fields.map(f=>{
+    const rid='ef_p'+prop.id+'_'+f.k;EFR[rid]={key:f.k,label:f.l+' — '+prop.name,cfg:f.c,obj:prop};
+    const v=prop[f.k];const display=f.c.pre+(f.c.dec>0?parseFloat(v).toFixed(f.c.dec):Math.round(v).toLocaleString('en-AU'))+f.c.suf;
+    return `<div class="ef" onclick="openById('${rid}')"><span class="ef-lbl">${f.l}</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${display}</span><span class="ef-pen">✎</span></span></div>`;
+  }).join('');
+  const rateHist=prop.rateHistory&&prop.rateHistory.length?[...prop.rateHistory].sort((a,b)=>b.ts-a.ts).map(r=>`<div class="log-row"><span class="log-date">${r.date}</span><span style="display:flex;align-items:center;gap:7px"><span class="log-val am">${r.rate.toFixed(2)}%</span><span class="log-del" onclick="delPropRate(${prop.id},${r.ts})">✕</span></span></div>`).join(''):'<div style="font-size:10px;color:var(--di);font-family:DM Mono">None logged</div>';
+  return `<div class="prop-card">
+    <div class="prop-hdr">
+      <div><div class="prop-name">${prop.name}</div><div style="margin-top:3px;display:flex;gap:6px"><span class="prop-badge ${prop.type==='ppor'?'ppor':'inv'}">${prop.type==='ppor'?'PPOR':'Investment'}</span>${prop.type==='investment'?`<span style="font-size:9px;font-family:'DM Mono',monospace;color:var(--gr);background:var(--gr-bg);border:0.5px solid var(--gr-bd);padding:2px 7px;border-radius:10px">${fmt(prop.rentWk*52/12)}/mo rent</span>`:''}</div></div>
+      <div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--gr);font-family:'DM Mono',monospace;font-weight:700">${fmtK(equity)} equity</span><span class="prop-del" onclick="delProp(${prop.id})">✕</span></div>
+    </div>
+    <div class="prop-g3">
+      <div class="prop-met"><div class="prop-met-l">Value</div><div class="prop-met-v bl">${fmtK(prop.val)}</div></div>
+      <div class="prop-met"><div class="prop-met-l">Loan</div><div class="prop-met-v rd">${fmtK(prop.loan)}</div></div>
+      <div class="prop-met"><div class="prop-met-l">Effective</div><div class="prop-met-v">${fmtK(eff)}</div></div>
+      <div class="prop-met"><div class="prop-met-l">LVR</div><div class="prop-met-v ${lvr<=80?'gr':'rd'}">${lvr}%</div></div>
+      <div class="prop-met"><div class="prop-met-l">Rate</div><div class="prop-met-v am">${cr.toFixed(2)}%</div></div>
+      <div class="prop-met"><div class="prop-met-l">Min/fn</div><div class="prop-met-v gr">${fmt(minFn)}</div></div>
+    </div>
+    <details><summary style="font-size:10px;color:var(--gr);font-family:'DM Mono',monospace;cursor:pointer;padding:6px 0;border-top:0.5px solid var(--bd)">Edit details ▾</summary>
+      <div style="margin-top:8px">
+        ${efText('Property name','name','12 Smith St',prop.id)}
+        ${efRows}
+        <div class="ir"><span class="ir-l" style="color:var(--di)">Auto-calc min (fortnightly)</span><span class="ir-v" style="color:var(--di);font-size:11px">${fmt(autoFn)}</span></div>
+        <div class="ir"><span class="ir-l" style="color:var(--di)">Auto-calc min (monthly)</span><span class="ir-v" style="color:var(--di);font-size:11px">${fmt(propMinAuto(prop,'monthly'))}</span></div>
+        <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px">Rate history</div>
+        ${rateHist}
+        <div class="log-add" onclick="openRateForProp(${prop.id})" style="margin-top:8px">+ Log rate change</div>
+      </div>
+    </details>
+  </div>`;
 }
-
-// ═══════════════════════════════════════════════════════════
+</script>
+<script>
 // RENDER PANELS
-// ═══════════════════════════════════════════════════════════
-let stYr=10;
-function stTab(y,el){stYr=y;document.querySelectorAll('#p-stocks .pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');renderStockProj();}
-function renderStockProj(){
-  const data=projStocks(stYr);
-  const step=stYr===10?2:5;
-  const yrs=[];for(let i=0;i<=stYr;i+=step)yrs.push(i);
-  const tickers=S.holdings.map(h=>h.ticker);
-  document.getElementById('st-proj').innerHTML=`<div style="overflow-x:auto"><table class="tbl">
-    <tr><th>Yr</th><th>Age</th>${tickers.map(t=>`<th>${t}</th>`).join('')}<th>Total</th></tr>
-    ${yrs.map(y=>`<tr><td>${y===0?'Now':'+'+y}</td><td>${S.age+y}</td>${tickers.map(t=>`<td>${fmtK(data[y][t]||0)}</td>`).join('')}<td class="hl">${fmtK(real(data[y].total,y))}</td></tr>`).join('')}
-  </table></div>`;
-}
-
 function renderStocks(){
-  renderHoldings();renderContribPlans();renderLumps();
-  const data=projStocks(30);
-  const labels=data.map(d=>d.y===0?'Now':''+d.y);
-  const totalMonthly=calcTotalMonthlyContrib();
+  if(!S.stocksEnabled){
+    document.getElementById('stocks-dis').innerHTML='<div class="dis-section"><div class="dis-icon">📈</div><div class="dis-lbl">Stocks disabled</div><div class="dis-desc">Enable in Home → Section toggles</div></div>';
+    document.getElementById('stocks-content').style.display='none';return;
+  }
+  document.getElementById('stocks-dis').innerHTML='';
+  document.getElementById('stocks-content').style.display='block';
+  renderHoldings();renderRebalancing();renderContribPlans();renderLumps();
+  const data=projStocks(30);const labels=data.map(d=>d.y===0?'Now':''+d.y);
   document.getElementById('st-met').innerHTML=`
-    <div class="met"><div class="ml">Portfolio now</div><div class="mv gr">${fmtK(data[0].total)}</div><div class="ms">${S.holdings.length} holdings</div></div>
-    <div class="met"><div class="ml">Monthly DCA</div><div class="mv bl">${fmtK(totalMonthly)}</div><div class="ms">active plans</div></div>
+    <div class="met"><div class="ml">Portfolio now</div><div class="mv gr">${fmtK(data[0].total)}</div><div class="mss">${S.holdings.length} holdings</div></div>
+    <div class="met"><div class="ml">Monthly DCA</div><div class="mv bl">${fmtK(totalMonthly())}</div><div class="mss">active plans</div></div>
     <div class="met"><div class="ml">Age ${S.age+10}</div><div class="mv gr">${fmtK(real(data[10].total,10))}</div></div>
     <div class="met"><div class="ml">Age ${S.age+30}</div><div class="mv gr">${fmtK(real(data[30].total,30))}</div></div>`;
   const ds=S.holdings.map(h=>({label:h.ticker,data:data.map(d=>d[h.ticker]||0),borderColor:h.color,backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0}));
   ds.push({label:'Total',data:data.map(d=>d.total),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.07)',fill:true,tension:.4,borderWidth:2.5,...pt0});
   mkChart('stChart',{type:'line',data:{labels,datasets:ds},options:bOpts});
   document.getElementById('st-leg').innerHTML=S.holdings.map(h=>`<div class="li"><div class="ld" style="background:${h.color}"></div>${h.ticker}</div>`).join('')+`<div class="li"><div class="ld" style="background:var(--gr)"></div>Total</div>`;
+  let stYr=10;
+  function renderStockProj(){
+    const d=projStocks(stYr);const step=stYr===10?2:5;const yrs=[];for(let i=0;i<=stYr;i+=step)yrs.push(i);
+    const tickers=S.holdings.map(h=>h.ticker);
+    document.getElementById('st-proj').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><tr><th>Yr</th><th>Age</th>${tickers.map(t=>`<th>${t}</th>`).join('')}<th>Total</th></tr>${yrs.map(y=>`<tr><td>${y===0?'Now':'+'+y}</td><td>${S.age+y}</td>${tickers.map(t=>`<td>${fmtK(d[y][t]||0)}</td>`).join('')}<td class="hl">${fmtK(real(d[y].total,y))}</td></tr>`).join('')}</table></div>`;
+  }
+  document.querySelectorAll('#p-stocks .pill').forEach(p=>{p.onclick=function(){document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));this.classList.add('active');stYr=parseInt(this.textContent);renderStockProj();};});
   renderStockProj();
-  document.getElementById('st-settings').innerHTML=
-    ef('Inflation rate','inflationRate',{pre:'',suf:'%',dec:1,min:0,max:10,hint:'Used when inflation adjustment is on'})+
-    mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj');
+  document.getElementById('st-settings').innerHTML=ef('Inflation rate','inflationRate',{pre:'',suf:'%',dec:1,min:0,max:10,hint:'Used when inflation adjustment is on'})+mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj');
 }
 
-function renderMortgage(){
-  const data=projMort(12);
-  const eff=calcEffective();
-  const rel=Math.max(S.mPropVal*0.8-S.mBalance,0);
-  const minFort=calcMinPayment('fortnightly');
-  const totalFort=minFort+S.mExtraFort;
-
-  document.getElementById('mort-met').innerHTML=`
-    <div class="met"><div class="ml">Balance</div><div class="mv rd">${fmtK(S.mBalance)}</div></div>
-    <div class="met"><div class="ml">Offset</div><div class="mv gr">${fmtK(S.mOffset)}</div></div>
-    <div class="met"><div class="ml">Effective</div><div class="mv">${fmtK(eff)}</div></div>
-    <div class="met"><div class="ml">Interest/yr</div><div class="mv rd">${fmtK(eff*S.mRate/100)}</div></div>
-    <div class="met"><div class="ml">Equity</div><div class="mv gr">${fmtK(data[0].eq)}</div></div>
-    <div class="met"><div class="ml">Releasable</div><div class="mv bl">${fmtK(rel)}</div></div>`;
-
-  mkChart('mortChart',{type:'line',data:{labels:data.map(d=>d.y===0?'Now':'+'+d.y+'yr'),datasets:[
-    {label:'Balance',data:data.map(d=>d.b),borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,0.07)',fill:true,tension:.4,borderWidth:2,...pt0},
-    {label:'Offset',data:data.map(d=>d.off),borderColor:'#1D9E75',backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0},
-    {label:'Equity',data:data.map(d=>d.eq),borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.07)',fill:true,tension:.4,borderWidth:2,...pt0},
-  ]},options:bOpts});
-
-  const origAmt=S.mLoanAmount||S.mBalance;
-  const paid=Math.max(0,origAmt-S.mBalance);
-  const pct=Math.min(100,Math.round((paid/origAmt)*100));
-  document.getElementById('mort-prog').innerHTML=`
-    <div class="prog"><div class="ph"><span class="pl">Principal paid</span><span class="pv">${pct}% · ${fmt(paid)}</span></div><div class="pb"><div class="pf" style="width:${pct}%;background:var(--gr)"></div></div></div>
-    <div style="margin-top:9px">
-      ${[
-        ['Rate',S.mRate.toFixed(2)+'%'],
-        ['Auto-calc min (fortnightly)',fmt(calcMinPaymentAuto('fortnightly'))],
-        ['Auto-calc min (monthly)',fmt(calcMinPaymentAuto('monthly'))],
-        ['Bank override (fortnightly)',S.mMinFort>0?fmt(S.mMinFort):'not set — using auto'],
-        ['Bank override (monthly)',S.mMinMonthly>0?fmt(S.mMinMonthly):'not set — using auto'],
-        ['Active min (fortnightly)',fmt(calcMinPayment('fortnightly'))],
-        ['Extra fortnightly',fmt(S.mExtraFort)],
-        ['Total fortnightly',fmt(totalFort)],
-        ['Effective balance',fmt(eff)],
-        ['Est. payoff',S.mortPayoffDate||'See Payoff tab'],
-      ].map(([l,v])=>`<div class="ir"><span class="ir-l">${l}</span><span class="ir-v">${v}</span></div>`).join('')}
-    </div>`;
-
-  // Loan detail fields
-  // Auto-calc minimum for reference
-  const autoMinFort=calcMinPaymentAuto('fortnightly');
-  const autoMinMo=calcMinPaymentAuto('monthly');
-  document.getElementById('mort-ctrl').innerHTML=
-    ef('Original loan amount','mLoanAmount',{pre:'$',suf:'',dec:0,min:10000,max:2000000,hint:'Used to auto-calculate minimum repayment'})+
-    ef('Current balance','mBalance',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Current outstanding balance'})+
-    ef('Offset account','mOffset',{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Current offset balance'})+
-    ef('Interest rate (%)','mRate',{pre:'',suf:'%',dec:2,min:1,max:15,hint:'Current rate — or use Rate History to log changes'})+
-    ef('Loan term (years)','mTerm',{pre:'',suf:' yrs',dec:0,min:5,max:30,hint:'Original loan term'})+
-    efText('Loan start date (DD/MM/YY)','mStartDate','e.g. 01/07/23')+
-    `<div style="background:var(--sf2);border-radius:var(--rs);padding:10px 11px;margin-bottom:2px;border:0.5px solid var(--bd)">
-      <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">Auto-calculated minimum (based on loan amount above)</div>
-      <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace">Fortnightly</span><span style="font-size:13px;font-weight:700;color:var(--gr);font-family:'DM Mono',monospace">${fmt(autoMinFort)}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace">Monthly</span><span style="font-size:13px;font-weight:700;color:var(--gr);font-family:'DM Mono',monospace">${fmt(autoMinMo)}</span></div>
-    </div>`+
-    `<div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;padding:8px 0 4px">Bank minimum override <span style="color:var(--di)">— enter your bank statement figure to override auto-calc. Leave 0 to use auto.</span></div>`+
-    ef('Bank fortnightly minimum','mMinFort',{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'Your bank statement fortnightly minimum — leave 0 to use auto-calc'})+
-    ef('Bank monthly minimum','mMinMonthly',{pre:'$',suf:'',dec:0,min:0,max:20000,hint:'Your bank statement monthly minimum — June figure: $1,224'})+
-    ef('Extra fortnightly (salary pkg)','mExtraFort',{pre:'$',suf:'',dec:0,min:0,max:5000,hint:'Salary packaged extra fortnightly payment'})+
-    ef('Property value','mPropVal',{pre:'$',suf:'',dec:0,min:50000,max:2000000,hint:'Current estimated property value'});
-
-  // Rate history
-  const rh=document.getElementById('rate-hist');
-  if(!S.rateHistory||!S.rateHistory.length){
-    rh.innerHTML=`<div style="font-size:11px;color:var(--di);font-family:DM Mono;padding:6px 0">No rate changes logged. Current: ${S.mRate.toFixed(2)}%</div>`;
-  } else {
-    rh.innerHTML=[...S.rateHistory].reverse().map(r=>`<div class="log-row">
-      <span class="log-date">${r.date}</span>
-      <span style="display:flex;align-items:center;gap:7px"><span class="log-val am">${r.rate.toFixed(2)}%</span><span class="log-del" onclick="delRate(${r.ts})">✕</span></span>
-    </div>`).join('');
+function renderProperties(){
+  if(!S.propertiesEnabled){
+    document.getElementById('props-dis').innerHTML='<div class="dis-section"><div class="dis-icon">🏠</div><div class="dis-lbl">Properties disabled</div><div class="dis-desc">Enable in Home → Section toggles</div></div>';
+    document.getElementById('props-content').style.display='none';return;
   }
-
-  document.getElementById('mort-togs').innerHTML=
-    mkTog('Offset account growing','Model your offset growing as you save each month','mOffsetGrowth')+
-    (S.mOffsetGrowth?ef('Monthly offset additions','mOffsetGrowthAmt',{pre:'$',suf:'/mo',dec:0,min:0,max:10000,hint:'Amount added to offset each month'}):'');
+  document.getElementById('props-dis').innerHTML='';document.getElementById('props-content').style.display='block';
+  document.getElementById('prop-list').innerHTML=S.properties.map(p=>renderPropCard(p)).join('');
+  const tv=S.properties.reduce((a,p)=>a+p.val,0);const te=totalEquity();const td=totalDebt();const tr=netRentalMonthly();
+  document.getElementById('prop-summary').innerHTML=`
+    <div class="met"><div class="ml">Total value</div><div class="mv bl">${fmtK(tv)}</div><div class="mss">${S.properties.length} properties</div></div>
+    <div class="met"><div class="ml">Total equity</div><div class="mv gr">${fmtK(te)}</div></div>
+    <div class="met"><div class="ml">Total debt</div><div class="mv rd">${fmtK(td)}</div></div>
+    <div class="met"><div class="ml">Net rent/mo</div><div class="mv gr">${fmtK(tr)}</div><div class="mss">after expenses</div></div>`;
+  const pp=projAllProps(30);const labels=pp.map(d=>d.y===0?'Now':''+d.y);
+  mkChart('propChart',{type:'line',data:{labels,datasets:[
+    {label:'Equity',data:pp.map(d=>d.equity),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.08)',fill:true,tension:.4,borderWidth:2,...pt0},
+    {label:'Debt',data:pp.map(d=>d.debt),borderColor:'#E24B4A',backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0},
+  ]},options:bOpts});
 }
 
 function renderPayoff(){
-  // Use auto-calculated min from mortgage data
-  const minFort=calcMinPayment('fortnightly');
-  const minMo=calcMinPayment('monthly');
-  // For fortnightly: use fortnightly figures directly (26 payments/yr)
-  // For monthly: convert extra from fortnightly to monthly equivalent
-  // Note: fortnightly pays more per year (26 x fort = more than 12 x monthly)
-  // This is why fortnightly payoff is faster
-  const minPerPeriod=poPeriod==='fortnightly'?minFort:minMo;
-  const extraPerPeriod=poPeriod==='fortnightly'?S.mExtraFort:(S.mExtraFort*26/12);
-
-  // Display loan setup (read-only, sourced from mortgage tab)
-  const annualTotal=poPeriod==='fortnightly'?(minPerPeriod+extraPerPeriod)*26:(minPerPeriod+extraPerPeriod)*12;
-  document.getElementById('po-setup').innerHTML=`
-    <div class="ir"><span class="ir-l">Loan balance</span><span class="ir-v">${fmt(S.mBalance)}</span></div>
-    <div class="ir"><span class="ir-l">Offset account</span><span class="ir-v gr">${fmt(S.mOffset)}</span></div>
-    <div class="ir"><span class="ir-l">Effective balance</span><span class="ir-v">${fmt(Math.max(0,S.mBalance-S.mOffset))}</span></div>
-    <div class="ir"><span class="ir-l">Rate</span><span class="ir-v">${S.mRate.toFixed(2)}%</span></div>
-    <div class="ir"><span class="ir-l">Min (${poPeriod})</span><span class="ir-v gr">${fmt(minPerPeriod)}</span></div>
-    <div class="ir"><span class="ir-l">Extra (${poPeriod})</span><span class="ir-v">${fmt(extraPerPeriod)}</span></div>
-    <div class="ir"><span class="ir-l">Total per period</span><span class="ir-v gr">${fmt(minPerPeriod+extraPerPeriod)}</span></div>
-    <div class="ir"><span class="ir-l">Annual total</span><span class="ir-v gr">${fmt(annualTotal)}</span></div>
-    <div style="font-size:10px;color:var(--di);font-family:'DM Mono',monospace;margin-top:6px;line-height:1.5">Fortnightly pays ${fmt(571*26)} vs monthly ${fmt(1142*12)} per year — fortnightly clears debt faster. Edit in Mortgage tab.</div>`;
-
-  document.getElementById('po-extra').innerHTML=
-    ef('One-off lump sum into mortgage','poExtraLump',{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Extra lump sum you could pay off today'});
-
-  const res=poSimulate(
-    S.mBalance,S.mOffset,S.mRate,S.mTerm,S.mStartDate,
-    minPerPeriod,extraPerPeriod,S.poExtraLump,
-    poPeriod,S.rateHistory
-  );
-
-  function fD(d){return fmtDMY(d);}
-  const savedMo=res.base.months-res.current.months;
-  const savedInt=res.base.interest-res.current.interest;
-
-  document.getElementById('po-result').innerHTML=`
-    <div class="po-box warn">
-      <div class="po-title" style="color:var(--rd)">Minimum only — ${poPeriod}</div>
-      <div class="po-row"><span class="po-l">Payoff date</span><span class="po-v rd">${fD(res.base.payoffDate)}</span></div>
-      <div class="po-row"><span class="po-l">Total interest paid</span><span class="po-v rd">${fmt(res.base.interest)}</span></div>
-      <div class="po-row"><span class="po-l">Duration</span><span class="po-v">${res.base.months} months</span></div>
-    </div>
-    <div class="po-box good">
-      <div class="po-title" style="color:var(--gr)">Current plan (min + extra)</div>
-      <div class="po-row"><span class="po-l">Payoff date</span><span class="po-v gr">${fD(res.current.payoffDate)}</span></div>
-      <div class="po-row"><span class="po-l">Total interest paid</span><span class="po-v gr">${fmt(res.current.interest)}</span></div>
-      <div class="po-row"><span class="po-l">Time saved</span><span class="po-v gr">${savedMo} months</span></div>
-      <div class="po-row"><span class="po-l">Interest saved</span><span class="po-v gr">${fmt(savedInt)}</span></div>
-    </div>
-    ${S.poExtraLump>0&&res.withLump?`<div class="po-box good">
-      <div class="po-title" style="color:var(--bl)">With ${fmt(S.poExtraLump)} lump sum</div>
-      <div class="po-row"><span class="po-l">Payoff date</span><span class="po-v bl">${fD(res.withLump.payoffDate)}</span></div>
-      <div class="po-row"><span class="po-l">Total interest paid</span><span class="po-v bl">${fmt(res.withLump.interest)}</span></div>
-      <div class="po-row"><span class="po-l">Time saved vs minimum</span><span class="po-v bl">${res.base.months-res.withLump.months} months</span></div>
-      <div class="po-row"><span class="po-l">Interest saved</span><span class="po-v bl">${fmt(res.base.interest-res.withLump.interest)}</span></div>
-    </div>`:''}`;
-
-  // Store payoff date for home tab
-  S.mortPayoffDate=fD(res.current.payoffDate);
-  saveState();
-
-  // Chart
-  const maxYrs=Math.max(res.base.byYear.length,res.current.byYear.length)+1;
-  const labels=Array.from({length:maxYrs},(_,i)=>i===0?'Now':'+'+i+'yr');
-  function byYD(sim){return labels.map((_,i)=>{const pt=sim.byYear.find(p=>p.y===i);return pt?pt.b:(i>=sim.byYear.length?0:null);});}
-
-  const datasets=[
-    {label:'Min only',data:byYD(res.base),borderColor:'#7a7a8c',backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0},
-    {label:'Current plan',data:byYD(res.current),borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,0.07)',fill:true,tension:.4,borderWidth:2,...pt0},
-  ];
-  if(S.poExtraLump>0&&res.withLump){
-    datasets.push({label:'With lump',data:byYD(res.withLump),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.08)',fill:true,tension:.4,borderWidth:2,...pt0});
+  if(!S.properties.length){
+    document.getElementById('po-prop-sel').innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">No properties — add one in Properties tab</div>';
+    ['po-setup','po-extra','po-result'].forEach(id=>document.getElementById(id).innerHTML='');return;
   }
-  mkChart('payoffChart',{type:'line',data:{labels,datasets},options:bOpts});
+  document.getElementById('po-prop-sel').innerHTML=S.properties.map(p=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border-radius:var(--rs);padding:11px 13px;border:0.5px solid ${S.poActivePropId===p.id?'var(--gr-bd)':'var(--bd)'};margin-bottom:6px;cursor:pointer" onclick="S.poActivePropId=${p.id};saveState();renderPayoff()">
+      <div><div style="font-size:12px;font-weight:600">${p.name}</div><div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px">${p.type==='ppor'?'PPOR':'Investment'} · ${fmtK(p.loan)} loan · ${p.rate.toFixed(2)}%</div></div>
+      <div style="width:18px;height:18px;border-radius:50%;background:${S.poActivePropId===p.id?'var(--gr)':'var(--sf3)'};border:2px solid ${S.poActivePropId===p.id?'var(--gr)':'var(--bd2)'};flex-shrink:0"></div>
+    </div>`).join('');
+  const prop=S.properties.find(p=>p.id===S.poActivePropId)||S.properties[0];
+  if(!prop)return;
+  const minPer=propMin(prop,poPeriod);const extraPer=poPeriod==='fortnightly'?prop.extraFort:prop.extraFort*26/12;
+  const annualTotal=(minPer+extraPer)*(poPeriod==='fortnightly'?26:12);
+  document.getElementById('po-setup').innerHTML=`
+    <div class="ir"><span class="ir-l">Loan balance</span><span class="ir-v">${fmt(prop.loan)}</span></div>
+    <div class="ir"><span class="ir-l">Offset</span><span class="ir-v gr">${fmt(prop.offset)}</span></div>
+    <div class="ir"><span class="ir-l">Effective balance</span><span class="ir-v">${fmt(propEff(prop))}</span></div>
+    <div class="ir"><span class="ir-l">Rate</span><span class="ir-v">${prop.rate.toFixed(2)}%</span></div>
+    <div class="ir"><span class="ir-l">Min (${poPeriod})</span><span class="ir-v gr">${fmt(minPer)}</span></div>
+    <div class="ir"><span class="ir-l">Extra (${poPeriod})</span><span class="ir-v">${fmt(extraPer)}</span></div>
+    <div class="ir"><span class="ir-l">Annual total</span><span class="ir-v gr">${fmt(annualTotal)}</span></div>`;
+  const lrid='ef_poLump';EFR[lrid]={key:'poExtraLump',label:'One-off lump sum',cfg:{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Extra lump sum paid today'},obj:null};
+  document.getElementById('po-extra').innerHTML=`<div class="ef" onclick="openById('${lrid}')"><span class="ef-lbl">One-off lump sum into mortgage</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${fmt(S.poExtraLump)}</span><span class="ef-pen">✎</span></span></div>`;
+  const res=poSimulate(prop,S.poExtraLump,poPeriod);
+  const sm=res.base.months-res.current.months;const si=res.base.interest-res.current.interest;
+  document.getElementById('po-result').innerHTML=`
+    <div class="po-box warn"><div class="po-title" style="color:var(--rd)">Minimum only</div>
+      <div class="po-row"><span class="po-l">Payoff date</span><span class="po-v rd">${fmtDMY(res.base.payoffDate)}</span></div>
+      <div class="po-row"><span class="po-l">Duration</span><span class="po-v">${res.base.months} months</span></div>
+      <div class="po-row"><span class="po-l">Total interest</span><span class="po-v rd">${fmt(res.base.interest)}</span></div></div>
+    <div class="po-box good"><div class="po-title" style="color:var(--gr)">Current plan (min + extra)</div>
+      <div class="po-row"><span class="po-l">Payoff date</span><span class="po-v gr">${fmtDMY(res.current.payoffDate)}</span></div>
+      <div class="po-row"><span class="po-l">Duration</span><span class="po-v gr">${res.current.months} months</span></div>
+      <div class="po-row"><span class="po-l">Total interest</span><span class="po-v gr">${fmt(res.current.interest)}</span></div>
+      <div class="po-row"><span class="po-l">Time saved</span><span class="po-v gr">${sm} months</span></div>
+      <div class="po-row"><span class="po-l">Interest saved</span><span class="po-v gr">${fmt(si)}</span></div></div>
+    ${S.poExtraLump>0&&res.withLump?`<div class="po-box info"><div class="po-title" style="color:var(--bl)">With ${fmt(S.poExtraLump)} lump sum</div>
+      <div class="po-row"><span class="po-l">Payoff date</span><span class="po-v bl">${fmtDMY(res.withLump.payoffDate)}</span></div>
+      <div class="po-row"><span class="po-l">Time saved vs min</span><span class="po-v bl">${res.base.months-res.withLump.months} months</span></div>
+      <div class="po-row"><span class="po-l">Interest saved</span><span class="po-v bl">${fmt(res.base.interest-res.withLump.interest)}</span></div></div>`:''}`;
+  const maxYrs=Math.max(res.base.byYear.length,res.current.byYear.length)+1;
+  const cl=Array.from({length:maxYrs},(_,i)=>i===0?'Now':'+'+i+'yr');
+  function byd(sim){return cl.map((_,i)=>{const pt=sim.byYear.find(p=>p.y===i);return pt?pt.b:0;});}
+  const ds=[{label:'Min',data:byd(res.base),borderColor:'#7a7a8c',backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0},{label:'Current',data:byd(res.current),borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,0.07)',fill:true,tension:.4,borderWidth:2,...pt0}];
+  if(S.poExtraLump>0&&res.withLump)ds.push({label:'Lump',data:byd(res.withLump),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.08)',fill:true,tension:.4,borderWidth:2,...pt0});
+  mkChart('payoffChart',{type:'line',data:{labels:cl,datasets:ds},options:bOpts});
+}
+
+function renderCashFlow(){
+  const cf=calcCF();
+  document.getElementById('cf-summary').innerHTML=`
+    <div class="met"><div class="ml">Monthly income</div><div class="mv gr">${fmtK(cf.totalInc)}</div><div class="mss">after tax</div></div>
+    <div class="met"><div class="ml">Monthly outgoings</div><div class="mv rd">${fmtK(cf.totalOut)}</div></div>
+    <div class="met"><div class="ml">${cf.surplus>=0?'Surplus':'Shortfall'}</div><div class="mv ${cf.surplus>=0?'gr':'rd'}">${fmtK(Math.abs(cf.surplus))}</div><div class="mss">per month</div></div>
+    <div class="met"><div class="ml">Annual equiv.</div><div class="mv ${cf.surplus>=0?'gr':'rd'}">${fmtK(Math.abs(cf.surplus*12))}</div></div>`;
+  document.getElementById('cf-income').innerHTML=
+    ef('Gross annual income','grossIncome',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Total gross income including OT'},S.cf)+
+    ef('Salary packaging (annual)','salaryPackaging',{pre:'$',suf:'/yr',dec:0,min:0,max:30000,hint:'Annual salary packaging amount'},S.cf)+
+    ef('Other monthly income','otherIncome',{pre:'$',suf:'/mo',dec:0,min:0,max:50000,hint:'Rental, dividends, side income etc.'},S.cf)+
+    `<div class="ir"><span class="ir-l">Est. monthly take-home</span><span class="ir-v gr">${fmt(cf.monthlyNet)}</span></div>`+
+    `<div class="ir"><span class="ir-l">Net rental income</span><span class="ir-v gr">${fmt(cf.rentalInc)}/mo</span></div>`;
+  const propRows=S.properties.map(p=>{const mf=propMin(p,'fortnightly');const t=(mf+p.extraFort)*26/12;return `<div class="cf-row"><span class="cf-lbl">${p.name}</span><span class="cf-val cf-neg">${fmt(t)}/mo</span></div>`;}).join('');
+  document.getElementById('cf-commitments').innerHTML=
+    `<div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 4px;border-bottom:0.5px solid var(--bd2)">Mortgage repayments</div>`+propRows+
+    `<div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 4px;border-bottom:0.5px solid var(--bd2)">Living</div>`+
+    ef('Monthly living expenses','livingExpenses',{pre:'$',suf:'/mo',dec:0,min:0,max:30000,hint:'All living costs excluding investments'},S.cf);
+  document.getElementById('cf-investments').innerHTML=`
+    <div class="cf-row"><span class="cf-lbl">ETF contributions</span><span class="cf-val cf-neg">${fmt(cf.etfMo)}/mo</span></div>
+    <div class="cf-row"><span class="cf-lbl">Super extra (${S.sExtra}/fn)</span><span class="cf-val cf-neg">${fmt(cf.superExtra)}/mo</span></div>`;
+  const sc=cf.surplus>=0?'cf-pos':'cf-neg';
+  document.getElementById('cf-surplus').innerHTML=`
+    <div class="cf-row"><span class="cf-lbl">Total income</span><span class="cf-val cf-pos">${fmt(cf.totalInc)}/mo</span></div>
+    <div class="cf-row"><span class="cf-lbl">Total outgoings</span><span class="cf-val cf-neg">${fmt(cf.totalOut)}/mo</span></div>
+    <div style="height:0.5px;background:var(--bd2);margin:4px 0"></div>
+    <div class="cf-row"><span class="cf-lbl" style="font-weight:700">${cf.surplus>=0?'Monthly surplus':'Shortfall'}</span><span class="cf-val ${sc}" style="font-size:16px">${fmt(Math.abs(cf.surplus))}/mo</span></div>
+    <div class="cf-row"><span class="cf-lbl">Annual equivalent</span><span class="cf-val ${sc}">${fmt(Math.abs(cf.surplus*12))}/yr</span></div>
+    <div style="font-size:10px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px;line-height:1.5">Tax based on 2025-26 Australian rates. HECS cleared. Actual may differ.</div>`;
 }
 
 function renderSuper(){
@@ -1362,126 +1074,63 @@ function renderSuper(){
     <div class="met"><div class="ml">Now</div><div class="mv pu">${fmtK(S.sBalance)}</div></div>
     <div class="met"><div class="ml">Age ${S.age+10}</div><div class="mv pu">${fmtK(data[10].b)}</div></div>
     <div class="met"><div class="ml">Age ${S.age+20}</div><div class="mv pu">${fmtK(data[20].b)}</div></div>
-    <div class="met"><div class="ml">Age ${S.age+30}</div><div class="mv pu">${fmtK(data[30].b)}</div><div class="ms">4%: ${fmtK(data[30].b*0.04)}/yr</div></div>`;
-  mkChart('supChart',{type:'line',data:{labels:data.map(d=>d.y===0?'Now':''+d.y),datasets:[
-    {label:'Super',data:data.map(d=>d.b),borderColor:'#7f77dd',backgroundColor:'rgba(127,119,221,0.09)',fill:true,tension:.4,borderWidth:2.5,...pt0}
-  ]},options:bOpts});
-  document.getElementById('sup-ms').innerHTML=[
-    {age:S.age+6,y:6,c:'var(--gr)'},{age:S.age+10,y:10,c:'var(--bl)'},{age:S.age+16,y:16,c:'var(--pu)'},
-    {age:S.age+21,y:21,c:'var(--am)'},{age:S.age+30,y:30,c:'var(--rd)'},
-  ].map(m=>`<div class="ms-row"><div class="ms-l"><div class="ms-dot" style="background:${m.c}"></div><div><div class="ms-age" style="color:${m.c}">Age ${m.age}</div><div class="ms-desc">4% drawdown: ${fmtK(data[m.y].b*0.04)}/yr</div></div></div><div class="ms-val" style="color:${m.c}">${fmtK(data[m.y].b)}</div></div>`).join('');
+    <div class="met"><div class="ml">Age ${S.age+30}</div><div class="mv pu">${fmtK(data[30].b)}</div><div class="mss">4%: ${fmtK(data[30].b*0.04)}/yr</div></div>`;
+  mkChart('supChart',{type:'line',data:{labels:data.map(d=>d.y===0?'Now':''+d.y),datasets:[{label:'Super',data:data.map(d=>d.b),borderColor:'#7f77dd',backgroundColor:'rgba(127,119,221,0.09)',fill:true,tension:.4,borderWidth:2.5,...pt0}]},options:bOpts});
+  document.getElementById('sup-ms').innerHTML=[{age:S.age+6,y:6,c:'var(--gr)'},{age:S.age+10,y:10,c:'var(--bl)'},{age:S.age+16,y:16,c:'var(--pu)'},{age:S.age+21,y:21,c:'var(--am)'},{age:S.age+30,y:30,c:'var(--rd)'}].map(m=>`<div class="ms-row"><div class="ms-l"><div class="ms-dot" style="background:${m.c}"></div><div><div class="ms-age" style="color:${m.c}">Age ${m.age}</div><div class="ms-desc">4% drawdown: ${fmtK(data[m.y].b*0.04)}/yr</div></div></div><div class="ms-val" style="color:${m.c}">${fmtK(data[m.y].b)}</div></div>`).join('');
   document.getElementById('sup-togs').innerHTML=mkTog('Salary rise assumption','Apply annual pay rise to employer SG contributions','sSalaryRise');
   document.getElementById('sup-ctrl').innerHTML=
     ef('Current balance','sBalance',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Current super balance'})+
-    ef('Extra fortnightly contributions','sExtra',{pre:'$',suf:'',dec:0,min:0,max:5000,hint:'Your extra voluntary super'})+
+    ef('Extra fortnightly','sExtra',{pre:'$',suf:'',dec:0,min:0,max:5000,hint:'Extra voluntary contributions per fortnight'})+
     ef('Employer SG (per month)','sEmployer',{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'Estimated monthly employer SG'})+
     ef('Annual return','sReturn',{pre:'',suf:'%',dec:1,min:1,max:20,hint:'Expected long-run return'})+
     (S.sSalaryRise?ef('Annual salary rise','sSalaryRisePct',{pre:'',suf:'%',dec:1,min:0,max:15,hint:'Annual pay rise applied to SG'}):'');
 }
 
-function renderPPOR(){
-  const price=S.pPrice,dep=S.pDeposit,loan=Math.max(0,price-dep);
-  const r=S.pRate/100/12,n=S.pTerm*12;
-  const mo=loan>0&&r>0?loan*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1):loan/(n||1);
-  const lvr=price>0?Math.round((loan/price)*100):0;
-  const rentMo=S.pRent*52/12;
-  const rel=Math.max(0,S.mPropVal*0.8-S.mBalance);
-  const fire=S.cashSavings+rel;
-  const need=price*0.2;
-  const covered=fire>=need;
-
-  document.getElementById('ppor-dep').innerHTML=`<div class="dep-ok"><span>${covered?'✓ Deposit covered':'⚠ Deposit gap'}</span><strong>${fmtK(fire)} available</strong></div>`;
-  document.getElementById('ppor-dep-met').innerHTML=`
-    <div class="met"><div class="ml">Cash savings</div><div class="mv gr">${fmtK(S.cashSavings)}</div></div>
-    <div class="met"><div class="ml">Releasable equity</div><div class="mv bl">${fmtK(rel)}</div></div>
-    <div class="met"><div class="ml">Total firepower</div><div class="mv gr">${fmtK(fire)}</div></div>
-    <div class="met"><div class="ml">Need (20%)</div><div class="mv ${covered?'gr':'rd'}">${fmtK(need)}</div></div>`;
-
-  const data=projPPOR(30);
-  document.getElementById('ppor-calc').innerHTML=`
-    <div class="met"><div class="ml">Purchase price</div><div class="mv">${fmtK(price)}</div></div>
-    <div class="met"><div class="ml">Loan amount</div><div class="mv rd">${fmtK(loan)}</div></div>
-    <div class="met"><div class="ml">LVR</div><div class="mv ${lvr<=80?'gr':'rd'}">${lvr}%</div><div class="ms">${lvr<=80?'No LMI':'LMI applies'}</div></div>
-    <div class="met"><div class="ml">Monthly repayment</div><div class="mv rd">${fmt(mo)}</div></div>
-    <div class="met"><div class="ml">Rental offset</div><div class="mv gr">${fmt(rentMo)}/mo</div></div>
-    <div class="met"><div class="ml">Net cash drag</div><div class="mv am">${fmt(Math.max(0,mo-rentMo))}/mo</div></div>`;
-
-  mkChart('pporChart',{type:'line',data:{labels:data.map(d=>d.y===0?'Now':''+d.y),datasets:[
-    {label:'Value',data:data.map(d=>d.val),borderColor:'#378ADD',backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0},
-    {label:'Loan',data:data.map(d=>d.loan),borderColor:'#E24B4A',backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0},
-    {label:'Equity',data:data.map(d=>d.eq),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.08)',fill:true,tension:.4,borderWidth:2,...pt0},
-  ]},options:bOpts});
-
-  document.getElementById('ppor-ctrl').innerHTML=
-    ef('Purchase price','pPrice',{pre:'$',suf:'',dec:0,min:100000,max:5000000,hint:'Expected purchase price'})+
-    ef('Deposit amount','pDeposit',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Deposit amount'})+
-    ef('Interest rate','pRate',{pre:'',suf:'%',dec:2,min:1,max:15,hint:'PPOR loan interest rate'})+
-    ef('Loan term (years)','pTerm',{pre:'',suf:' yrs',dec:0,min:5,max:30,hint:'Loan term'})+
-    ef('Old home rent ($/wk)','pRent',{pre:'$',suf:'/wk',dec:0,min:0,max:2000,hint:'Weekly rental income from current home'})+
-    ef('Annual property growth','pGrowth',{pre:'',suf:'%',dec:1,min:0,max:15,hint:'Expected annual capital growth'})+
-    ef('Cash savings','cashSavings',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Deposit fund / savings'})+
-    ef('Emergency fund','emergency',{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Emergency fund'});
-}
-
 function renderHistory(){
-  const proj=projStocks(30);const sup=projSuper(30);const mort=projMort(30);const pp=projPPOR(30);
-  const projData=proj.map((s,i)=>({y:s.y,tot:s.total+sup[i].b+mort[i].eq+pp[i].eq}));
+  const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
+  const projData=st.map((s,i)=>({y:s.y,tot:s.total+sup[i].b+pp[i].equity}));
   const nowYear=new Date().getFullYear();const nowMonth=new Date().getMonth();
-  const actualPts=(S.nwHistory||[]).map(e=>{
-    const d=parseDMY(e.date)||new Date();
-    const yr=d.getFullYear()-nowYear+(d.getMonth()-nowMonth)/12;
-    return{x:yr,y:e.val};
-  });
+  const actualPts=(S.nwHistory||[]).map(e=>{const d=parseDMY(e.date)||new Date();const yr=d.getFullYear()-nowYear+(d.getMonth()-nowMonth)/12;return{x:yr,y:e.val};});
   mkChart('histChart',{type:'line',data:{datasets:[
     {label:'Projected',data:projData.map(d=>({x:d.y,y:d.tot})),borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.07)',fill:true,tension:.4,borderWidth:1.5,borderDash:[5,4],pointRadius:0},
     {label:'Actual',data:actualPts,borderColor:'#1D9E75',backgroundColor:'#1D9E75',showLine:true,tension:.3,borderWidth:2.5,pointRadius:5},
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtK(c.parsed.y)}`}}},scales:{x:{type:'linear',ticks:{callback:v=>v===0?'Now':'+'+Math.round(v)+'yr',font:{size:9},color:'#7a7a8c',maxTicksLimit:7},grid:{display:false},border:{display:false}},y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}}}});
   const entries=document.getElementById('nw-entries');
-  if(!S.nwHistory||!S.nwHistory.length){entries.innerHTML='<div style="text-align:center;color:var(--mu);font-size:11px;padding:14px;font-family:DM Mono">No entries yet — log your first snapshot below</div>';return;}
-  entries.innerHTML=[...S.nwHistory].reverse().map(e=>`<div class="log-row"><span class="log-date">${e.date}</span><span style="display:flex;align-items:center;gap:7px"><span class="log-val gr">${fmt(e.val)}</span><span class="log-del" onclick="delNW('${e.date}',${e.ts})">✕</span></span></div>`).join('');
+  if(!S.nwHistory||!S.nwHistory.length){entries.innerHTML='<div style="text-align:center;color:var(--mu);font-size:11px;padding:14px;font-family:DM Mono">No entries yet</div>';return;}
+  entries.innerHTML=[...S.nwHistory].reverse().map(e=>`<div class="log-row"><span class="log-date">${e.date}</span><span style="display:flex;align-items:center;gap:7px"><span class="log-val gr">${fmt(e.val)}</span><span class="log-del" onclick="delNW(${e.ts})">✕</span></span></div>`).join('');
 }
 function logNW(){
-  const st=projStocks(0)[0],sup=projSuper(0)[0],mort=projMort(0);
-  const tot=st.total+sup.b+mort[0].eq+S.cashSavings+S.emergency;
-  S.nwHistory=S.nwHistory||[];
-  const d=today();const ts=Date.now();
-  S.nwHistory.push({date:d,val:Math.round(tot),ts});
-  S.nwHistory.sort((a,b)=>a.ts-b.ts);
+  const st=projStocks(0)[0];const sup=projSuper(0)[0];const pp=projAllProps(0)[0];
+  const tot=st.total+sup.b+pp.equity+S.cashSavings+S.emergency;
+  S.nwHistory=S.nwHistory||[];S.nwHistory.push({date:today(),val:Math.round(tot),ts:Date.now()});S.nwHistory.sort((a,b)=>a.ts-b.ts);
   saveState();renderHistory();
 }
-function delNW(date,ts){S.nwHistory=S.nwHistory.filter(e=>e.ts!==ts);saveState();renderHistory();}
-
-// Projection
+function delNW(ts){S.nwHistory=S.nwHistory.filter(e=>e.ts!==ts);saveState();renderHistory();}
+</script>
+<script>
+// PROJECTION
 const SCEN_DESC=[
-  '📈 <strong>Current plan</strong> — ETFs via DCA plans, current mortgage, no new PPOR yet. Your realistic baseline.',
-  '🏠 <strong>Buy PPOR now</strong> — Models purchasing the new home and adds PPOR equity to the projection.',
-  '🛡 <strong>Conservative</strong> — Lower returns: ETFs 7%, super 6%, property 3% growth. Worst-case floor.',
+  '📈 <strong>Current plan</strong> — ETFs via DCA, current properties, realistic baseline.',
+  '📈 <strong>Optimistic</strong> — Higher returns: ETFs +2%, super 8%, property growth 6%.',
+  '🛡 <strong>Conservative</strong> — Lower returns: ETFs capped 7%, super 6%, property 3%.',
 ];
 let savedRets={};
 function setScen(i,el){
   S.scenario=i;document.querySelectorAll('.sb').forEach((b,j)=>b.classList.toggle('active',j===i));
   document.getElementById('scen-desc').innerHTML=SCEN_DESC[i];
-  if(i<2&&savedRets.s){S.sReturn=savedRets.s;S.pGrowth=savedRets.p;S.holdings.forEach((h,idx)=>{if(savedRets['h'+idx]!==undefined)h.ret=savedRets['h'+idx];});}
-  if(i===0)S.pporIncluded=false;
-  if(i===1)S.pporIncluded=true;
-  if(i===2){
-    savedRets={s:S.sReturn,p:S.pGrowth};
-    S.holdings.forEach((h,idx)=>{savedRets['h'+idx]=h.ret;});
-    S.pporIncluded=false;S.sReturn=6;S.pGrowth=3;
-    S.holdings.forEach(h=>{h.ret=Math.min(h.ret,7);});
-  }
+  if(i===0&&savedRets.s){S.sReturn=savedRets.s;S.holdings.forEach((h,idx)=>{if(savedRets['h'+idx]!==undefined)h.ret=savedRets['h'+idx];});S.properties.forEach((p,idx)=>{if(savedRets['p'+idx]!==undefined)p.growth=savedRets['p'+idx];});}
+  if(i===1){savedRets={s:S.sReturn};S.holdings.forEach((h,idx)=>{savedRets['h'+idx]=h.ret;});S.properties.forEach((p,idx)=>{savedRets['p'+idx]=p.growth;});S.sReturn=8;S.holdings.forEach(h=>{h.ret=Math.min(h.ret+2,15);});S.properties.forEach(p=>{p.growth=6;});}
+  if(i===2){savedRets={s:S.sReturn};S.holdings.forEach((h,idx)=>{savedRets['h'+idx]=h.ret;});S.properties.forEach((p,idx)=>{savedRets['p'+idx]=p.growth;});S.sReturn=6;S.holdings.forEach(h=>{h.ret=Math.min(h.ret,7);});S.properties.forEach(p=>{p.growth=3;});}
   renderProjChart();
 }
 function renderProj(){
-  document.getElementById('proj-togs').innerHTML=
-    mkTog('Include PPOR in projection','Toggle new home equity on/off','pporIncluded')+
-    mkTog('Inflation-adjusted','Show values in today\'s dollars','inflationAdj');
+  document.getElementById('proj-togs').innerHTML=mkTog('Inflation-adjusted','Show values in today\'s purchasing power','inflationAdj');
   document.getElementById('scen-desc').innerHTML=SCEN_DESC[S.scenario||0];
   renderProjChart();
 }
 function renderProjChart(){
-  const st=projStocks(30),sup=projSuper(30),mort=projMort(30),pp=projPPOR(30);
-  const c=st.map((s,i)=>({y:s.y,etf:real(s.total,s.y),sup:sup[i].b,inv:mort[i].eq,ppor:pp[i].eq,tot:real(s.total,s.y)+sup[i].b+mort[i].eq+pp[i].eq}));
+  const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
+  const c=st.map((s,i)=>({y:s.y,etf:real(s.total,s.y),sup:sup[i].b,props:pp[i].equity,tot:real(s.total,s.y)+sup[i].b+pp[i].equity}));
   document.getElementById('proj-met').innerHTML=`
     <div class="met"><div class="ml">Age ${S.age+10}</div><div class="mv gr">${fmtK(c[10].tot)}</div></div>
     <div class="met"><div class="ml">Age ${S.age+20}</div><div class="mv gr">${fmtK(c[20].tot)}</div></div>
@@ -1490,74 +1139,67 @@ function renderProjChart(){
   mkChart('projChart',{type:'line',data:{labels:c.map(d=>d.y===0?'Now':''+d.y),datasets:[
     {label:'ETFs',data:c.map(d=>d.etf),borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.15)',fill:true,tension:.4,borderWidth:0,...pt0},
     {label:'Super',data:c.map(d=>d.sup),borderColor:'#7f77dd',backgroundColor:'rgba(127,119,221,0.15)',fill:true,tension:.4,borderWidth:0,...pt0},
-    {label:'Inv.prop',data:c.map(d=>d.inv),borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,0.15)',fill:true,tension:.4,borderWidth:0,...pt0},
-    {label:'PPOR',data:c.map(d=>d.ppor),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.15)',fill:true,tension:.4,borderWidth:0,...pt0},
+    {label:'Properties',data:c.map(d=>d.props),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.15)',fill:true,tension:.4,borderWidth:0,...pt0},
     {label:'Total',data:c.map(d=>d.tot),borderColor:'#f0f0f5',backgroundColor:'transparent',tension:.4,borderWidth:2,...pt0},
   ]},options:{...bOpts,scales:{...bOpts.scales,x:{...bOpts.scales.x,ticks:{...bOpts.scales.x.ticks,maxTicksLimit:8}}}}});
   const yrs=[0,5,10,15,20,25,30];
-  document.getElementById('proj-tbl').innerHTML=`<tr><th>Age</th><th>ETFs</th><th>Super</th><th>PPOR</th><th>Total</th></tr>${yrs.map(y=>`<tr><td>${S.age+y}${y===0?' now':''}</td><td>${fmtK(c[y].etf)}</td><td>${fmtK(c[y].sup)}</td><td>${fmtK(c[y].ppor)}</td><td class="hl">${fmtK(c[y].tot)}</td></tr>`).join('')}`;
+  document.getElementById('proj-tbl').innerHTML=`<tr><th>Age</th><th>ETFs</th><th>Super</th><th>Properties</th><th>Total</th></tr>${yrs.map(y=>`<tr><td>${S.age+y}${y===0?' now':''}</td><td>${fmtK(c[y].etf)}</td><td>${fmtK(c[y].sup)}</td><td>${fmtK(c[y].props)}</td><td class="hl">${fmtK(c[y].tot)}</td></tr>`).join('')}`;
 }
 
+// HOME
 function renderHome(){
-  const st=projStocks(30),sup=projSuper(30),mort=projMort(30),pp=projPPOR(30);
-  const eff=calcEffective();
-  const minFort=calcMinPayment('fortnightly');
-  const tot=st[0].total+sup[0].b+mort[0].eq+S.cashSavings+S.emergency;
-
+  const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
+  const cf=calcCF();const te=totalEquity();
+  const tot=(S.stocksEnabled?st[0].total:0)+(S.propertiesEnabled?te:0)+sup[0].b+S.cashSavings+S.emergency;
   document.getElementById('hdr-total').textContent=fmtK(tot);
   document.getElementById('ov-nw').textContent=fmt(tot);
   document.getElementById('ov-age').textContent=S.age;
-  document.getElementById('hdr-name').textContent=S.appName||"Ned's Finance";
-  document.getElementById('settings-name-val').textContent=S.appName||"Ned's Finance";
-
-  const assets=[
-    {lbl:'ETFs',v:st[0].total,c:'#378ADD'},
-    {lbl:'Super',v:sup[0].b,c:'#7f77dd'},
-    {lbl:'Home equity',v:mort[0].eq,c:'#E24B4A'},
-    {lbl:'Deposit / cash',v:S.cashSavings,c:'#EF9F27'},
-    {lbl:'Emergency',v:S.emergency,c:'#4a4a5a'},
-  ];
-  drawDonut(assets.map(a=>a.v),assets.map(a=>a.c),tot);
+  document.getElementById('hdr-name').textContent=S.appName||'Finance';
+  document.getElementById('settings-name-val').textContent=S.appName||'Finance';
+  const assets=[];
+  if(S.stocksEnabled)assets.push({lbl:'ETFs',v:st[0].total,c:'#378ADD'});
+  assets.push({lbl:'Super',v:sup[0].b,c:'#7f77dd'});
+  if(S.propertiesEnabled)assets.push({lbl:'Property equity',v:te,c:'#1D9E75'});
+  assets.push({lbl:'Cash',v:S.cashSavings+S.emergency,c:'#EF9F27'});
+  const dTotal=assets.reduce((a,x)=>a+x.v,0);
+  drawDonut(assets.map(a=>a.v),assets.map(a=>a.c),dTotal||1);
   document.getElementById('donut-leg').innerHTML=assets.map(a=>`<div class="dl"><span class="dll"><span style="width:7px;height:7px;border-radius:2px;background:${a.c};display:inline-block;margin-right:5px"></span>${a.lbl}</span><span class="dlv" style="color:${a.c}">${fmtK(a.v)}</span></div>`).join('');
-
   document.getElementById('ov-met').innerHTML=`
-    <div class="met"><div class="ml">ETFs</div><div class="mv bl">${fmtK(st[0].total)}</div><div class="ms">${S.holdings.length} holdings</div></div>
-    <div class="met"><div class="ml">Super</div><div class="mv pu">${fmtK(sup[0].b)}</div><div class="ms">ART 90% intl</div></div>
-    <div class="met"><div class="ml">Home equity</div><div class="mv rd">${fmtK(mort[0].eq)}</div><div class="ms">current property</div></div>
-    <div class="met"><div class="ml">Cash</div><div class="mv am">${fmtK(S.cashSavings+S.emergency)}</div><div class="ms">savings + emergency</div></div>`;
-
-  // Key facts — mixture of auto-calculated (static) and editable
+    ${S.stocksEnabled?`<div class="met"><div class="ml">ETFs</div><div class="mv bl">${fmtK(st[0].total)}</div><div class="mss">${S.holdings.length} holdings</div></div>`:''}
+    <div class="met"><div class="ml">Super</div><div class="mv pu">${fmtK(sup[0].b)}</div><div class="mss">ART 90% intl</div></div>
+    ${S.propertiesEnabled?`<div class="met"><div class="ml">Property equity</div><div class="mv gr">${fmtK(te)}</div><div class="mss">${S.properties.length} properties</div></div>`:''}
+    <div class="met"><div class="ml">Cash</div><div class="mv am">${fmtK(S.cashSavings+S.emergency)}</div><div class="mss">savings + emergency</div></div>
+    <div class="met"><div class="ml">Monthly surplus</div><div class="mv ${cf.surplus>=0?'gr':'rd'}">${fmtK(cf.surplus)}</div><div class="mss">after commitments</div></div>
+    <div class="met"><div class="ml">Net rent/mo</div><div class="mv gr">${fmtK(netRentalMonthly())}</div><div class="mss">from investments</div></div>`;
   document.getElementById('ov-facts').innerHTML=
     ef('Age','age',{pre:'',suf:'',dec:0,min:18,max:80,hint:'Your current age'})+
-    `<div class="ir"><span class="ir-l">Effective mortgage</span><span class="ir-v">${fmt(eff)}</span></div>`+
-    `<div class="ir"><span class="ir-l">Mortgage equity</span><span class="ir-v gr">${fmtK(mort[0].eq)}</span></div>`+
-    `<div class="ir"><span class="ir-l">Min. fortnightly</span><span class="ir-v">${fmt(minFort)}</span></div>`+
-    `<div class="ir"><span class="ir-l">Total fortnightly</span><span class="ir-v">${fmt(minFort+S.mExtraFort)}</span></div>`+
-    ef('Salary packaging (annual)','salaryPackaging',{pre:'$',suf:'/yr',dec:0,min:0,max:30000,hint:'Annual salary packaging amount'})+
-    ef('Cash savings','cashSavings',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Deposit fund / cash savings'})+
-    ef('Emergency fund','emergency',{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Emergency fund balance'})+
-    `<div class="ir"><span class="ir-l">Est. mortgage payoff</span><span class="ir-v gr">${S.mortPayoffDate||'See Payoff tab'}</span></div>`+
+    ef('Cash savings','cashSavings',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Deposit fund / savings'})+
+    ef('Emergency fund','emergency',{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Emergency fund — always untouched'})+
+    `<div class="ir"><span class="ir-l">Total property equity</span><span class="ir-v gr">${fmtK(te)}</span></div>`+
+    `<div class="ir"><span class="ir-l">Total property debt</span><span class="ir-v rd">${fmtK(totalDebt())}</span></div>`+
+    `<div class="ir"><span class="ir-l">Monthly cash surplus</span><span class="ir-v ${cf.surplus>=0?'gr':'rd'}">${fmt(cf.surplus)}</span></div>`+
     `<div class="ir"><span class="ir-l">Data</span><span class="ir-v gr" style="font-size:11px">✓ Saved on device</span></div>`;
-
   document.getElementById('ov-ms').innerHTML=[
     {age:S.age+6,y:6,lbl:'Financial security',c:'var(--gr)'},
     {age:S.age+10,y:10,lbl:'Financially independent',c:'var(--bl)'},
     {age:S.age+16,y:16,lbl:'Semi-retirement viable',c:'var(--pu)'},
     {age:S.age+21,y:21,lbl:'Full retirement viable',c:'var(--am)'},
     {age:S.age+30,y:30,lbl:'Super unlocks',c:'var(--rd)'},
-  ].map(m=>{
-    const v=st[m.y].total+sup[m.y].b+mort[m.y].eq+pp[m.y].eq;
-    return `<div class="ms-row"><div class="ms-l"><div class="ms-dot" style="background:${m.c}"></div><div><div class="ms-age" style="color:${m.c}">Age ${m.age}</div><div class="ms-desc">${m.lbl}</div></div></div><div class="ms-val" style="color:${m.c}">${fmtK(v)}</div></div>`;
-  }).join('');
+  ].map(m=>{const v=(S.stocksEnabled?st[m.y].total:0)+sup[m.y].b+(S.propertiesEnabled?pp[m.y].equity:0);return `<div class="ms-row"><div class="ms-l"><div class="ms-dot" style="background:${m.c}"></div><div><div class="ms-age" style="color:${m.c}">Age ${m.age}</div><div class="ms-desc">${m.lbl}</div></div></div><div class="ms-val" style="color:${m.c}">${fmtK(v)}</div></div>`;}).join('');
+  renderSectionToggles();
 }
 
-// ═══════════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════════
-const PANELS=['home','stocks','mortgage','payoff','super','ppor','history','proj'];
-const RENDERS={home:renderHome,stocks:renderStocks,mortgage:renderMortgage,payoff:renderPayoff,super:renderSuper,ppor:renderPPOR,history:renderHistory,proj:renderProj};
+// NAME MODAL
+function openNameModal(){document.getElementById('name-inp').value=S.appName||'';document.getElementById('name-modal').classList.add('open');}
+function closeNameModal(){document.getElementById('name-modal').classList.remove('open');}
+function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';closeNameModal();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
 
+// NAV
+const PANELS=['home','stocks','properties','payoff','cashflow','super','history','proj'];
+const RENDERS={home:renderHome,stocks:renderStocks,properties:renderProperties,payoff:renderPayoff,cashflow:renderCashFlow,super:renderSuper,history:renderHistory,proj:renderProj};
 function show(name,el){
+  if(name==='stocks'&&!S.stocksEnabled){show('home',document.querySelector('.nb'));return;}
+  if(name==='properties'&&!S.propertiesEnabled){show('home',document.querySelector('.nb'));return;}
   PANELS.forEach(p=>document.getElementById('p-'+p).classList.toggle('active',p===name));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -1567,36 +1209,20 @@ function show(name,el){
 function refresh(){
   const active=PANELS.find(p=>document.getElementById('p-'+p).classList.contains('active'))||'home';
   RENDERS[active]();
-  // Always update header
-  const st=projStocks(0)[0],sup=projSuper(0)[0],mort=projMort(0);
-  document.getElementById('hdr-total').textContent=fmtK(st.total+sup.b+mort[0].eq+S.cashSavings+S.emergency);
+  const st=projStocks(0)[0];const sup=projSuper(0)[0];const pp=projAllProps(0)[0];
+  const tot=(S.stocksEnabled?st.total:0)+(S.propertiesEnabled?totalEquity():0)+sup.b+S.cashSavings+S.emergency;
+  document.getElementById('hdr-total').textContent=fmtK(tot);
 }
 
-// ═══════════════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════════
-// Set header date
 (()=>{
-  const d=new Date();
-  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('hdr-date').textContent=
-    days[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
+  const d=new Date();const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('hdr-date').textContent=days[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
 })();
-
-// Set period toggle
-if(S.poPeriod==='monthly'){
-  document.getElementById('pt-fn').classList.remove('active');
-  document.getElementById('pt-mo').classList.add('active');
-  poPeriod='monthly';
-}
-
-// Add default salaryPackaging to DEFAULTS if missing
-if(!S.salaryPackaging) S.salaryPackaging=21000;
-if(!S.mLoanAmount) S.mLoanAmount=205000;
-
-renderColorPicker();
-renderHome();
+if(S.poPeriod==='monthly'){document.getElementById('pt-fn').classList.remove('active');document.getElementById('pt-mo').classList.add('active');poPeriod='monthly';}
+if(!S.poActivePropId&&S.properties.length)S.poActivePropId=S.properties[0].id;
+if(!S.cf)S.cf={grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000};
+updateNav();renderColorPicker();renderHome();
 </script>
 </body>
 </html>
