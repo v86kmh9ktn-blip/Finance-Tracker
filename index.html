@@ -593,18 +593,23 @@ function poSimulate(prop,extraLump,period){
   const now=new Date();
   function rateAt(ts){let r=prop.rate;if(prop.rateHistory&&prop.rateHistory.length){const sorted=[...prop.rateHistory].sort((a,b)=>a.ts-b.ts);for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}}return r;}
   const minPer=propMin(prop,period);
-  const extraPer=period==='fortnightly'?prop.extraFort:prop.extraFort*26/12;
+  const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
   function run(extra,lump){
     let b=prop.loan-lump;
     if(b<=0)return{months:0,interest:0,payoffDate:new Date(),byYear:[{y:0,b:0}]};
     let periods=0;let interest=0;let ts=now.getTime();
+    // minimum only: no offset benefit (true worst case)
+    // with extra: offset grows each period from contributions
+    let currentOffset=extra>0?prop.offset:0;
     const byYear=[{y:0,b:Math.round(b)}];let prevY=0;
     const maxP=prop.term*ppy*2;
     while(b>0.01&&periods<maxP){
       const r=rateAt(ts)/100/ppy;
-      const eff=Math.max(0,b-prop.offset);
+      if(extra>0)currentOffset=Math.min(currentOffset+extra,b);
+      const eff=Math.max(0,b-currentOffset);
       const intChg=eff*r;
-      const prin=(minPer+extra)-intChg;
+      // extra goes to offset not principal — only minimum paid to bank
+      const prin=minPer-intChg;
       if(prin<=0)return{months:Math.round(prop.term*12),interest:Math.round(interest),payoffDate:new Date(now.getTime()+prop.term*365.25*24*3600*1000),byYear};
       interest+=intChg;b=Math.max(0,b-prin);periods++;ts+=msPer;
       const yr=Math.floor(periods/ppy);
@@ -614,6 +619,7 @@ function poSimulate(prop,extraLump,period){
   }
   return{base:run(0,0),current:run(extraPer,0),withLump:extraLump>0?run(extraPer,extraLump):null,minPer,extraPer};
 }
+
 
 // CASH FLOW
 function calcCF(){
@@ -1000,7 +1006,11 @@ function renderPayoff(){
     </div>`).join('');
   const prop=S.properties.find(p=>p.id===S.poActivePropId)||S.properties[0];
   if(!prop)return;
-  const minPer=propMin(prop,poPeriod);const extraPer=poPeriod==='fortnightly'?prop.extraFort:prop.extraFort*26/12;
+  const minPer=propMin(prop,poPeriod);
+// Use payoff-tab override if set, otherwise use property default
+if(S.poSimExtra===undefined||S.poSimExtra===null)S.poSimExtra=prop.extraFort;
+const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
+
   const annualTotal=(minPer+extraPer)*(poPeriod==='fortnightly'?26:12);
   document.getElementById('po-setup').innerHTML=`
     <div class="ir"><span class="ir-l">Loan balance</span><span class="ir-v">${fmt(prop.loan)}</span></div>
@@ -1011,7 +1021,12 @@ function renderPayoff(){
     <div class="ir"><span class="ir-l">Extra (${poPeriod})</span><span class="ir-v">${fmt(extraPer)}</span></div>
     <div class="ir"><span class="ir-l">Annual total</span><span class="ir-v gr">${fmt(annualTotal)}</span></div>`;
   const lrid='ef_poLump';EFR[lrid]={key:'poExtraLump',label:'One-off lump sum',cfg:{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Extra lump sum paid today'},obj:null};
-  document.getElementById('po-extra').innerHTML=`<div class="ef" onclick="openById('${lrid}')"><span class="ef-lbl">One-off lump sum into mortgage</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${fmt(S.poExtraLump)}</span><span class="ef-pen">✎</span></span></div>`;
+const erid='ef_poSimExtra';EFR[erid]={key:'poSimExtra',label:'Extra contribution (fortnightly)',cfg:{pre:'$',suf:'/fn',dec:0,min:0,max:10000,hint:'Simulated fortnightly offset contribution — does not change your property settings'},obj:null};
+document.getElementById('po-extra').innerHTML=
+  `<div class="ef" onclick="openById('${erid}')"><span class="ef-lbl">Extra offset contribution (fortnightly)</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${fmt(S.poSimExtra??prop.extraFort)}</span><span class="ef-pen">✎</span></span></div>`+
+  `<div class="ef" onclick="openById('${lrid}')"><span class="ef-lbl">One-off lump sum</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${fmt(S.poExtraLump)}</span><span class="ef-pen">✎</span></span></div>`+
+  `<div style="font-size:10px;color:var(--di);font-family:'DM Mono',monospace;padding:6px 0">Changing extra here is for simulation only — update in Properties to make it permanent</div>`;
+
   const res=poSimulate(prop,S.poExtraLump,poPeriod);
   const sm=res.base.months-res.current.months;const si=res.base.interest-res.current.interest;
   document.getElementById('po-result').innerHTML=`
