@@ -1502,7 +1502,6 @@ if(S.poPeriod==='monthly'){document.getElementById('pt-fn').classList.remove('ac
 if(!S.poActivePropId&&S.properties.length)S.poActivePropId=S.properties[0].id;
 if(!S.cf)S.cf={grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000};
 updateNav();renderColorPicker();renderHome();
-</script>
   // GEO BREAKDOWN
 let geoRegions=[];
 function renderGeo(){
@@ -1594,5 +1593,6 @@ function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.ge
   </div>
     <div id="undo-btn" onclick="undo()" style="display:none;position:fixed;bottom:calc(var(--nh) + var(--safe) + 12px);left:12px;background:var(--sf);border:0.5px solid var(--bd2);border-radius:20px;padding:8px 14px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;color:var(--tx);cursor:pointer;z-index:190;align-items:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,0.4)">↩ Undo</div>
 </div>
+</script>
 </body>
 </html>
