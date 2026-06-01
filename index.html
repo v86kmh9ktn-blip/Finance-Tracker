@@ -250,13 +250,12 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       <div class="card"><div class="sec">Holdings <span class="sec-hint">— tap tiles to edit</span></div><div id="holdings-list"></div><div class="add-btn" onclick="openAddStock()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add holding</div></div>
       <div class="card">
         <div class="sec">Portfolio rebalancing</div>
-     <div class="card" id="geo-card" style="display:none">
+        <div class="card" id="geo-card" style="display:none">
   <div class="sec">Geographic breakdown <span class="sec-hint">— manual entry</span></div>
   <div id="geo-content"></div>
   <div class="add-btn" onclick="openGeoModal()" style="margin-top:4px">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Edit geographic data
   </div>
-</div>
           <div class="card">
   <div class="sec">Goals & targets</div>
   <div id="stock-goals"></div>
@@ -920,7 +919,9 @@ function renderHoldings(){
       <div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:7px">10yr → ${fmtK(proj1(h,10))}</div>
     </div>`;
   }).join('');
-  function cycleTag(id){
+}
+
+function cycleTag(id){
   const h=S.holdings.find(x=>x.id===id);if(!h)return;
   const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');
   h.tag=keys[(cur+1)%keys.length];
@@ -1006,7 +1007,13 @@ function renderLumps(){
   el.innerHTML=[...S.lumpSums].sort((a,b)=>tsFromDMY(b.date)-tsFromDMY(a.date)).map(l=>`
     <div class="lump-row"><div><div style="font-size:12px;font-weight:600;color:var(--am)">${l.ticker} — ${fmt(l.amount)}</div><div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px">${l.date}</div></div>
     <span style="color:var(--di);cursor:pointer;padding:2px 7px;font-size:13px" onclick="delLump(${l.id})">✕</span></div>`).join('');
-  function renderStockGoals(){
+}
+function openAddLump(){document.getElementById('lump-ticker').innerHTML=S.holdings.map(h=>`<option value="${h.ticker}">${h.ticker}</option>`).join('');document.getElementById('lump-amount').value='';document.getElementById('lump-date').value=today();document.getElementById('lump-modal').classList.add('open');}
+function closeLumpModal(){document.getElementById('lump-modal').classList.remove('open');}
+function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();saveState();renderStocks();}
+function delLump(id){S.lumpSums=S.lumpSums.filter(l=>l.id!==id);saveState();renderStocks();}
+
+function renderStockGoals(){
   const g=S.goals.stocks;const data=projStocks(30);
   const targetYr=parseDMY(g.targetDate);const now=new Date();
   const yrsToTarget=targetYr?Math.max(0,(targetYr-now)/(365.25*24*3600*1000)):10;
@@ -1097,91 +1104,7 @@ function renderPropGoals(prop){
     <textarea onchange="if(!S.goals.property)S.goals.property={};if(!S.goals.property[${prop.id}])S.goals.property[${prop.id}]={};S.goals.property[${prop.id}].notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:'DM Mono',monospace;outline:none;resize:none;min-height:70px;line-height:1.6;margin-top:8px" placeholder="e.g. Refinance when LVR hits 60%, target positive cash flow by 2028...">${g.notes||''}</textarea>
   </div>`;
 }
-}
-function openAddLump(){document.getElementById('lump-ticker').innerHTML=S.holdings.map(h=>`<option value="${h.ticker}">${h.ticker}</option>`).join('');document.getElementById('lump-amount').value='';document.getElementById('lump-date').value=today();document.getElementById('lump-modal').classList.add('open');}
-function closeLumpModal(){document.getElementById('lump-modal').classList.remove('open');}
-function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();saveState();renderStocks();}
-function delLump(id){S.lumpSums=S.lumpSums.filter(l=>l.id!==id);saveState();renderStocks();}
-  // GEO BREAKDOWN
-let geoRegions=[];
-function renderGeo(){
-  const card=document.getElementById('geo-card');
-  if(!S.geoEnabled){card.style.display='none';return;}
-  card.style.display='block';
-  const el=document.getElementById('geo-content');
-  if(!Object.keys(S.geoHoldings).length){
-    el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No geographic data yet — tap Edit below to add</div>';
-    return;
-  }
-  // Build combined weighted breakdown across all holdings
-  const totalPortfolio=S.holdings.reduce((a,h)=>a+h.val,0);
-  const combined={};
-  S.holdings.forEach(h=>{
-    const regions=S.geoHoldings[h.ticker];
-    if(!regions)return;
-    const weight=totalPortfolio>0?h.val/totalPortfolio:0;
-    regions.forEach(r=>{combined[r.region]=(combined[r.region]||0)+r.pct*weight;});
-  });
-  const regions=Object.entries(combined).sort((a,b)=>b[1]-a[1]);
-  const colors=['#378ADD','#1D9E75','#EF9F27','#7f77dd','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
 
-  // Pie chart using canvas
-  el.innerHTML=`
-    <div style="position:relative;width:160px;height:160px;margin:10px auto"><canvas id="geoChart" width="160" height="160"></canvas></div>
-    <div style="margin-top:10px">${regions.map(([region,pct],i)=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--bd)">
-        <div style="display:flex;align-items:center;gap:7px"><div style="width:9px;height:9px;border-radius:2px;background:${colors[i%colors.length]};flex-shrink:0"></div><span style="font-size:11px;font-family:'DM Mono',monospace">${region}</span></div>
-        <span style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace">${pct.toFixed(1)}%</span>
-      </div>`).join('')}
-    </div>
-    <div style="font-size:10px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px">Weighted across portfolio by holding value</div>`;
-
-  // Draw pie
-  setTimeout(()=>{
-    const canvas=document.getElementById('geoChart');if(!canvas)return;
-    const ctx=canvas.getContext('2d');const cx=80,cy=80,r=75;
-    let angle=-Math.PI/2;const total=regions.reduce((a,[,p])=>a+p,0);
-    regions.forEach(([,pct],i)=>{
-      const slice=(pct/total)*2*Math.PI;
-      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);
-      ctx.fillStyle=colors[i%colors.length];ctx.fill();
-      angle+=slice;
-    });
-    // Center hole for donut effect
-    ctx.beginPath();ctx.arc(cx,cy,40,0,2*Math.PI);ctx.fillStyle='#13131a';ctx.fill();
-  },50);
-
-  // Per-holding breakdown tabs
-  S.holdings.filter(h=>S.geoHoldings[h.ticker]).forEach(h=>{
-    const regions=S.geoHoldings[h.ticker];
-    el.innerHTML+=`<div style="margin-top:12px"><div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${h.ticker} breakdown</div>${regions.map(r=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--bd)"><span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--mu)">${r.region}</span><span style="font-size:11px;font-weight:600;font-family:'DM Mono',monospace">${r.pct.toFixed(1)}%</span></div>`).join('')}</div>`;
-  });
-}
-
-function openGeoModal(){
-  document.getElementById('geo-ticker').innerHTML=S.holdings.map(h=>`<option value="${h.ticker}">${h.ticker}</option>`).join('');
-  document.getElementById('geo-ticker').onchange=loadGeoTicker;
-  loadGeoTicker();
-  document.getElementById('geo-modal').classList.add('open');
-}
-function loadGeoTicker(){
-  const ticker=document.getElementById('geo-ticker').value;
-  geoRegions=JSON.parse(JSON.stringify(S.geoHoldings[ticker]||[]));
-  renderGeoRegions();
-}
-function closeGeoModal(){document.getElementById('geo-modal').classList.remove('open');}
-function renderGeoRegions(){
-  document.getElementById('geo-regions').innerHTML=geoRegions.map((r,i)=>`
-    <div style="display:flex;gap:7px;margin-bottom:7px;align-items:center">
-      <input placeholder="Region (e.g. USA)" value="${r.region}" onchange="geoRegions[${i}].region=this.value" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">
-      <input type="number" placeholder="%" value="${r.pct}" onchange="geoRegions[${i}].pct=parseFloat(this.value)||0;updateGeoTotal()" style="width:70px;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">
-      <span onclick="geoRegions.splice(${i},1);renderGeoRegions()" style="color:var(--rd);cursor:pointer;font-size:18px;padding:4px">✕</span>
-    </div>`).join('');
-  updateGeoTotal();
-}
-function addGeoRegion(){geoRegions.push({region:'',pct:0});renderGeoRegions();}
-function updateGeoTotal(){const t=geoRegions.reduce((a,r)=>a+r.pct,0);const el=document.getElementById('geo-total');el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}
-function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));saveState();closeGeoModal();renderGeo();}
 </script>
 <script>
 // PROPERTIES
@@ -1268,6 +1191,7 @@ function renderPropCard(prop){
       <div onclick="togglePropEdit(${prop.id})" style="background:var(--gr);color:#fff;border-radius:var(--rs);padding:11px;text-align:center;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;cursor:pointer;margin-top:12px">Done — close edit ✓</div>
     </div>
   </div>
+</div>
   </div>`;
 }
 </script>
@@ -1294,6 +1218,14 @@ function renderStocks(){
   document.getElementById('st-leg').innerHTML=S.holdings.map(h=>`<div class="li"><div class="ld" style="background:${h.color}"></div>${h.ticker}</div>`).join('')+`<div class="li"><div class="ld" style="background:var(--gr)"></div>Total</div>`;
   let stYr=10;
   renderStockGoals();
+  function renderStockProj(){
+    const d=projStocks(stYr);const step=stYr===10?2:5;const yrs=[];for(let i=0;i<=stYr;i+=step)yrs.push(i);
+    const tickers=S.holdings.map(h=>h.ticker);
+    document.getElementById('st-proj').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><tr><th>Yr</th><th>Age</th>${tickers.map(t=>`<th>${t}</th>`).join('')}<th>Total</th></tr>${yrs.map(y=>`<tr><td>${y===0?'Now':'+'+y}</td><td>${S.age+y}</td>${tickers.map(t=>`<td>${fmtK(d[y][t]||0)}</td>`).join('')}<td class="hl">${fmtK(real(d[y].total,y))}</td></tr>`).join('')}</table></div>`;
+  }
+  document.querySelectorAll('#p-stocks .pill').forEach(p=>{p.onclick=function(){document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));this.classList.add('active');stYr=parseInt(this.textContent);renderStockProj();};});
+  renderStockProj();
+  document.getElementById('st-settings').innerHTML=ef('Inflation rate','inflationRate',{pre:'',suf:'%',dec:1,min:0,max:10,hint:'Used when inflation adjustment is on'})+mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj');
   // Tag breakdown
 const tagSummary=Object.keys(TAGS).map(t=>{
   const holdings=S.holdings.filter(h=>(h.tag||'core')===t);
@@ -1304,15 +1236,8 @@ const tagSummary=Object.keys(TAGS).map(t=>{
   return`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--bd)"><div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:50%;background:${TAGS[t].color}"></div><span style="font-size:11px;font-family:'DM Mono',monospace">${TAGS[t].label}</span></div><span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:600">${pct}% · ${fmtK(val)}</span></div>`;
 }).join('');
 document.getElementById('st-met').innerHTML+=`<div style="grid-column:1/-1;background:var(--sf2);border-radius:var(--rs);padding:10px;border:0.5px solid var(--bd);margin-top:2px">${tagSummary}</div>`;
-  function renderStockProj(){
-    const d=projStocks(stYr);const step=stYr===10?2:5;const yrs=[];for(let i=0;i<=stYr;i+=step)yrs.push(i);
-    const tickers=S.holdings.map(h=>h.ticker);
-    document.getElementById('st-proj').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><tr><th>Yr</th><th>Age</th>${tickers.map(t=>`<th>${t}</th>`).join('')}<th>Total</th></tr>${yrs.map(y=>`<tr><td>${y===0?'Now':'+'+y}</td><td>${S.age+y}</td>${tickers.map(t=>`<td>${fmtK(d[y][t]||0)}</td>`).join('')}<td class="hl">${fmtK(real(d[y].total,y))}</td></tr>`).join('')}</table></div>`;
-  }
-  document.querySelectorAll('#p-stocks .pill').forEach(p=>{p.onclick=function(){document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));this.classList.add('active');stYr=parseInt(this.textContent);renderStockProj();};});
-  renderStockProj();
-  document.getElementById('st-settings').innerHTML=ef('Inflation rate','inflationRate',{pre:'',suf:'%',dec:1,min:0,max:10,hint:'Used when inflation adjustment is on'})+mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj');
- 
+}
+
 function renderProperties(){
   if(!S.propertiesEnabled){
     document.getElementById('props-dis').innerHTML='<div class="dis-section"><div class="dis-icon">🏠</div><div class="dis-lbl">Properties disabled</div><div class="dis-desc">Enable in Home → Section toggles</div></div>';
@@ -1356,7 +1281,6 @@ const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
     <div class="ir"><span class="ir-l">Offset</span><span class="ir-v gr">${fmt(prop.offset)}</span></div>
     <div class="ir"><span class="ir-l">Effective balance</span><span class="ir-v">${fmt(propEff(prop))}</span></div>
     <div class="ef" onclick="openText('startDate','Loan start date (DD/MM/YY)','01/07/23',${prop.id})"><span class="ef-lbl">Loan start date</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${prop.startDate||'—'}</span><span class="ef-pen">✎</span></span></div>
-    <div class="ir"><span class="ir-l">Rate</span><span class="ir-v">${prop.rate.toFixed(2)}%</span></div>
     <div class="ir"><span class="ir-l">Min (${poPeriod})</span><span class="ir-v gr">${fmt(minPer)}</span></div>
     <div class="ir"><span class="ir-l">Extra (${poPeriod})</span><span class="ir-v">${fmt(extraPer)}</span></div>
     <div class="ir"><span class="ir-l">Annual total</span><span class="ir-v gr">${fmt(annualTotal)}</span></div>`;
@@ -1582,7 +1506,88 @@ if(S.poPeriod==='monthly'){document.getElementById('pt-fn').classList.remove('ac
 if(!S.poActivePropId&&S.properties.length)S.poActivePropId=S.properties[0].id;
 if(!S.cf)S.cf={grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000};
 updateNav();renderColorPicker();renderHome();
- <div class="sheet-bg" id="geo-modal" onclick="if(event.target===this)closeGeoModal()">
+</script>
+  // GEO BREAKDOWN
+let geoRegions=[];
+function renderGeo(){
+  const card=document.getElementById('geo-card');
+  if(!S.geoEnabled){card.style.display='none';return;}
+  card.style.display='block';
+  const el=document.getElementById('geo-content');
+  if(!Object.keys(S.geoHoldings).length){
+    el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No geographic data yet — tap Edit below to add</div>';
+    return;
+  }
+  // Build combined weighted breakdown across all holdings
+  const totalPortfolio=S.holdings.reduce((a,h)=>a+h.val,0);
+  const combined={};
+  S.holdings.forEach(h=>{
+    const regions=S.geoHoldings[h.ticker];
+    if(!regions)return;
+    const weight=totalPortfolio>0?h.val/totalPortfolio:0;
+    regions.forEach(r=>{combined[r.region]=(combined[r.region]||0)+r.pct*weight;});
+  });
+  const regions=Object.entries(combined).sort((a,b)=>b[1]-a[1]);
+  const colors=['#378ADD','#1D9E75','#EF9F27','#7f77dd','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
+
+  // Pie chart using canvas
+  el.innerHTML=`
+    <div style="position:relative;width:160px;height:160px;margin:10px auto"><canvas id="geoChart" width="160" height="160"></canvas></div>
+    <div style="margin-top:10px">${regions.map(([region,pct],i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--bd)">
+        <div style="display:flex;align-items:center;gap:7px"><div style="width:9px;height:9px;border-radius:2px;background:${colors[i%colors.length]};flex-shrink:0"></div><span style="font-size:11px;font-family:'DM Mono',monospace">${region}</span></div>
+        <span style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace">${pct.toFixed(1)}%</span>
+      </div>`).join('')}
+    </div>
+    <div style="font-size:10px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px">Weighted across portfolio by holding value</div>`;
+
+  // Draw pie
+  setTimeout(()=>{
+    const canvas=document.getElementById('geoChart');if(!canvas)return;
+    const ctx=canvas.getContext('2d');const cx=80,cy=80,r=75;
+    let angle=-Math.PI/2;const total=regions.reduce((a,[,p])=>a+p,0);
+    regions.forEach(([,pct],i)=>{
+      const slice=(pct/total)*2*Math.PI;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);
+      ctx.fillStyle=colors[i%colors.length];ctx.fill();
+      angle+=slice;
+    });
+    // Center hole for donut effect
+    ctx.beginPath();ctx.arc(cx,cy,40,0,2*Math.PI);ctx.fillStyle='#13131a';ctx.fill();
+  },50);
+
+  // Per-holding breakdown tabs
+  S.holdings.filter(h=>S.geoHoldings[h.ticker]).forEach(h=>{
+    const regions=S.geoHoldings[h.ticker];
+    el.innerHTML+=`<div style="margin-top:12px"><div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${h.ticker} breakdown</div>${regions.map(r=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--bd)"><span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--mu)">${r.region}</span><span style="font-size:11px;font-weight:600;font-family:'DM Mono',monospace">${r.pct.toFixed(1)}%</span></div>`).join('')}</div>`;
+  });
+}
+
+function openGeoModal(){
+  document.getElementById('geo-ticker').innerHTML=S.holdings.map(h=>`<option value="${h.ticker}">${h.ticker}</option>`).join('');
+  document.getElementById('geo-ticker').onchange=loadGeoTicker;
+  loadGeoTicker();
+  document.getElementById('geo-modal').classList.add('open');
+}
+function loadGeoTicker(){
+  const ticker=document.getElementById('geo-ticker').value;
+  geoRegions=JSON.parse(JSON.stringify(S.geoHoldings[ticker]||[]));
+  renderGeoRegions();
+}
+function closeGeoModal(){document.getElementById('geo-modal').classList.remove('open');}
+function renderGeoRegions(){
+  document.getElementById('geo-regions').innerHTML=geoRegions.map((r,i)=>`
+    <div style="display:flex;gap:7px;margin-bottom:7px;align-items:center">
+      <input placeholder="Region (e.g. USA)" value="${r.region}" onchange="geoRegions[${i}].region=this.value" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">
+      <input type="number" placeholder="%" value="${r.pct}" onchange="geoRegions[${i}].pct=parseFloat(this.value)||0;updateGeoTotal()" style="width:70px;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">
+      <span onclick="geoRegions.splice(${i},1);renderGeoRegions()" style="color:var(--rd);cursor:pointer;font-size:18px;padding:4px">✕</span>
+    </div>`).join('');
+  updateGeoTotal();
+}
+function addGeoRegion(){geoRegions.push({region:'',pct:0});renderGeoRegions();}
+function updateGeoTotal(){const t=geoRegions.reduce((a,r)=>a+r.pct,0);const el=document.getElementById('geo-total');el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}
+function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));saveState();closeGeoModal();renderGeo();}
+  <div class="sheet-bg" id="geo-modal" onclick="if(event.target===this)closeGeoModal()">
   <div class="sheet">
     <div class="sheet-title">Geographic breakdown <div class="mx" onclick="closeGeoModal()">×</div></div>
     <div class="field"><label>Holding</label><select id="geo-ticker"></select></div>
@@ -1591,9 +1596,7 @@ updateNav();renderColorPicker();renderHome();
     <div id="geo-total" style="font-size:12px;font-family:'DM Mono',monospace;margin-top:8px;text-align:right"></div>
     <div class="ma"><button class="bss" onclick="closeGeoModal()">Cancel</button><button class="bp" onclick="saveGeo()">Save</button></div>
   </div>
-</div>
     <div id="undo-btn" onclick="undo()" style="display:none;position:fixed;bottom:calc(var(--nh) + var(--safe) + 12px);left:12px;background:var(--sf);border:0.5px solid var(--bd2);border-radius:20px;padding:8px 14px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;color:var(--tx);cursor:pointer;z-index:190;align-items:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,0.4)">↩ Undo</div>
 </div>
-</script>
 </body>
 </html>
