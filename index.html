@@ -228,15 +228,10 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="card"><div class="sec">Snapshot <span class="sec-hint">— tap green values to edit</span></div><div id="ov-facts"></div></div>
     <div class="card"><div class="sec">Assets</div><div class="g2" id="ov-met"></div></div>
     <div class="card"><div class="sec">Milestones</div><div id="ov-ms"></div></div>
-    <div class="card"><div class="sec">Overall goals</div><div id="nw-goals"></div></div>
     <div class="card"><div class="sec">Section toggles</div><div id="section-toggles"></div></div>
     <div class="card"><div class="sec">App settings</div>
       <div class="ef" onclick="openNameModal()"><span class="ef-lbl">Dashboard name</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val" id="settings-name-val">—</span><span class="ef-pen">✎</span></span></div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:7px">
-        <div onclick="saveAsDefault()" style="background:var(--gr-bg);border:0.5px solid var(--gr-bd);color:var(--gr);border-radius:var(--rs);padding:12px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;font-family:'DM Mono',monospace">💾 Save current values as my default</div>
-        <div onclick="restoreDefault()" style="background:var(--bl-bg);border:0.5px solid var(--bl-bd);color:var(--bl);border-radius:var(--rs);padding:12px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;font-family:'DM Mono',monospace">↩ Restore to my saved default</div>
-        <div class="reset-btn" onclick="confirmReset()">⚠ Reset to zero — blank canvas</div>
-      </div>
+      <div style="margin-top:10px"><div class="reset-btn" onclick="confirmReset()">⚠ Reset all data to defaults</div></div>
     </div>
   </div>
 
@@ -250,22 +245,11 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
         <div id="rebal-section"></div>
         <div class="ef" onclick="openRebalModal()" style="margin-top:6px"><span class="ef-lbl">Set target allocation %</span><span class="ef-pen">✎</span></div>
       </div>
-      <div class="card">
-        <div class="sec">Portfolio rebalancing</div>
-        <div id="rebal-section"></div>
-        <div class="ef" onclick="openRebalModal()" style="margin-top:6px"><span class="ef-lbl">Set target allocation %</span><span class="ef-pen">✎</span></div>
-      </div>
       <div class="card"><div class="sec">Monthly contribution plans</div><div id="contrib-plans"></div><div class="add-btn" onclick="openAddPlan()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add plan</div></div>
       <div class="card"><div class="sec">Lump sum / excess contributions</div><div id="lump-list"></div><div class="add-btn" onclick="openAddLump()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add lump sum</div></div>
       <div class="card"><div class="sec">Portfolio growth</div><div class="g2" id="st-met"></div><div class="ch"><canvas id="stChart"></canvas></div><div class="leg" id="st-leg"></div></div>
       <div class="card"><div class="sec">Projections</div><div class="pills"><div class="pill active" onclick="stTab(10,this)">10 yr</div><div class="pill" onclick="stTab(20,this)">20 yr</div><div class="pill" onclick="stTab(30,this)">30 yr</div></div><div id="st-proj"></div></div>
       <div class="card"><div class="sec">Settings</div><div id="st-settings"></div></div>
-      <div class="card" id="geo-card" style="display:none">
-        <div class="sec">Geographic breakdown <span class="sec-hint">— manual entry</span></div>
-        <div id="geo-content"></div>
-        <div class="add-btn" onclick="openGeoModal()" style="margin-top:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Edit geographic data</div>
-      </div>
-      <div class="card"><div class="sec">Goals &amp; targets</div><div id="stock-goals"></div></div>
     </div>
   </div>
 
@@ -300,7 +284,6 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   <div class="panel" id="p-super">
     <div class="card"><div class="sec">ART · 90% international unhedged</div><div class="g2" id="sup-met"></div><div class="ch"><canvas id="supChart"></canvas></div></div>
     <div class="card"><div class="sec">Milestones</div><div id="sup-ms"></div></div>
-    <div class="card"><div class="sec">Goals &amp; targets</div><div id="super-goals"></div></div>
     <div class="card"><div class="sec">Options</div><div id="sup-togs"></div></div>
     <div class="card"><div class="sec">Adjust <span class="sec-hint">— tap to edit</span></div><div id="sup-ctrl"></div></div>
   </div>
@@ -448,29 +431,6 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   </div>
 </div>
 
-<!-- REBAL MODAL -->
-<div class="sheet-bg" id="rebal-modal" onclick="if(event.target===this)closeRebalModal()">
-  <div class="sheet">
-    <div class="sheet-title">Target allocation <div class="mx" onclick="closeRebalModal()">×</div></div>
-    <div style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:12px;line-height:1.6">Set your target % for each holding. Total should equal 100%.</div>
-    <div id="rebal-inputs"></div>
-    <div id="rebal-total" style="font-size:12px;font-family:'DM Mono',monospace;margin-top:8px;text-align:right"></div>
-    <div class="ma"><button class="bss" onclick="closeRebalModal()">Cancel</button><button class="bp" onclick="saveRebal()">Save</button></div>
-  </div>
-</div>
-<!-- GEO MODAL -->
-<div class="sheet-bg" id="geo-modal" onclick="if(event.target===this)closeGeoModal()">
-  <div class="sheet">
-    <div class="sheet-title">Geographic breakdown <div class="mx" onclick="closeGeoModal()">×</div></div>
-    <div class="field"><label>Holding</label><select id="geo-ticker"></select></div>
-    <div id="geo-regions" style="margin-bottom:10px"></div>
-    <div class="add-btn" onclick="addGeoRegion()">+ Add region</div>
-    <div id="geo-total" style="font-size:12px;font-family:'DM Mono',monospace;margin-top:8px;text-align:right"></div>
-    <div class="ma"><button class="bss" onclick="closeGeoModal()">Cancel</button><button class="bp" onclick="saveGeo()">Save</button></div>
-  </div>
-</div>
-<!-- UNDO BUTTON -->
-<div id="undo-btn" onclick="undo()" style="display:none;position:fixed;bottom:calc(var(--nh) + var(--safe) + 12px);left:12px;background:var(--sf);border:0.5px solid var(--bd2);border-radius:20px;padding:8px 14px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;color:var(--tx);cursor:pointer;z-index:190;align-items:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,0.4)">↩ Undo</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const STORE='ned_fin_v15';
@@ -495,7 +455,8 @@ const DEFAULTS={
     rateHistory:[{rate:6.13,date:'01/06/26',ts:new Date(2026,5,1).getTime()}]
   }],
   nextPropId:2,
-  poPeriod:'fortnightly',poActivePropId:1,poExtraLump:0,
+  poPeriod:'fortnightly',poActivePropId:1,poExtraLump:0,poSimExtra:693,
+
   sBalance:172000,sExtra:550,sEmployer:1400,sReturn:7.5,
   sSalaryRise:false,sSalaryRisePct:3,
   cf:{grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000},
@@ -511,51 +472,9 @@ function loadState(){
 }
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
 function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
-const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
-function confirmReset(){if(confirm('Reset to zero? All data wiped to blank canvas. Cannot be undone.')){localStorage.removeItem(STORE);localStorage.removeItem(STORE+'_userdefault');Object.assign(S,JSON.parse(JSON.stringify(ZERO_STATE)));saveState();refresh();}}
-function saveAsDefault(){if(confirm('Save current values as your personal default?')){localStorage.setItem(STORE+'_userdefault',JSON.stringify(S));alert('✓ Saved as your personal default');}}
-function restoreDefault(){const saved=localStorage.getItem(STORE+'_userdefault');if(!saved){alert('No personal default saved yet. Set up your values then tap Save as my default.');return;}if(confirm('Restore to your saved personal default?')){Object.assign(S,JSON.parse(saved));saveState();refresh();}}
-
-// Undo stack
-const undoStack=[];
-const MAX_UNDO=20;
-function pushUndo(){try{undoStack.push(JSON.stringify(S));if(undoStack.length>MAX_UNDO)undoStack.shift();updateUndoBtn();}catch(e){}}
-function updateUndoBtn(){const b=document.getElementById('undo-btn');if(b){b.style.display=undoStack.length?'flex':'none';b.textContent='↩ Undo ('+undoStack.length+')';}}
-function undo(){if(!undoStack.length)return;Object.assign(S,JSON.parse(undoStack.pop()));localStorage.setItem(STORE,JSON.stringify(S));updateUndoBtn();refresh();}
+function confirmReset(){if(confirm('Reset ALL data to defaults?')){localStorage.removeItem(STORE);location.reload();}}
 
 const S=loadState();
-
-// Ensure goals exists for users loading old saved data
-if(!S.goals)S.goals={stocks:{targetValue:500000,targetDate:'01/01/36',targetMonthly:2000,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:2000000,targetDrawdown:80000,notes:''},networth:{fireNumber:3000000,debtFreeDate:'01/01/31',notes:''}};
-if(!S.goals.stocks)S.goals.stocks={targetValue:500000,targetDate:'01/01/36',targetMonthly:2000,coreSatelliteSplit:80,notes:''};
-if(!S.goals.super)S.goals.super={targetAtRetirement:2000000,targetDrawdown:80000,notes:''};
-if(!S.goals.networth)S.goals.networth={fireNumber:3000000,debtFreeDate:'01/01/31',notes:''};
-if(!S.goals.property)S.goals.property={};
-if(!S.rebalTargets)S.rebalTargets={};
-if(!S.geoHoldings)S.geoHoldings={};
-if(S.geoEnabled===undefined)S.geoEnabled=false;
-
-// Tags for stock classification
-const TAGS={
-  core:{label:'Core',color:'#1D9E75'},
-  satellite:{label:'Satellite',color:'#378ADD'},
-  defensive:{label:'Defensive',color:'#7f77dd'},
-  growth:{label:'Growth',color:'#EF9F27'},
-  income:{label:'Income',color:'#fb923c'},
-  speculative:{label:'Speculative',color:'#E24B4A'},
-};
-
-// Property edit open state (persists across re-renders)
-const propEditOpen=new Set();
-function togglePropEdit(id){
-  if(propEditOpen.has(id))propEditOpen.delete(id);
-  else propEditOpen.add(id);
-  const el=document.getElementById('prop-edit-'+id);
-  const arrow=document.getElementById('prop-arrow-'+id);
-  if(el)el.style.display=propEditOpen.has(id)?'block':'none';
-  if(arrow)arrow.textContent=propEditOpen.has(id)?'▴':'▾';
-}
-
 const COLORS=['#1D9E75','#378ADD','#7f77dd','#EF9F27','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
 let selColor=COLORS[0];
 
@@ -675,18 +594,23 @@ function poSimulate(prop,extraLump,period){
   const now=new Date();
   function rateAt(ts){let r=prop.rate;if(prop.rateHistory&&prop.rateHistory.length){const sorted=[...prop.rateHistory].sort((a,b)=>a.ts-b.ts);for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}}return r;}
   const minPer=propMin(prop,period);
-  const extraPer=period==='fortnightly'?prop.extraFort:prop.extraFort*26/12;
+  const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
   function run(extra,lump){
     let b=prop.loan-lump;
     if(b<=0)return{months:0,interest:0,payoffDate:new Date(),byYear:[{y:0,b:0}]};
     let periods=0;let interest=0;let ts=now.getTime();
+    // minimum only: no offset benefit (true worst case)
+    // with extra: offset grows each period from contributions
+    let currentOffset=extra>0?prop.offset:0;
     const byYear=[{y:0,b:Math.round(b)}];let prevY=0;
     const maxP=prop.term*ppy*2;
     while(b>0.01&&periods<maxP){
       const r=rateAt(ts)/100/ppy;
-      const eff=Math.max(0,b-prop.offset);
+      if(extra>0)currentOffset=Math.min(currentOffset+extra,b);
+      const eff=Math.max(0,b-currentOffset);
       const intChg=eff*r;
-      const prin=(minPer+extra)-intChg;
+      // extra goes to offset not principal — only minimum paid to bank
+      const prin=minPer-intChg;
       if(prin<=0)return{months:Math.round(prop.term*12),interest:Math.round(interest),payoffDate:new Date(now.getTime()+prop.term*365.25*24*3600*1000),byYear};
       interest+=intChg;b=Math.max(0,b-prin);periods++;ts+=msPer;
       const yr=Math.floor(periods/ppy);
@@ -696,6 +620,7 @@ function poSimulate(prop,extraLump,period){
   }
   return{base:run(0,0),current:run(extraPer,0),withLump:extraLump>0?run(extraPer,extraLump):null,minPer,extraPer};
 }
+
 
 // CASH FLOW
 function calcCF(){
@@ -841,13 +766,7 @@ function renderHoldings(){
     const rrid='ef_hret_'+h.id;EFR[rrid]={key:'ret',label:'Return — '+h.ticker,cfg:{pre:'',suf:'%',dec:1,min:0,max:30,hint:'Expected annual return'},obj:h};
     const mo=monthlyContribs()[h.ticker]||0;
     return `<div class="holding">
-      <div class="hh">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:15px;font-weight:700;color:${h.color}">${h.ticker}</span>
-          <span onclick="cycleTag(${h.id})" style="font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;cursor:pointer;background:${(TAGS[h.tag||'core']||TAGS.core).color}22;color:${(TAGS[h.tag||'core']||TAGS.core).color};border:0.5px solid ${(TAGS[h.tag||'core']||TAGS.core).color}66">${(TAGS[h.tag||'core']||TAGS.core).label}</span>
-        </div>
-        <div class="hdel" onclick="delStock(${h.id})">×</div>
-      </div>
+      <div class="hh"><span style="font-size:15px;font-weight:700;color:${h.color}">${h.ticker}</span><div class="hdel" onclick="delStock(${h.id})">×</div></div>
       <div class="h-tiles">
         <div class="h-tile" onclick="openById('${vrid}')"><div class="h-tile-l">VALUE</div><div class="h-tile-v gr">${fmtK(h.val)}</div><div class="h-tile-hint">tap ✎</div></div>
         <div class="h-tile"><div class="h-tile-l">/MONTH</div><div class="h-tile-v bl">+${fmtK(mo)}</div><div class="h-tile-hint">via plans</div></div>
@@ -869,43 +788,6 @@ function addStock(){
   closeAddStock();saveState();renderStocks();
 }
 function delStock(id){if(!confirm('Remove this holding?'))return;S.holdings=S.holdings.filter(h=>h.id!==id);saveState();renderStocks();}
-function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');h.tag=keys[(cur+1)%keys.length];saveState();renderHoldings();}
-
-function renderRebalancing(){
-  const el=document.getElementById('rebal-section');if(!el)return;
-  if(!S.holdings.length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">No holdings yet</div>';return;}
-  const total=S.holdings.reduce((a,h)=>a+h.val,0);
-  if(!total){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">Add values to see rebalancing</div>';return;}
-  el.innerHTML=S.holdings.map(h=>{
-    const actual=h.val/total*100;const target=S.rebalTargets[h.ticker]||0;
-    const diff=actual-target;
-    const action=Math.abs(diff)<1?'✓ On target':diff>0?'Overweight '+diff.toFixed(1)+'%':'Underweight '+Math.abs(diff).toFixed(1)+'%';
-    const color=Math.abs(diff)<1?'var(--gr)':diff>0?'var(--am)':'var(--rd)';
-    const maxP=Math.max(actual,target,1);
-    return '<div style="background:var(--sf2);border-radius:var(--rs);padding:10px;border:0.5px solid var(--bd);margin-bottom:7px">'+
-      '<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:700;color:'+h.color+'">'+h.ticker+'</span><span style="font-size:10px;font-family:DM Mono;color:var(--mu)">Actual '+actual.toFixed(1)+'% · Target '+target+'%</span></div>'+
-      '<div style="height:6px;background:var(--sf3);border-radius:3px;position:relative;margin-bottom:4px">'+
-        '<div style="height:6px;border-radius:3px;position:absolute;top:0;left:0;width:'+Math.min(100,actual/maxP*100).toFixed(1)+'%;background:'+h.color+';opacity:.7"></div>'+
-        (target>0?'<div style="width:2px;height:12px;background:var(--tx);position:absolute;top:-3px;border-radius:1px;left:'+Math.min(100,target/maxP*100).toFixed(1)+'%"></div>':'')+
-      '</div>'+
-      '<div style="font-size:10px;font-family:DM Mono;color:'+color+'">'+action+'</div>'+
-    '</div>';
-  }).join('');
-}
-
-function openRebalModal(){
-  document.getElementById('rebal-inputs').innerHTML=S.holdings.map(h=>
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
-    '<span style="font-size:13px;font-weight:700;color:'+h.color+';width:50px">'+h.ticker+'</span>'+
-    '<input type="number" inputmode="decimal" placeholder="0" value="'+(S.rebalTargets[h.ticker]||0)+'" oninput="S.rebalTargets[''+h.ticker+'']=parseFloat(this.value)||0;updateRebalTotal()" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">'+
-    '<span style="color:var(--mu)">%</span></div>'
-  ).join('');
-  updateRebalTotal();
-  document.getElementById('rebal-modal').classList.add('open');
-}
-function updateRebalTotal(){const tot=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');if(el){el.textContent='Total: '+tot.toFixed(1)+'%';el.style.color=Math.abs(tot-100)<0.1?'var(--gr)':'var(--rd)';}}
-function closeRebalModal(){document.getElementById('rebal-modal').classList.remove('open');}
-function saveRebal(){saveState();closeRebalModal();renderStocks();}
 
 // REBALANCING
 function renderRebalancing(){
@@ -1048,11 +930,8 @@ function renderPropCard(prop){
       <div class="prop-met"><div class="prop-met-l">Rate</div><div class="prop-met-v am">${cr.toFixed(2)}%</div></div>
       <div class="prop-met"><div class="prop-met-l">Min/fn</div><div class="prop-met-v gr">${fmt(minFn)}</div></div>
     </div>
-    <div style="border-top:0.5px solid var(--bd);margin-top:8px">
-      <div onclick="togglePropEdit(${prop.id})" style="font-size:10px;color:var(--gr);font-family:'DM Mono',monospace;cursor:pointer;padding:8px 0;display:flex;justify-content:space-between;align-items:center">
-        <span>Edit details</span><span id="prop-arrow-${prop.id}">${propEditOpen.has(prop.id)?'▴':'▾'}</span>
-      </div>
-      <div id="prop-edit-${prop.id}" style="display:${propEditOpen.has(prop.id)?'block':'none'}">
+    <details><summary style="font-size:10px;color:var(--gr);font-family:'DM Mono',monospace;cursor:pointer;padding:6px 0;border-top:0.5px solid var(--bd)">Edit details ▾</summary>
+      <div style="margin-top:8px">
         ${efText('Property name','name','12 Smith St',prop.id)}
         ${efRows}
         <div class="ir"><span class="ir-l" style="color:var(--di)">Auto-calc min (fortnightly)</span><span class="ir-v" style="color:var(--di);font-size:11px">${fmt(autoFn)}</span></div>
@@ -1060,150 +939,13 @@ function renderPropCard(prop){
         <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px">Rate history</div>
         ${rateHist}
         <div class="log-add" onclick="openRateForProp(${prop.id})" style="margin-top:8px">+ Log rate change</div>
-        ${renderPropGoals(prop)}
-        <div onclick="togglePropEdit(${prop.id})" style="background:var(--gr);color:#fff;border-radius:var(--rs);padding:11px;text-align:center;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;cursor:pointer;margin-top:12px">Done — close edit ✓</div>
       </div>
-    </div>
+    </details>
   </div>`;
 }
 </script>
 <script>
 // RENDER PANELS
-function renderStockGoals(){
-  const g=S.goals.stocks;
-  const data=projStocks(30);
-  const targetYr=parseDMY(g.targetDate);const now=new Date();
-  const yrsToTarget=targetYr?Math.max(0,(targetYr-now)/(365.25*24*3600*1000)):10;
-  const yr=Math.min(Math.round(yrsToTarget),30);
-  const projAtTarget=(projStocks(yr)[yr]||{}).total||0;
-  const onTrack=projAtTarget>=g.targetValue;
-  const trid='ef_gst_tv';EFR[trid]={key:'targetValue',label:'Target portfolio value',cfg:{pre:'$',suf:'',dec:0,min:0,max:10000000,hint:'Target ETF portfolio value'},obj:g};
-  const tmid='ef_gst_tm';EFR[tmid]={key:'targetMonthly',label:'Target monthly contribution',cfg:{pre:'$',suf:'/mo',dec:0,min:0,max:20000,hint:'Monthly DCA target'},obj:g};
-  const csid='ef_gst_cs';EFR[csid]={key:'coreSatelliteSplit',label:'Core allocation target',cfg:{pre:'',suf:'%',dec:0,min:0,max:100,hint:'Target % in core holdings'},obj:g};
-  const el=document.getElementById('stock-goals');if(!el)return;
-  el.innerHTML=
-    '<div style="background:'+(onTrack?'var(--gr-bg)':'var(--rd-bg)')+';border:0.5px solid '+(onTrack?'var(--gr-bd)':'var(--rd-bd)')+';border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'+
-      '<span style="font-size:11px;font-family:DM Mono;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">'+(onTrack?'✓ On track':'⚠ Behind target')+'</span>'+
-      '<span style="font-size:12px;font-weight:700;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">Proj. '+fmtK(projAtTarget)+' vs '+fmtK(g.targetValue)+'</span>'+
-    '</div>'+
-    ef('Target portfolio value','targetValue',{pre:'$',suf:'',dec:0,min:0,max:10000000,hint:'Target ETF portfolio value'},g)+
-    efText('Target date (DD/MM/YY)','targetDate','01/01/36',null)+
-    ef('Target monthly contribution','targetMonthly',{pre:'$',suf:'/mo',dec:0,min:0,max:20000,hint:'Monthly DCA target'},g)+
-    ef('Core allocation target','coreSatelliteSplit',{pre:'',suf:'%',dec:0,min:0,max:100,hint:'Target % in core holdings'},g)+
-    '<div class="ir"><span class="ir-l">Actual monthly DCA</span><span class="ir-v '+(totalMonthly()>=(g.targetMonthly||0)?'gr':'rd')+'">'+fmt(totalMonthly())+'/mo</span></div>'+
-    '<div style="margin-top:10px"><div style="font-size:9px;color:var(--mu);font-family:DM Mono;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Notes</div>'+
-    '<textarea onchange="S.goals.stocks.notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:'DM Mono',monospace;outline:none;resize:none;min-height:70px;line-height:1.6" placeholder="e.g. Hit $500k by 40, DCA into VGS each month...">'+(g.notes||'')+'</textarea></div>';
-}
-
-function renderSuperGoals(){
-  const g=S.goals.super;
-  const data=projSuper(30);
-  const retAge=60;const yrsToRet=Math.max(0,Math.min(retAge-S.age,30));
-  const balAtRet=data[yrsToRet]?data[yrsToRet].b:0;
-  const onTrack=balAtRet>=(g.targetAtRetirement||0);
-  const trid='ef_gsp_tr';EFR[trid]={key:'targetAtRetirement',label:'Target super at retirement',cfg:{pre:'$',suf:'',dec:0,min:0,max:10000000,hint:'Super balance target at age 60'},obj:g};
-  const tdid='ef_gsp_td';EFR[tdid]={key:'targetDrawdown',label:'Target annual drawdown',cfg:{pre:'$',suf:'/yr',dec:0,min:0,max:500000,hint:'Annual income needed in retirement'},obj:g};
-  const el=document.getElementById('super-goals');if(!el)return;
-  el.innerHTML=
-    '<div style="background:'+(onTrack?'var(--gr-bg)':'var(--rd-bg)')+';border:0.5px solid '+(onTrack?'var(--gr-bd)':'var(--rd-bd)')+';border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'+
-      '<span style="font-size:11px;font-family:DM Mono;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">'+(onTrack?'✓ On track':'⚠ Behind target')+'</span>'+
-      '<span style="font-size:12px;font-weight:700;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">Proj. '+fmtK(balAtRet)+' vs '+fmtK(g.targetAtRetirement||0)+'</span>'+
-    '</div>'+
-    ef('Target balance at retirement','targetAtRetirement',{pre:'$',suf:'',dec:0,min:0,max:10000000,hint:'Super target at age 60'},g)+
-    ef('Target annual drawdown','targetDrawdown',{pre:'$',suf:'/yr',dec:0,min:0,max:500000,hint:'Annual income in retirement'},g)+
-    '<div class="ir"><span class="ir-l">4% drawdown on target</span><span class="ir-v gr">'+fmt((g.targetAtRetirement||0)*0.04/12)+'/mo</span></div>'+
-    '<div class="ir"><span class="ir-l">Projected 4% drawdown</span><span class="ir-v '+(balAtRet*0.04/12>=(g.targetDrawdown||0)/12?'gr':'rd')+'">'+fmt(balAtRet*0.04/12)+'/mo</span></div>'+
-    '<div class="ir"><span class="ir-l">Concessional cap room</span><span class="ir-v">'+fmt(Math.max(0,30000-S.sExtra*26-S.sEmployer*12))+'/yr</span></div>'+
-    '<div style="margin-top:10px"><textarea onchange="S.goals.super.notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:'DM Mono',monospace;outline:none;resize:none;min-height:70px;line-height:1.6" placeholder="e.g. Maximise concessional contributions from 35...">'+(g.notes||'')+'</textarea></div>';
-}
-
-function renderNWGoals(){
-  const g=S.goals.networth;
-  const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
-  const tot30=st[30].total+sup[30].b+pp[30].equity;
-  const onTrack=tot30>=(g.fireNumber||0);
-  const frid='ef_gnw_fr';EFR[frid]={key:'fireNumber',label:'FIRE number',cfg:{pre:'$',suf:'',dec:0,min:0,max:20000000,hint:'Net worth needed to retire (4% rule)'},obj:g};
-  const fireMonthly=(g.fireNumber||0)*0.04/12;
-  const el=document.getElementById('nw-goals');if(!el)return;
-  el.innerHTML=
-    '<div style="background:'+(onTrack?'var(--gr-bg)':'var(--am-bg)')+';border:0.5px solid '+(onTrack?'var(--gr-bd)':'var(--am-bd)')+';border-radius:var(--rs);padding:10px 12px;margin-bottom:10px">'+
-      '<div style="font-size:9px;color:'+(onTrack?'var(--gr)':'var(--am)')+';font-family:DM Mono;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">FIRE status</div>'+
-      '<div style="font-size:13px;font-weight:700;color:'+(onTrack?'var(--gr)':'var(--am)')+'">'+( onTrack?'✓ On track at age '+(S.age+30):'Proj. '+fmtK(tot30)+' vs '+fmtK(g.fireNumber||0)+' target')+'</div>'+
-      '<div style="font-size:10px;color:var(--mu);font-family:DM Mono;margin-top:3px">4% drawdown on FIRE number: '+fmt(fireMonthly)+'/mo</div>'+
-    '</div>'+
-    ef('FIRE number','fireNumber',{pre:'$',suf:'',dec:0,min:0,max:20000000,hint:'Target net worth for financial independence'},g)+
-    efText('Debt-free target date','debtFreeDate','01/01/31',null)+
-    '<div class="ir"><span class="ir-l">Monthly income at FIRE</span><span class="ir-v gr">'+fmt(fireMonthly)+'/mo</span></div>'+
-    '<div class="ir"><span class="ir-l">Projected net worth age '+(S.age+30)+'</span><span class="ir-v">'+fmtK(tot30)+'</span></div>'+
-    '<div style="margin-top:10px"><textarea onchange="S.goals.networth.notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:'DM Mono',monospace;outline:none;resize:none;min-height:70px;line-height:1.6" placeholder="e.g. FIRE by 50, semi-retire at 45...">'+(g.notes||'')+'</textarea></div>';
-}
-
-function renderPropGoals(prop){
-  if(!S.goals.property)S.goals.property={};
-  if(!S.goals.property[prop.id])S.goals.property[prop.id]={targetLVR:60,targetEquity:200000,targetYield:5,notes:''};
-  const g=S.goals.property[prop.id];
-  const currentLVR=prop.val>0?Math.round(prop.loan/prop.val*100):0;
-  const currentEquity=Math.max(0,prop.val-prop.loan);
-  const currentYield=prop.val>0?(prop.rentWk*52/prop.val*100):0;
-  const lvrid='ef_gpr_lvr_'+prop.id;EFR[lvrid]={key:'targetLVR',label:'Target LVR',cfg:{pre:'',suf:'%',dec:0,min:0,max:100,hint:'Target loan to value ratio'},obj:g};
-  const eqid='ef_gpr_eq_'+prop.id;EFR[eqid]={key:'targetEquity',label:'Target equity',cfg:{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Target equity in this property'},obj:g};
-  const ylid='ef_gpr_yl_'+prop.id;EFR[ylid]={key:'targetYield',label:'Target gross yield',cfg:{pre:'',suf:'%',dec:1,min:0,max:20,hint:'Target rental yield (investment only)'},obj:g};
-  return '<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bd)">'+
-    '<div style="font-size:9px;color:var(--mu);font-family:DM Mono;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Goals — '+prop.name+'</div>'+
-    ef('Target LVR','targetLVR',{pre:'',suf:'%',dec:0,min:0,max:100,hint:'Target LVR %'},g)+
-    ef('Target equity','targetEquity',{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Target equity amount'},g)+
-    (prop.type==='investment'?ef('Target gross yield','targetYield',{pre:'',suf:'%',dec:1,min:0,max:20,hint:'Target rental yield'},g):'')+
-    '<div class="ir"><span class="ir-l">Current LVR</span><span class="ir-v '+(currentLVR<=(g.targetLVR||60)?'gr':'am')+'">'+currentLVR+'%</span></div>'+
-    '<div class="ir"><span class="ir-l">Current equity</span><span class="ir-v '+(currentEquity>=(g.targetEquity||0)?'gr':'am')+'">'+fmtK(currentEquity)+'</span></div>'+
-    '<textarea onchange="if(!S.goals.property['+prop.id+'])S.goals.property['+prop.id+']={};S.goals.property['+prop.id+'].notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:'DM Mono',monospace;outline:none;resize:none;min-height:70px;line-height:1.6;margin-top:8px" placeholder="e.g. Refinance when LVR hits 60%...">'+(g.notes||'')+'</textarea>'+
-  '</div>';
-}
-
-// GEO BREAKDOWN
-let geoRegions=[];
-function renderGeo(){
-  const card=document.getElementById('geo-card');if(!card)return;
-  if(!S.geoEnabled){card.style.display='none';return;}
-  card.style.display='block';
-  const el=document.getElementById('geo-content');if(!el)return;
-  if(!Object.keys(S.geoHoldings).length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No geographic data yet — tap Edit below to add</div>';return;}
-  const totalPortfolio=S.holdings.reduce((a,h)=>a+h.val,0);
-  const combined={};
-  S.holdings.forEach(h=>{const regions=S.geoHoldings[h.ticker];if(!regions)return;const weight=totalPortfolio>0?h.val/totalPortfolio:0;regions.forEach(r=>{combined[r.region]=(combined[r.region]||0)+r.pct*weight;});});
-  const regions=Object.entries(combined).sort((a,b)=>b[1]-a[1]);
-  const colors=['#378ADD','#1D9E75','#EF9F27','#7f77dd','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
-  el.innerHTML='<div style="position:relative;width:160px;height:160px;margin:10px auto"><canvas id="geoChart" width="160" height="160"></canvas></div>'+
-    '<div style="margin-top:10px">'+regions.map(([region,pct],i)=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--bd)"><div style="display:flex;align-items:center;gap:7px"><div style="width:9px;height:9px;border-radius:2px;background:'+colors[i%colors.length]+';flex-shrink:0"></div><span style="font-size:11px;font-family:DM Mono">'+region+'</span></div><span style="font-size:12px;font-weight:700;font-family:DM Mono">'+pct.toFixed(1)+'%</span></div>').join('')+'</div>'+
-    '<div style="font-size:10px;color:var(--di);font-family:DM Mono;margin-top:8px">Weighted across portfolio by holding value</div>';
-  setTimeout(()=>{
-    const canvas=document.getElementById('geoChart');if(!canvas)return;
-    const ctx=canvas.getContext('2d');const cx=80,cy=80,r=75;let angle=-Math.PI/2;
-    const total=regions.reduce((a,[,p])=>a+p,0);
-    regions.forEach(([,pct],i)=>{const slice=(pct/total)*2*Math.PI;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.fillStyle=colors[i%colors.length];ctx.fill();angle+=slice;});
-    ctx.beginPath();ctx.arc(cx,cy,40,0,2*Math.PI);ctx.fillStyle='#13131a';ctx.fill();
-  },50);
-}
-function openGeoModal(){
-  document.getElementById('geo-ticker').innerHTML=S.holdings.map(h=>'<option value="'+h.ticker+'">'+h.ticker+'</option>').join('');
-  document.getElementById('geo-ticker').onchange=loadGeoTicker;
-  loadGeoTicker();
-  document.getElementById('geo-modal').classList.add('open');
-}
-function loadGeoTicker(){const ticker=document.getElementById('geo-ticker').value;geoRegions=JSON.parse(JSON.stringify(S.geoHoldings[ticker]||[]));renderGeoRegions();}
-function closeGeoModal(){document.getElementById('geo-modal').classList.remove('open');}
-function renderGeoRegions(){
-  document.getElementById('geo-regions').innerHTML=geoRegions.map((r,i)=>
-    '<div style="display:flex;gap:7px;margin-bottom:7px;align-items:center">'+
-    '<input placeholder="Region (e.g. USA)" value="'+r.region+'" onchange="geoRegions['+i+'].region=this.value" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">'+
-    '<input type="number" placeholder="%" value="'+r.pct+'" onchange="geoRegions['+i+'].pct=parseFloat(this.value)||0;updateGeoTotal()" style="width:70px;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">'+
-    '<span onclick="geoRegions.splice('+i+',1);renderGeoRegions()" style="color:var(--rd);cursor:pointer;font-size:18px;padding:4px">✕</span></div>'
-  ).join('');
-  updateGeoTotal();
-}
-function addGeoRegion(){geoRegions.push({region:'',pct:0});renderGeoRegions();}
-function updateGeoTotal(){const t=geoRegions.reduce((a,r)=>a+r.pct,0);const el=document.getElementById('geo-total');if(el){el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}}
-function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));saveState();closeGeoModal();renderGeo();}
-
 function renderStocks(){
   if(!S.stocksEnabled){
     document.getElementById('stocks-dis').innerHTML='<div class="dis-section"><div class="dis-icon">📈</div><div class="dis-lbl">Stocks disabled</div><div class="dis-desc">Enable in Home → Section toggles</div></div>';
@@ -1230,7 +972,6 @@ function renderStocks(){
   }
   document.querySelectorAll('#p-stocks .pill').forEach(p=>{p.onclick=function(){document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));this.classList.add('active');stYr=parseInt(this.textContent);renderStockProj();};});
   renderStockProj();
-  renderRebalancing();
   document.getElementById('st-settings').innerHTML=ef('Inflation rate','inflationRate',{pre:'',suf:'%',dec:1,min:0,max:10,hint:'Used when inflation adjustment is on'})+mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj');
 }
 
@@ -1266,7 +1007,11 @@ function renderPayoff(){
     </div>`).join('');
   const prop=S.properties.find(p=>p.id===S.poActivePropId)||S.properties[0];
   if(!prop)return;
-  const minPer=propMin(prop,poPeriod);const extraPer=poPeriod==='fortnightly'?prop.extraFort:prop.extraFort*26/12;
+  const minPer=propMin(prop,poPeriod);
+// Use payoff-tab override if set, otherwise use property default
+if(S.poSimExtra===undefined||S.poSimExtra===null)S.poSimExtra=prop.extraFort;
+const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
+
   const annualTotal=(minPer+extraPer)*(poPeriod==='fortnightly'?26:12);
   document.getElementById('po-setup').innerHTML=`
     <div class="ir"><span class="ir-l">Loan balance</span><span class="ir-v">${fmt(prop.loan)}</span></div>
@@ -1277,7 +1022,12 @@ function renderPayoff(){
     <div class="ir"><span class="ir-l">Extra (${poPeriod})</span><span class="ir-v">${fmt(extraPer)}</span></div>
     <div class="ir"><span class="ir-l">Annual total</span><span class="ir-v gr">${fmt(annualTotal)}</span></div>`;
   const lrid='ef_poLump';EFR[lrid]={key:'poExtraLump',label:'One-off lump sum',cfg:{pre:'$',suf:'',dec:0,min:0,max:500000,hint:'Extra lump sum paid today'},obj:null};
-  document.getElementById('po-extra').innerHTML=`<div class="ef" onclick="openById('${lrid}')"><span class="ef-lbl">One-off lump sum into mortgage</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${fmt(S.poExtraLump)}</span><span class="ef-pen">✎</span></span></div>`;
+const erid='ef_poSimExtra';EFR[erid]={key:'poSimExtra',label:'Extra contribution (fortnightly)',cfg:{pre:'$',suf:'/fn',dec:0,min:0,max:10000,hint:'Simulated fortnightly offset contribution — does not change your property settings'},obj:null};
+document.getElementById('po-extra').innerHTML=
+  `<div class="ef" onclick="openById('${erid}')"><span class="ef-lbl">Extra offset contribution (fortnightly)</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${fmt(S.poSimExtra??prop.extraFort)}</span><span class="ef-pen">✎</span></span></div>`+
+  `<div class="ef" onclick="openById('${lrid}')"><span class="ef-lbl">One-off lump sum</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${fmt(S.poExtraLump)}</span><span class="ef-pen">✎</span></span></div>`+
+  `<div style="font-size:10px;color:var(--di);font-family:'DM Mono',monospace;padding:6px 0">Changing extra here is for simulation only — update in Properties to make it permanent</div>`;
+
   const res=poSimulate(prop,S.poExtraLump,poPeriod);
   const sm=res.base.months-res.current.months;const si=res.base.interest-res.current.interest;
   document.getElementById('po-result').innerHTML=`
@@ -1453,7 +1203,6 @@ function renderHome(){
     {age:S.age+30,y:30,lbl:'Super unlocks',c:'var(--rd)'},
   ].map(m=>{const v=(S.stocksEnabled?st[m.y].total:0)+sup[m.y].b+(S.propertiesEnabled?pp[m.y].equity:0);return `<div class="ms-row"><div class="ms-l"><div class="ms-dot" style="background:${m.c}"></div><div><div class="ms-age" style="color:${m.c}">Age ${m.age}</div><div class="ms-desc">${m.lbl}</div></div></div><div class="ms-val" style="color:${m.c}">${fmtK(v)}</div></div>`;}).join('');
   renderSectionToggles();
-  renderNWGoals();
 }
 
 // NAME MODAL
@@ -1489,13 +1238,7 @@ function refresh(){
 if(S.poPeriod==='monthly'){document.getElementById('pt-fn').classList.remove('active');document.getElementById('pt-mo').classList.add('active');poPeriod='monthly';}
 if(!S.poActivePropId&&S.properties.length)S.poActivePropId=S.properties[0].id;
 if(!S.cf)S.cf={grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000};
-updateNav();renderColorPicker();
-try{
-  renderHome();
-}catch(err){
-  document.body.innerHTML+='<div style="position:fixed;top:0;left:0;right:0;background:#E24B4A;color:#fff;padding:16px;z-index:9999;font-family:DM Mono,monospace;font-size:12px;word-break:break-all">'+
-  '⚠ JS Error: '+err.message+'<br>'+err.stack+'</div>';
-}
+updateNav();renderColorPicker();renderHome();
 </script>
 </body>
 </html>
