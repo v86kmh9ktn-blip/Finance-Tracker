@@ -516,7 +516,8 @@ function loadState(){
 }
 function saveState(){try{pushUndo();localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
 function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
-function confirmReset(){if(confirm('Reset ALL data to defaults?')){localStorage.removeItem(STORE);location.reload();}}
+const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
+function confirmReset(){if(confirm('Reset to zero — blank canvas? This cannot be undone.')){localStorage.setItem(STORE,JSON.stringify(ZERO_STATE));location.reload();}}
 
 const S=loadState();
 
@@ -1226,8 +1227,7 @@ function renderPropGoals(prop){
   '</div>';
 }
 
-// ── RESET / SAVE DEFAULT ───────────────────────────────────────────────────
-const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
+// ── SAVE DEFAULT ───────────────────────────────────────────────────────────
 function saveAsDefault(){if(confirm('Save current values as your personal default?')){localStorage.setItem(STORE+'_userdefault',JSON.stringify(S));alert('✓ Saved as your personal default');}}
 function restoreDefault(){const saved=localStorage.getItem(STORE+'_userdefault');if(!saved){alert('No personal default saved yet. Set up your values then tap Save as my default.');return;}if(confirm('Restore to your saved personal default?')){Object.assign(S,JSON.parse(saved));saveState();refresh();}}
 
