@@ -743,30 +743,38 @@ function poSimulate(prop,extraLump,period){
   const ppy=period==='fortnightly'?26:12;
   const msPer=period==='fortnightly'?14*24*3600*1000:30.44*24*3600*1000;
   const now=new Date();
-  const startDate=parseDMY(S.poStartDate||prop.startDate)||new Date(2023,6,1);
+  const startDate=parseDMY(S.poStartDate||prop.startDate)||new Date(2024,0,1);
   const yearsElapsed=Math.max(0,(now-startDate)/(365.25*24*3600*1000));
   const remainingTerm=Math.max(1,prop.term-yearsElapsed);
   function rateAt(ts){let r=prop.rate;if(prop.rateHistory&&prop.rateHistory.length){const sorted=[...prop.rateHistory].sort((a,b)=>a.ts-b.ts);for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}}return r;}
+  // Minimum is based on original loan amount over full term - this is the contracted bank payment
   const minPer=propMin(prop,period);
+  // Extra per period - user's additional repayment on top of minimum
   const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
+  // Redraw balance: stored in prop.offset as combined offset+redraw, or separate if available
+  const currentOffset=prop.offset||0;
+
   function run(extra,lump){
-    let b=prop.loan-lump;
+    // b = current loan balance. Offset/redraw reduces effective interest but not the balance directly.
+    // Extra payment goes directly off principal each period.
+    let b=Math.max(0,prop.loan-lump);
     if(b<=0)return{months:0,interest:0,payoffDate:new Date(),byYear:[{y:0,b:0}]};
     let periods=0;let interest=0;let ts=now.getTime();
-    // minimum only: no offset benefit (true worst case)
-    // with extra: offset grows each period from contributions
-    let currentOffset=extra>0?prop.offset:0;
     const byYear=[{y:0,b:Math.round(b)}];let prevY=0;
-    const maxP=Math.round(remainingTerm*ppy*2);
+    // Use a generous max (2x remaining term) to handle fast payoffs
+    const maxP=Math.round(remainingTerm*ppy*2+ppy);
     while(b>0.01&&periods<maxP){
       const r=rateAt(ts)/100/ppy;
-      if(extra>0)currentOffset=Math.min(currentOffset+extra,b);
+      // Interest charged on effective balance (loan minus offset account)
       const eff=Math.max(0,b-currentOffset);
       const intChg=eff*r;
-      // extra goes to offset not principal — only minimum paid to bank
-      const prin=minPer-intChg;
+      // Total amount going off loan = min payment + extra - interest
+      const totalPmt=minPer+extra;
+      const prin=totalPmt-intChg;
       if(prin<=0)return{months:Math.round(prop.term*12),interest:Math.round(interest),payoffDate:new Date(now.getTime()+prop.term*365.25*24*3600*1000),byYear};
-      interest+=intChg;b=Math.max(0,b-prin);periods++;ts+=msPer;
+      interest+=intChg;
+      b=Math.max(0,b-prin);
+      periods++;ts+=msPer;
       const yr=Math.floor(periods/ppy);
       if(yr>prevY){byYear.push({y:yr,b:Math.round(b)});prevY=yr;}
     }
