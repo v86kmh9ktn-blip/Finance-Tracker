@@ -209,10 +209,51 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .dll{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mu);font-family:'DM Mono',monospace}
 .dlv{font-size:10px;font-weight:600;font-family:'DM Mono',monospace}
 .gr{color:var(--gr)}.bl{color:var(--bl)}.pu{color:var(--pu)}.am{color:var(--am)}.rd{color:var(--rd)}
+
+/* MILESTONE TOAST */
+.ms-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;border-radius:20px;padding:12px 20px;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;z-index:900;transition:transform .4s cubic-bezier(.175,.885,.32,1.275);white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center;pointer-events:none}
+.ms-toast.show{transform:translateX(-50%) translateY(0)}
+.ms-toast-sub{font-size:10px;font-weight:400;font-family:'DM Mono',monospace;opacity:.85;margin-top:2px}
+/* FIRE COUNTDOWN */
+.fire-ring{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 0 4px}
+.fire-seg{text-align:center}
+.fire-num{font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--gr);line-height:1}
+.fire-lbl{font-size:8px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.fire-sep{font-size:22px;color:var(--di);font-weight:300;padding-bottom:8px}
+/* EQUITY TIMELINE */
+.etl-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--bd)}
+.etl-row:last-child{border-bottom:none}
+.etl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.etl-dot.done{background:var(--gr)}
+.etl-dot.next{background:var(--am);box-shadow:0 0 0 3px rgba(239,159,39,0.25)}
+.etl-dot.future{background:var(--sf3);border:1.5px solid var(--di)}
+.etl-body{flex:1}
+.etl-title{font-size:12px;font-weight:600}
+.etl-sub{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px}
+.etl-right{text-align:right}
+.etl-date{font-size:11px;font-weight:700;font-family:'DM Mono',monospace}
+.etl-val{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px}
+/* MONTE CARLO */
+.mc-band{opacity:.18}
+/* DRAWDOWN SIM */
+.dd-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--bd)}
+.dd-row:last-child{border-bottom:none}
+.dd-lbl{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
+.dd-val{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
+/* HEALTH CARD */
+.hc-score{font-size:40px;font-weight:700;letter-spacing:-2px;line-height:1;text-align:center;padding:8px 0 4px}
+.hc-grade{font-size:11px;font-family:'DM Mono',monospace;text-align:center;margin-bottom:10px}
+.hc-item{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:0.5px solid var(--bd)}
+.hc-item:last-child{border-bottom:none}
+.hc-bar-wrap{flex:1;height:4px;background:var(--sf3);border-radius:2px;overflow:hidden}
+.hc-bar{height:100%;border-radius:2px;transition:width .6s ease}
+.hc-il{font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;width:110px;flex-shrink:0}
+.hc-ip{font-size:10px;font-weight:700;font-family:'DM Mono',monospace;width:32px;text-align:right;flex-shrink:0}
 </style>
 </head>
 <body>
 <div class="save-banner" id="save-banner">💾 Saved</div>
+<div class="ms-toast" id="ms-toast"><div id="ms-toast-msg">🎉</div><div class="ms-toast-sub" id="ms-toast-sub"></div></div>
 <div class="hdr">
   <div><div class="hdr-name" id="hdr-name" onclick="openNameModal()">Finance</div><div class="hdr-sub" id="hdr-date"></div></div>
   <div class="hdr-nw"><div class="hdr-val" id="hdr-total">—</div><div class="hdr-lbl">net worth</div></div>
@@ -227,6 +268,8 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     </div>
     <div class="card"><div class="sec">Snapshot <span class="sec-hint">— tap green values to edit</span></div><div id="ov-facts"></div></div>
     <div class="card"><div class="sec">Assets</div><div class="g2" id="ov-met"></div></div>
+    <div class="card" id="fire-card"><div class="sec">🔥 FIRE countdown</div><div id="fire-countdown"></div></div>
+    <div class="card"><div class="sec">💪 Financial health</div><div id="health-card"></div></div>
     <div class="card"><div class="sec">Milestones</div><div id="ov-ms"></div></div>
     <div class="card"><div class="sec">Overall goals</div><div id="nw-goals"></div></div>
     <div class="card"><div class="sec">Section toggles</div><div id="section-toggles"></div></div>
@@ -270,6 +313,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div id="props-content">
       <div class="card"><div class="sec">Your properties</div><div id="prop-list"></div><div class="add-btn" onclick="openAddProp()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add property</div></div>
       <div class="card"><div class="sec">Combined summary</div><div class="g2" id="prop-summary"></div></div>
+      <div class="card"><div class="sec">Equity unlock timeline</div><div id="equity-timeline"></div></div>
       <div class="card"><div class="sec">Equity over time</div><div class="ch"><canvas id="propChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--gr)"></div>Total equity</div><div class="li"><div class="ld" style="background:var(--rd)"></div>Total debt</div></div></div>
     </div>
   </div>
@@ -310,6 +354,8 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   <div class="panel" id="p-proj">
     <div class="card"><div class="sec">Scenario</div><div class="scen-bar"><div class="sb active" onclick="setScen(0,this)">📈 Current</div><div class="sb" onclick="setScen(1,this)">📈 Optimistic</div><div class="sb" onclick="setScen(2,this)">🛡 Conservative</div></div><div id="scen-desc" style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6;padding:9px;background:var(--sf2);border-radius:var(--rs);border:0.5px solid var(--bd)"></div></div>
     <div class="card"><div class="sec">Options</div><div id="proj-togs"></div></div>
+    <div class="card"><div class="sec">📊 Monte Carlo <span class="sec-hint">— 200 simulations</span></div><div id="mc-card"></div><div class="ch" style="height:180px;margin-top:8px"><canvas id="mcChart"></canvas></div></div>
+    <div class="card"><div class="sec">🏖 Drawdown simulator</div><div id="drawdown-card"></div><div class="ch" style="height:180px;margin-top:8px"><canvas id="ddChart"></canvas></div></div>
     <div class="card"><div class="sec">Scenario assumptions <span class="sec-hint">— tap to edit</span></div><div id="proj-assumptions"></div></div>
     <div class="card"><div class="sec">Total net worth</div><div class="g2" id="proj-met"></div><div class="ch" style="height:200px"><canvas id="projChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--bl)"></div>ETFs</div><div class="li"><div class="ld" style="background:var(--pu)"></div>Super</div><div class="li"><div class="ld" style="background:var(--gr)"></div>Properties</div></div></div>
     <div class="card"><div class="sec">Full table</div><div style="overflow-x:auto"><table class="tbl" id="proj-tbl"></table></div></div>
@@ -516,7 +562,7 @@ function loadState(){
 }
 function saveState(){try{pushUndo();localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
 function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
-const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
+const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,shownMilestones:[],goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
 function confirmReset(){if(confirm('Reset to zero — blank canvas? This cannot be undone.')){localStorage.setItem(STORE,JSON.stringify(ZERO_STATE));location.reload();}}
 
 const S=loadState();
@@ -1272,6 +1318,7 @@ function renderProperties(){
   }
   document.getElementById('props-dis').innerHTML='';document.getElementById('props-content').style.display='block';
   document.getElementById('prop-list').innerHTML=S.properties.map(p=>renderPropCard(p)).join('');
+  renderEquityTimeline();
   const tv=S.properties.reduce((a,p)=>a+p.val,0);const te=totalEquity();const td=totalDebt();const tr=netRentalMonthly();
   document.getElementById('prop-summary').innerHTML=`
     <div class="met"><div class="ml">Total value</div><div class="mv bl">${fmtK(tv)}</div><div class="mss">${S.properties.length} properties</div></div>
@@ -1427,6 +1474,8 @@ function renderProj(){
   document.getElementById('scen-desc').innerHTML=SCEN_DESC[scenIdx];
   renderProjChart();
   renderRetirementIncome();
+  renderMonteCarlo();
+  renderDrawdownSim();
 }
 function renderRetirementIncome(){
   const st=projStocksScen(30);const sup=projSuperScen(30);const pp=projAllPropsScen(30);
@@ -1450,6 +1499,288 @@ function renderProjChart(){
   ]},options:{...bOpts,scales:{...bOpts.scales,x:{...bOpts.scales.x,ticks:{...bOpts.scales.x.ticks,maxTicksLimit:8}}}}});
   const yrs=[0,5,10,15,20,25,30];
   document.getElementById('proj-tbl').innerHTML=`<tr><th>Age</th><th>ETFs</th><th>Super</th><th>Properties</th><th>Total</th></tr>${yrs.map(y=>`<tr><td>${S.age+y}${y===0?' now':''}</td><td>${fmtK(c[y].etf)}</td><td>${fmtK(c[y].sup)}</td><td>${fmtK(c[y].props)}</td><td class="hl">${fmtK(c[y].tot)}</td></tr>`).join('')}`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// MILESTONE TOAST NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════
+var _shownMilestones = S.shownMilestones || [];
+function checkMilestones(nw) {
+  var milestones = [
+    {v:50000,  emoji:'🌱', lbl:'$50k net worth'},
+    {v:100000, emoji:'💯', lbl:'$100k net worth'},
+    {v:250000, emoji:'🚀', lbl:'$250k net worth'},
+    {v:500000, emoji:'🌟', lbl:'Half a million!'},
+    {v:750000, emoji:'💎', lbl:'$750k net worth'},
+    {v:1000000,emoji:'🏆', lbl:'Millionaire!'},
+    {v:2000000,emoji:'🔥', lbl:'$2M net worth'},
+    {v:5000000,emoji:'👑', lbl:'$5M net worth'},
+  ];
+  milestones.forEach(function(m) {
+    if (nw >= m.v && _shownMilestones.indexOf(m.v) === -1) {
+      _shownMilestones.push(m.v);
+      S.shownMilestones = _shownMilestones;
+      showMilestoneToast(m.emoji + ' ' + m.lbl, 'You just crossed ' + fmtK(m.v));
+    }
+  });
+}
+function showMilestoneToast(msg, sub) {
+  var t = document.getElementById('ms-toast');
+  var m = document.getElementById('ms-toast-msg');
+  var s = document.getElementById('ms-toast-sub');
+  if (!t) return;
+  m.textContent = msg; s.textContent = sub;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(function() { t.classList.remove('show'); }, 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FIRE COUNTDOWN
+// ═══════════════════════════════════════════════════════════════════
+function renderFIRECountdown(tot) {
+  var el = document.getElementById('fire-countdown');
+  if (!el) return;
+  var fire = (S.goals && S.goals.networth && S.goals.networth.fireNumber) || 0;
+  if (!fire || fire <= 0) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--mu);font-family:DM Mono;padding:8px 0">Set your FIRE number in Overall Goals to see countdown.</div>';
+    return;
+  }
+  if (tot >= fire) {
+    el.innerHTML = '<div style="text-align:center;padding:12px 0"><div style="font-size:28px;margin-bottom:6px">🎉</div><div style="font-size:16px;font-weight:700;color:var(--gr)">You\'ve reached FIRE!</div><div style="font-size:11px;color:var(--mu);font-family:DM Mono;margin-top:4px">Net worth exceeds FIRE number</div></div>';
+    return;
+  }
+  // Find which projection year hits FIRE
+  var st = projStocks(40); var sup = projSuper(40); var pp = projAllProps(40);
+  var fireYr = -1;
+  for (var y = 0; y <= 40; y++) {
+    var projTot = (S.stocksEnabled ? st[y].total : 0) + (S.propertiesEnabled ? pp[y].equity : 0) + sup[y].b + S.cashSavings + S.emergency;
+    if (projTot >= fire) { fireYr = y; break; }
+  }
+  var pct = Math.min(100, (tot / fire) * 100);
+  var fireMonthly = fire * 0.04 / 12;
+  var needed = Math.max(0, fire - tot);
+  var html2 = '';
+  if (fireYr >= 0) {
+    var fireAge = S.age + fireYr;
+    var yrs = Math.floor(fireYr); var mos = Math.round((fireYr - yrs) * 12);
+    html2 += '<div class="fire-ring">';
+    html2 += '<div class="fire-seg"><div class="fire-num">' + yrs + '</div><div class="fire-lbl">years</div></div>';
+    if (mos > 0) { html2 += '<div class="fire-sep">·</div><div class="fire-seg"><div class="fire-num">' + mos + '</div><div class="fire-lbl">months</div></div>'; }
+    html2 += '<div class="fire-sep">→</div><div class="fire-seg"><div class="fire-num" style="font-size:18px">Age ' + fireAge + '</div><div class="fire-lbl">FIRE age</div></div>';
+    html2 += '</div>';
+  } else {
+    html2 += '<div style="text-align:center;padding:8px 0;color:var(--mu);font-size:11px;font-family:DM Mono">Extend projections or increase contributions to reach FIRE</div>';
+  }
+  // Progress bar
+  html2 += '<div style="margin:10px 0 6px"><div style="display:flex;justify-content:space-between;font-size:9px;font-family:DM Mono;color:var(--mu);margin-bottom:5px"><span>Progress to FIRE</span><span>' + pct.toFixed(1) + '%</span></div>';
+  html2 += '<div style="height:7px;background:var(--sf3);border-radius:4px;overflow:hidden"><div style="height:100%;width:' + pct.toFixed(1) + '%;background:linear-gradient(90deg,var(--gr),var(--bl));border-radius:4px;transition:width .8s ease"></div></div></div>';
+  html2 += '<div class="ir"><span class="ir-l">FIRE number</span><span class="ir-v gr">' + fmt(fire) + '</span></div>';
+  html2 += '<div class="ir"><span class="ir-l">Still needed</span><span class="ir-v am">' + fmt(needed) + '</span></div>';
+  html2 += '<div class="ir"><span class="ir-l">Monthly income at FIRE</span><span class="ir-v gr">' + fmt(fireMonthly) + '/mo</span></div>';
+  el.innerHTML = html2;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FINANCIAL HEALTH CARD
+// ═══════════════════════════════════════════════════════════════════
+function renderHealthCard(tot, cf) {
+  var el = document.getElementById('health-card');
+  if (!el) return;
+  var checks = [];
+  // Emergency fund: 3+ months expenses
+  var monthlyExp = cf.totalOut || 1;
+  var emRatio = S.emergency / monthlyExp;
+  checks.push({lbl:'Emergency fund', score: Math.min(100, emRatio/6*100), note: emRatio.toFixed(1) + 'mo expenses covered (target 6mo)'});
+  // Savings rate: surplus / net income
+  var savingsRate = cf.totalInc > 0 ? Math.max(0, cf.surplus / cf.totalInc * 100) : 0;
+  checks.push({lbl:'Savings rate', score: Math.min(100, savingsRate / 30 * 100), note: savingsRate.toFixed(1) + '% (target 30%+)'});
+  // Super contributions: using concessional cap
+  var annualConc = (S.sExtra * 26) + (S.sEmployer * 12);
+  var concCap = 30000;
+  var concPct = Math.min(100, annualConc / concCap * 100);
+  checks.push({lbl:'Concessional cap', score: concPct, note: fmtK(annualConc) + ' / ' + fmtK(concCap) + ' used'});
+  // Debt-to-asset ratio (lower = better)
+  var totalDebtV = totalDebt();
+  var totalAssets = tot + totalDebtV;
+  var dta = totalAssets > 0 ? (totalDebtV / totalAssets) * 100 : 0;
+  checks.push({lbl:'Debt-to-assets', score: Math.max(0, 100 - dta), note: dta.toFixed(1) + '% (lower is better)'});
+  // ETF DCA consistency
+  var dcaMo = totalMonthly();
+  var dcaScore = dcaMo >= 2000 ? 100 : dcaMo >= 1000 ? 75 : dcaMo >= 500 ? 50 : dcaMo > 0 ? 25 : 0;
+  checks.push({lbl:'ETF DCA active', score: dcaScore, note: fmt(dcaMo) + '/mo in active plans'});
+  // Diversification: have stocks + super + property
+  var divCount = (S.stocksEnabled && S.holdings.length > 0 ? 1 : 0) + (S.sBalance > 0 ? 1 : 0) + (S.propertiesEnabled && S.properties.length > 0 ? 1 : 0) + (S.cashSavings > 0 ? 1 : 0);
+  checks.push({lbl:'Diversification', score: divCount / 4 * 100, note: divCount + ' of 4 asset classes active'});
+
+  var overall = Math.round(checks.reduce(function(a, c) { return a + c.score; }, 0) / checks.length);
+  var grade = overall >= 85 ? 'Excellent 🌟' : overall >= 70 ? 'Strong 💪' : overall >= 55 ? 'Good 👍' : overall >= 40 ? 'Fair ⚡' : 'Needs work 🔧';
+  var gradeColor = overall >= 85 ? 'var(--gr)' : overall >= 70 ? 'var(--bl)' : overall >= 55 ? 'var(--am)' : 'var(--rd)';
+
+  var html2 = '<div class="hc-score" style="color:' + gradeColor + '">' + overall + '</div>';
+  html2 += '<div class="hc-grade" style="color:' + gradeColor + '">' + grade + '</div>';
+  checks.forEach(function(c) {
+    var color = c.score >= 75 ? '#1D9E75' : c.score >= 50 ? '#EF9F27' : '#E24B4A';
+    html2 += '<div class="hc-item"><div class="hc-il">' + c.lbl + '</div><div class="hc-bar-wrap"><div class="hc-bar" style="width:' + c.score.toFixed(0) + '%;background:' + color + '"></div></div><div class="hc-ip" style="color:' + color + '">' + Math.round(c.score) + '</div></div>';
+    html2 += '<div style="font-size:9px;color:var(--di);font-family:DM Mono;padding:0 0 5px 119px;margin-top:-3px">' + c.note + '</div>';
+  });
+  el.innerHTML = html2;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EQUITY UNLOCK TIMELINE (Properties tab)
+// ═══════════════════════════════════════════════════════════════════
+function renderEquityTimeline() {
+  var el = document.getElementById('equity-timeline');
+  if (!el) return;
+  if (!S.properties.length) { el.innerHTML = '<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">Add a property to see the equity timeline.</div>'; return; }
+  var html2 = '';
+  S.properties.forEach(function(prop) {
+    var proj = projProp(prop, 30);
+    // Find LVR thresholds
+    var thresholds = [
+      {lvr:80, lbl:'LMI-free / refinance ready', c:'var(--bl)'},
+      {lvr:60, lbl:'Strong equity position',     c:'var(--gr)'},
+      {lvr:40, lbl:'Prime refinance / release',  c:'var(--pu)'},
+      {lvr:0,  lbl:'Mortgage-free! 🎉',          c:'var(--am)'},
+    ];
+    var currentLVR = prop.val > 0 ? (prop.loan / prop.val) * 100 : 0;
+    html2 += '<div style="font-size:11px;font-weight:700;margin-bottom:6px;margin-top:' + (html2 ? '14px' : '0') + '">' + prop.name + ' <span style="font-size:9px;color:var(--mu);font-family:DM Mono">Current LVR: ' + currentLVR.toFixed(1) + '%</span></div>';
+    thresholds.forEach(function(thresh) {
+      // Find the year LVR drops below threshold
+      var hitYear = -1;
+      for (var i = 0; i < proj.length; i++) {
+        var lvr = proj[i].val > 0 ? (proj[i].loan / proj[i].val) * 100 : 0;
+        if (lvr <= thresh.lvr) { hitYear = i; break; }
+      }
+      var done = currentLVR <= thresh.lvr;
+      var dotClass = done ? 'done' : (hitYear === -1 ? 'future' : 'next');
+      if (done && thresh.lvr > 0) dotClass = 'done';
+      else if (done && thresh.lvr === 0) dotClass = 'done';
+      var dateStr = '';
+      var valStr = '';
+      if (done) {
+        dateStr = '✓ Achieved';
+      } else if (hitYear >= 0) {
+        var d = new Date(); d.setFullYear(d.getFullYear() + hitYear);
+        dateStr = (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+        valStr = 'in ' + hitYear + ' yr' + (hitYear !== 1 ? 's' : '');
+      } else {
+        dateStr = '30yr+';
+      }
+      var color = done ? 'var(--gr)' : hitYear >= 0 ? thresh.c : 'var(--di)';
+      html2 += '<div class="etl-row"><div class="etl-dot ' + dotClass + '"></div><div class="etl-body"><div class="etl-title" style="color:' + color + '">' + (thresh.lvr === 0 ? 'Paid off' : 'LVR ≤' + thresh.lvr + '%') + '</div><div class="etl-sub">' + thresh.lbl + '</div></div><div class="etl-right"><div class="etl-date" style="color:' + color + '">' + dateStr + '</div><div class="etl-val">' + valStr + '</div></div></div>';
+    });
+  });
+  el.innerHTML = html2;
+}
+
+function getScenAssumptions(){
+  var idx=S.scenario||0;
+  if(S.scenAssumptions&&S.scenAssumptions[idx])return S.scenAssumptions[idx];
+  return {etfReturn:8,superReturn:7.5,propGrowth:4,extraMonthly:0};
+}
+// ═══════════════════════════════════════════════════════════════════
+// MONTE CARLO (Projection tab)
+// ═══════════════════════════════════════════════════════════════════
+function renderMonteCarlo() {
+  var el = document.getElementById('mc-card');
+  if (!el) return;
+  var SIMS = 200; var YRS = 30;
+  var sa = getScenAssumptions();
+  // Run simulations with random return variation (±volatility)
+  var etfVol = 12; var supVol = 7; var propVol = 4;
+  var results = []; // results[sim][year] = total
+  for (var s = 0; s < SIMS; s++) {
+    var etfV = S.holdings.length ? S.holdings.reduce(function(a,h){return a+h.val;},0) : 0;
+    var supV = S.sBalance;
+    var propEq = totalEquity();
+    var yearly = [];
+    for (var y = 0; y <= YRS; y++) {
+      yearly.push(etfV + supV + propEq);
+      // Randomised annual return with normal-ish distribution
+      var etfR = sa.etfReturn/100 + (gaussRand() * etfVol/100);
+      var supR = sa.superReturn/100 + (gaussRand() * supVol/100);
+      var propR = sa.propGrowth/100 + (gaussRand() * propVol/100);
+      etfV = Math.max(0, etfV * (1 + etfR) + totalMonthly() * 12);
+      supV = supV * (1 + supR) + (S.sEmployer + S.sExtra * 26/12) * 12;
+      propEq = Math.max(0, propEq * (1 + propR));
+    }
+    results.push(yearly);
+  }
+  // Compute percentiles at each year
+  var p10=[],p25=[],p50=[],p75=[],p90=[];
+  for (var y = 0; y <= YRS; y++) {
+    var vals = results.map(function(r){return r[y];}).sort(function(a,b){return a-b;});
+    p10.push(vals[Math.floor(SIMS*0.10)]);
+    p25.push(vals[Math.floor(SIMS*0.25)]);
+    p50.push(vals[Math.floor(SIMS*0.50)]);
+    p75.push(vals[Math.floor(SIMS*0.75)]);
+    p90.push(vals[Math.floor(SIMS*0.90)]);
+  }
+  var labels = p50.map(function(_,i){return i===0?'Now':''+i;});
+  var fire = (S.goals && S.goals.networth && S.goals.networth.fireNumber) || 0;
+  el.innerHTML = '<div class="g2" style="margin-bottom:6px">'
+    + '<div class="met"><div class="ml">Median (50th %ile)</div><div class="mv gr">' + fmtK(p50[30]) + '</div><div class="mss">at year 30</div></div>'
+    + '<div class="met"><div class="ml">Range (10–90th)</div><div class="mv bl">' + fmtK(p10[30]) + ' – ' + fmtK(p90[30]) + '</div><div class="mss">at year 30</div></div>'
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--mu);font-family:DM Mono;line-height:1.5;margin-bottom:4px">Shaded bands show 10–25–75–90th percentile range across 200 simulations using randomised annual returns.</div>';
+  var datasets = [
+    {label:'90th %ile',data:p90,borderColor:'rgba(55,138,221,0)',backgroundColor:'rgba(55,138,221,0.13)',fill:'+1',tension:.4,...pt0},
+    {label:'75th %ile',data:p75,borderColor:'rgba(55,138,221,0)',backgroundColor:'rgba(55,138,221,0.18)',fill:'+1',tension:.4,...pt0},
+    {label:'Median',data:p50,borderColor:'#378ADD',backgroundColor:'transparent',tension:.4,borderWidth:2,...pt0},
+    {label:'25th %ile',data:p25,borderColor:'rgba(226,75,74,0)',backgroundColor:'rgba(226,75,74,0.18)',fill:'+1',tension:.4,...pt0},
+    {label:'10th %ile',data:p10,borderColor:'rgba(226,75,74,0)',backgroundColor:'rgba(226,75,74,0.13)',fill:false,tension:.4,...pt0},
+  ];
+  if (fire > 0) {
+    datasets.push({label:'FIRE target',data:labels.map(function(){return fire;}),borderColor:'#1D9E75',backgroundColor:'transparent',borderWidth:1.5,borderDash:[6,4],...pt0});
+  }
+  mkChart('mcChart',{type:'line',data:{labels:labels,datasets:datasets},options:bOpts});
+}
+function gaussRand() {
+  var u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*0.4;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DRAWDOWN SIMULATOR (Projection tab)
+// ═══════════════════════════════════════════════════════════════════
+function renderDrawdownSim() {
+  var el = document.getElementById('drawdown-card');
+  if (!el) return;
+  var st = projStocksScen(30); var sup = projSuperScen(30); var pp = projAllPropsScen(30);
+  // Portfolio at retirement (age 60 or 30yr projection)
+  var retYr = Math.min(30, Math.max(0, 60 - S.age));
+  var retPort = st[retYr].total + sup[retYr].b + pp[retYr].equity + S.cashSavings + S.emergency;
+  var annualReturn = 0.06; // conservative 6% in drawdown phase
+  var scenarios = [
+    {lbl:'Conservative spend', annual: retPort * 0.03, color:'#1D9E75'},
+    {lbl:'4% rule',            annual: retPort * 0.04, color:'#378ADD'},
+    {lbl:'Comfortable spend',  annual: retPort * 0.05, color:'#EF9F27'},
+    {lbl:'High spend',         annual: retPort * 0.06, color:'#E24B4A'},
+  ];
+  var html2 = '<div style="font-size:10px;color:var(--mu);font-family:DM Mono;margin-bottom:10px;line-height:1.5">Starting portfolio at age ' + (S.age + retYr) + ': <strong style="color:var(--tx)">' + fmt(retPort) + '</strong>. Assumes ' + (annualReturn*100).toFixed(0) + '% annual return in retirement.</div>';
+  var labels = [];
+  for (var i = 0; i <= 40; i++) labels.push(i === 0 ? 'Retire' : '+' + i);
+  var datasets = [];
+  scenarios.forEach(function(sc) {
+    var bal = retPort;
+    var data = [];
+    var depletedAt = -1;
+    for (var y = 0; y <= 40; y++) {
+      data.push(Math.max(0, Math.round(bal)));
+      if (bal <= 0 && depletedAt < 0) depletedAt = y;
+      bal = bal * (1 + annualReturn) - sc.annual;
+    }
+    var survives = bal > 0;
+    html2 += '<div class="dd-row"><div class="dd-lbl">' + sc.lbl + '<br><span style="font-size:9px;color:var(--di)">' + fmt(sc.annual) + '/yr · ' + fmt(sc.annual/12) + '/mo</span></div><div class="dd-val" style="color:' + sc.color + '">' + (survives ? 'Lasts 40yr+ ✓' : 'Depleted yr ' + depletedAt) + '</div></div>';
+    datasets.push({label:sc.lbl,data:data,borderColor:sc.color,backgroundColor:'transparent',tension:.4,borderWidth:1.8,...pt0});
+  });
+  el.innerHTML = html2;
+  mkChart('ddChart',{type:'line',data:{labels:labels,datasets:datasets},options:{...bOpts,plugins:{...bOpts.plugins,legend:{display:true,labels:{color:'#7a7a8c',font:{size:8},boxWidth:12}}}}});
 }
 
 // HOME
@@ -1494,6 +1825,9 @@ function renderHome(){
   ].map(m=>{const v=(S.stocksEnabled?st[m.y].total:0)+sup[m.y].b+(S.propertiesEnabled?pp[m.y].equity:0);return `<div class="ms-row"><div class="ms-l"><div class="ms-dot" style="background:${m.c}"></div><div><div class="ms-age" style="color:${m.c}">Age ${m.age}</div><div class="ms-desc">${m.lbl}</div></div></div><div class="ms-val" style="color:${m.c}">${fmtK(v)}</div></div>`;}).join('');
   renderSectionToggles();
   renderNWGoals();
+  renderFIRECountdown(tot);
+  renderHealthCard(tot, cf);
+  checkMilestones(tot);
 }
 
 // NAME MODAL
@@ -1529,6 +1863,8 @@ function refresh(){
 if(S.poPeriod==='monthly'){document.getElementById('pt-fn').classList.remove('active');document.getElementById('pt-mo').classList.add('active');poPeriod='monthly';}
 if(!S.poActivePropId&&S.properties.length)S.poActivePropId=S.properties[0].id;
 if(!S.cf)S.cf={grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000};
+if(!S.shownMilestones)S.shownMilestones=[];
+_shownMilestones=S.shownMilestones;
 updateNav();renderColorPicker();renderHome();
 </script>
 </body>
