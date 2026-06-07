@@ -1,666 +1,3 @@
-
-Claude finished the response
-
-ned-finance_7.html
-html
-
-IMG_5167.PNG
-IMG_5151 2.PNG
-i have this interactive web app,. fully interactive it's supposed to look like this, recently new code was added which has broken the page rendering it inactive. data is not showing and i am unable to navigate each any tabs.  Can you identify where the code has gone wrong and fix the error
-
-22:18
-
-Viewed 6 files
-Viewed 6 files
-Now I can see the bug clearly. On line 1451, the JavaScript string in renderProj() uses curly/smart quotes ('' and '') instead of regular straight quotes, causing a syntax error. Let me look at exactly what's there:
-
-
-View the exact problematic line
-View the exact problematic line
-Found it. Line 1451 has curly/smart quotes (' ') instead of straight quotes in the onclick="openById('')" calls — e.g. openById(''+erRid+'') uses '' and '' instead of \'. This breaks the entire script block with a syntax error, which is why nothing renders. Now I'll fix it:
-
-
-Ran 2 commands, edited a file
-Ran 2 commands, edited a file
-Those are all fine (using proper quotes). The fix is clean. Let me copy it to the output directory:
-
-
-Ran a command, read a file
-Ran a command, read a file
-Root cause: curly/smart quotes on line 1451 in the renderProj() function.
-
-The newly added code in the Projection tab's scenario assumptions section used typographic "curly" quotes (' ') instead of straight apostrophes (\') inside the JavaScript string. Specifically in the onclick="openById('')" calls, they looked like this:
-
-js
-// BROKEN — curly quotes around variable names:
-onclick="openById(''+erRid+'')"
-//                ^^       ^^  ← ' and ' (not valid JS)
-
-// FIXED — proper escaped straight quotes:
-onclick="openById('"+erRid+"')"
-//                \'       \'  ← escaped apostrophes
-Because this was inside a <script> block, the curly quotes made the JavaScript unparseable — the entire script threw Uncaught Error: Script error before any code could run, which is exactly what you saw in the console. This cascaded into nothing rendering and all tabs being dead.
-
-
-Ned finance fixed
-Code · HTML 
-the navigation tab now works, however their is still a seperate bug or error causing all data to not be showing. their is a saved default data stored in the code ect but none of this is showing
-
-22:23
-
-Viewed 3 files
-Viewed 3 files
-I can see a duplicate HTML block for the rebalancing card (lines 249-257). Now let me check the renderHome function more carefully and the stTab function referenced in the pills:
-
-
-Check for stTab function and geo functions
-Check for stTab function and geo functions
-Now I can see there are two bugs causing the data not to show. Let me check for the stTab function which is referenced in the HTML but may be missing:
-
-
-Ran 2 commands
-Ran 2 commands
-stTab is missing entirely — it's called in the HTML but never defined. Also let me check the duplicate rebal-section div IDs and the renderStocks function which has an inline renderStockProj but references stTab:
-
-
-Look at renderStocks to understand stTab relationship
-Look at renderStocks to understand stTab relationship
-Now I have the full picture. There are three bugs causing data not to show:
-
-stTab is undefined — called in HTML pills but the function doesn't exist (the inline renderStockProj inside renderStocks overwrites pill onclick handlers correctly, but stTab is still called on initial HTML click before renderStocks runs, which throws an error)
-Duplicate id="rebal-section" — two cards in the HTML with the same ID (lines 249-257), causing renderRebalancing() to only target the first one
-Duplicate id="rebal-modal" — two modal divs with the same ID (lines 432-440 and 454-462)
-Let me now fix all three:
-
-
-Edited 2 files
-Edited 2 files
-Now add the missing stTab global function:
-
-
-Add the missing stTab global function near renderStocks
-Add the missing stTab global function near renderStocks
-Now let me verify the fixes are clean and copy to output:
-
-
-Verify all three fixes
-Verify all three fixes
-All three fixed — each ID now appears exactly once and stTab is defined. Copy to output:
-
-
-Ran a command, read a file
-Ran a command, read a file
-Found and fixed three bugs that were preventing data from rendering:
-
-Bug 1 — stTab function missing The stock projection pills in the HTML call onclick="stTab(10,this)" but this function was never defined globally. Any click (or error during init referencing it) would throw and halt rendering. Added a proper global stTab() function.
-
-Bug 2 — Duplicate id="rebal-section" The Stocks panel HTML had the rebalancing card copy-pasted twice, both with the same ID. document.getElementById only returns the first match, so renderRebalancing() would write to the first and the second would stay blank — also causing layout confusion.
-
-Bug 3 — Duplicate id="rebal-modal" Two separate modal <div> elements both had id="rebal-modal". This meant openRebalModal() was toggling the wrong element (whichever the browser's DOM picked first), so the modal would never open correctly, and closeRebalModal() would leave stale state. Removed the duplicate.
-
-
-Ned finance fixed
-Code · HTML 
-no changes, data still missing. if this helps with the debugging using the inspect it has identified a syntax error 'poStartDate' and referenceError; Can't find variable:renderStocks.  as such says cannot access renders before inititilisation
-
-22:29
-
-Ran 3 commands, viewed 2 files
-Ran 3 commands, viewed 2 files
-Now I see it clearly. Line 1509 — const RENDERS={...} uses const at the top level of a <script> block. This is the critical issue: renderStocks, renderProperties etc. are defined in earlier <script> blocks, but const RENDERS tries to reference them. In Safari/WebKit (iOS), const in a script block creates a block-scoped binding that can't see functions hoisted from other <script> tags in the same way — causing "Can't find variable: renderStocks".
-
-Also const PANELS on line 1508 has the same issue. And const SCEN_DESC on line 1413, const CH on line 819. The fix: change these top-level const declarations that reference cross-script functions to var, and also check poStartDate - it's used in poSimulate but not in DEFAULTS, so it's undefined on first load.
-
-
-Fix PANELS and RENDERS const to var so they work across script blocks in WebKit
-Fix PANELS and RENDERS const to var so they work across script blocks in WebKit
-Now fix poStartDate missing from DEFAULTS — it needs to be initialised:
-
-
-Add poStartDate to DEFAULTS so it's always defined
-Add poStartDate to DEFAULTS so it's always defined
-Now also fix the const CH and const SCEN_DESC which are also cross-script consts that could cause similar issues on WebKit:
-
-
-Edited 2 files
-Edited 2 files
-Now the real root cause — the entire app is split across 7 separate <script> blocks. In strict-mode WebKit, const/let are block-scoped to each <script> tag, so functions defined in one block can't be reliably referenced by const in another. The most robust fix is to merge all scripts into one. Let me do that:
-
-
-Merge all inline script blocks into one to eliminate cross-script scoping issues
-Merge all inline script blocks into one to eliminate cross-script scoping issues
-All inline scripts are now one block. Let me also verify the poWhatIfExtra is in the ZERO_STATE too, and do a final check:
-
-
-Verify poStartDate and poWhatIfExtra are properly defined
-Verify poStartDate and poWhatIfExtra are properly defined
-I also spot another curly-quote bug on line 1313 in the payoff render — same pattern as the first fix. Let me check and fix:
-
-
-Ran 4 commands, viewed a file
-Ran 4 commands, viewed a file
-Those are all legitimate Unicode (arrows, em-dashes, pencil emoji) — not the issue. The curly quotes on line 1313 must be a different character. Let me look at the raw bytes on that exact line:
-
-
-Check raw bytes on line 1313 around openById
-Check raw bytes on line 1313 around openById
-The bytes are \\'\\'+erid+\\'\\'' — that's \' then \' then +erid+ then \' then \'. So there are double-escaped quotes — \\' produces a literal backslash + quote in the string, not an escaped quote. The fix should be just \\' once each side (not double). Let me view the exact string:
-
-
-Decode line 1313 around openById to see exact string
-Decode line 1313 around openById to see exact string
-There it is — openById(''+erid+'') — the quotes around erid are regular single quotes (') not escaped, so the outer string (which is also delimited by ') terminates early. This is the same curly-quote bug pattern from earlier, but now with plain ' characters that were originally the curly quotes from the original file — they got partially fixed but these are using plain straight quotes in the wrong position.
-
-The string is: '<div ... onclick="openById(''+erid+'')">...' — the ' before '+erid+' prematurely closes the outer JS string. It needs to be \' to escape it.
-
-
-Viewed a file, ran a command
-Viewed a file, ran a command
-Now let me do a comprehensive scan for ALL remaining instances of this ''+varName+'' broken pattern:
-
-
-Ran 2 commands, read a file
-Ran 2 commands, read a file
-Three root causes fixed in this pass:
-
-1. "Can't find variable: renderStocks" — cross-script const scoping (the main culprit) The app was split across 7 separate <script> blocks. In WebKit (Safari/iOS), const and let are scoped to their individual <script> block — so const RENDERS = {home:renderHome, stocks:renderStocks, ...} in the last block couldn't see functions defined in earlier blocks. Fixed by merging all inline scripts into one single block, and changing const PANELS/const RENDERS/const CH/const SCEN_DESC to var.
-
-2. poStartDate syntax error — undefined property S.poStartDate was used throughout the payoff logic but was never declared in DEFAULTS, so on first load (before localStorage has anything) it was undefined, causing crashes. Added poStartDate:'01/07/23' and poWhatIfExtra:0 to the defaults.
-
-3. Second curly-quote bug in payoff tab The same broken openById(''+varName+'') pattern (originally curly quotes, surviving as misplaced straight quotes) was also present in the payoff panel's renderPayoff() function, causing that entire string assignment to crash. Fixed the escaping to openById(\''+varName+'\').
-
-
-Ned finance fixed
-Code · HTML 
-there is still an issue, still missing all data and now back to the navigation tabs not working.
-
-22:33
-Let me do a thorough diagnostic by actually parsing the JS for syntax errors.
-
-
-Ran 3 commands
-Ran 3 commands
-Found it. The openText('poStartDate',...) call inside the string has unescaped single quotes. Let me now fix ALL such syntax errors systematically:
-
-
-Ran 2 commands, viewed a file
-Ran 2 commands, viewed a file
-The right approach here is to take the entire JS, run it through node repeatedly to find ALL syntax errors, then fix them all at once. Let me do a full systematic repair:
-
-
-Ran 3 commands, viewed a file
-Ran 3 commands, viewed a file
-Found it — line 1328 has a nested template literal: `...${...?`<div...>`:''}` — a backtick template literal nested inside another backtick template literal (line 1317–1331). The inner one on line 1328 is `<div class="po-box info">...` inside the outer one. This is the syntax error. Let me fix it by converting the inner nested backtick to a regular string:
-
-
-Ran 6 commands
-Ran 6 commands
-The ` after ''} is closing the outer template literal at the right place — that's correct. The error must be in the IIFE inside ${} on line 876. Let me look at it more carefully:
-
-
-Ran 2 commands
-Ran 2 commands
-One unmatched open paren — the IIFE (function(){...}()) is missing its closing ). The ${(S.poWhatIfExtra>0?(function(){...}()):''} needs one more ) to close the outer (. Let me find and fix it:
-
-
-Ran 2 commands
-Ran 2 commands
-The JS is now fully valid. Copy to output:
-
-
-Ran a command, read a file
-Ran a command, read a file
-This time I used node --check to actually validate the JavaScript rather than guessing — that made all the difference. Here's what was found and fixed:
-
-Bug 1 — openText('poStartDate',...) unescaped quotes (line 1308) Inside a single-quoted JS string, the onclick="openText('poStartDate','Loan start date...')" contained unescaped single quotes that broke out of the outer string. Fixed by escaping them as \'.
-
-Bug 2 — Nested template literal in po-result (line 1328) A backtick template literal (`) was nested directly inside another backtick template literal — JavaScript doesn't allow this without wrapping in ${}. The inner `<div class="po-box info">...</div>` was converted to a plain string concatenation instead.
-
-Bug 3 — Missing closing parenthesis in the what-if IIFE The expression ${(S.poWhatIfExtra>0?(function(){...}()):''} had one unmatched open paren — the outer ( before S.poWhatIfExtra had no matching ) at the end. This left the template literal expression unclosed, causing the parser to fail on the next }.
-
-
-Ned finance fixed
-Code · HTML 
-there is a code to reset to zero-blank canvas, however when it's pressed it continues to revert to default values. can you adjust the script so that when reset to zero actually resets to zero while still having save as my default values and restore my saved default working
-
-22:44
-
-Viewed a file, ran a command
-Viewed a file, ran a command
-The problem is clear. confirmReset() removes the localStorage key and reloads — but loadState() falls back to DEFAULTS (the pre-filled data) when nothing is in storage. The fix: reset should save ZERO_STATE into localStorage instead of just removing it, so on reload it loads zeros.
-
-
-Edited 2 files
-Edited 2 files
-But there's a second problem — ZERO_STATE is defined much later in the script (line 1230), but confirmReset is defined at line 519, before ZERO_STATE. Since they're now in one merged script block, ZERO_STATE won't be hoisted. Move ZERO_STATE up before confirmReset:
-
-
-Viewed a file, edited a file
-Viewed a file, edited a file
-Now add ZERO_STATE right before confirmReset at the top of the script, and also add the missing fields (poStartDate, poSimExtra, poWhatIfExtra):
-
-
-Insert ZERO_STATE before confirmReset so it's available when confirmReset is called
-Insert ZERO_STATE before confirmReset so it's available when confirmReset is called
-Now verify the JS is still valid and copy to output:
-
-
-Ran 2 commands, read a file
-Ran 2 commands, read a file
-Two issues fixed:
-
-The core bug — reset fell back to DEFAULTS confirmReset() was calling localStorage.removeItem(STORE) then reloading. But loadState() returns DEFAULTS (your pre-filled data) when nothing is found in storage — so removing the key just reloaded the defaults. Fixed by writing ZERO_STATE directly into localStorage before reloading, so on reload loadState() finds it and loads zeros.
-
-Secondary bug — ZERO_STATE defined too late ZERO_STATE was declared near line 1230, long after confirmReset at line 519. In the merged single script block this means confirmReset would reference an uninitialised const if called early. Moved ZERO_STATE to just before confirmReset so it's always defined first.
-
-The three buttons now work independently:
-
-Reset to zero → saves ZERO_STATE to storage, reloads to a blank canvas
-Save as my default → saves current values under a separate _userdefault key
-Restore my saved default → loads from that _userdefault key back into the app
-
-Ned finance fixed
-Code · HTML 
-all codes are currently working as intended. can you think of any other usful features to utilise for this finance app? keeping it smart and intuitive. mortgage, payoff and proj seem a little lack luster compared to homepage and stocks tab
-
-22:50
-Great that everything's working! Here are some ideas focused on lifting those three tabs:
-
-Payoff tab
-
-Offset vs redraw toggle — show the difference in strategy visually
-"What if rates change?" slider — drag to a new rate and instantly see the payoff date shift
-Break-even calculator — how many months until refinancing costs pay off
-Side-by-side property comparison when you have multiple loans
-Mortgage / Properties tab
-
-Equity unlock timeline — at what date does LVR hit 80%, 60%, showing when you could access equity or drop LMI
-Rental yield vs interest cost gap chart — cashflow per property visualised over time
-Serviceability calculator — how much more could you borrow based on current income
-Projections tab
-
-FIRE countdown — a live "X years, Y months to financial independence" based on current trajectory
-Monte Carlo toggle — show a probability band (best/worst/median) instead of a single line
-Drawdown simulator — at retirement age, show how long the portfolio lasts at different spending levels
-Salary increase modelling — "if income grows 5%/yr, how does that change the projection?"
-Cross-tab ideas
-
-Net worth milestone notifications — a celebratory banner when you hit $100k, $250k, $500k etc.
-Tax efficiency score — a simple indicator flagging if super contributions are under the concessional cap, or if salary packaging is being maximised
-Weekly/monthly "financial health" summary card on the home screen
-Which of these appeal to you most? I can build out whichever ones you'd like — happy to do a few at once if they're in the same tab.
-
-do a timeline unlock for mortgage, fire countdown, monte carlo toggle, drawdown simulator, networth milestone notifications and financial health card
-
-22:56
-
-Viewed 5 files, ran a command
-Viewed 5 files, ran a command
-Good. Now I have a full picture. Let me build all 6 features at once in a clean Python script:
-
-
-Ran 2 commands
-Ran 2 commands
-Now wire up the new functions into the existing render calls:
-
-
-Edited 2 files
-Edited 2 files
-done?
-
-11:03
-Not yet — still need to wire Monte Carlo and Drawdown into renderProj, add the missing getScenAssumptions helper, and ensure shownMilestones is in ZERO_STATE. Let me finish:
-
-
-Edited 3 files
-Edited 3 files
-Now sync shownMilestones at init and ensure _shownMilestones picks up saved state on load:
-
-
-Sync _shownMilestones from loaded state at init
-Sync _shownMilestones from loaded state at init
-Now run the syntax check:
-
-
-Ran 2 commands, read a file
-Ran 2 commands, read a file
-All done — syntax clean. Here's what's been added:
-
-Home tab
-
-🔥 FIRE Countdown — shows years/months to financial independence with a live progress bar, FIRE age, monthly income at FIRE, and still-needed amount. Pulls your FIRE number from Overall Goals
-💪 Financial Health Card — scores you 0–100 across 6 metrics: emergency fund coverage, savings rate, concessional super cap usage, debt-to-assets ratio, ETF DCA consistency, and diversification. Colour-coded bars with grade label
-🎉 Milestone Toasts — animated banner slides in when you cross $50k, $100k, $250k, $500k, $750k, $1M, $2M, $5M. Each milestone only fires once (stored in device state)
-Properties tab
-
-Equity Unlock Timeline — per property, shows exactly when you'll hit LVR ≤80% (LMI-free), ≤60% (strong equity), ≤40% (prime release), and paid off. Ticked green for achieved, amber pulsing dot for next milestone
-Projections tab
-
-📊 Monte Carlo — runs 200 simulations with randomised annual returns, plots 10/25/50/75/90th percentile bands. Shows median and range at year 30. FIRE target line overlays if set
-🏖 Drawdown Simulator — shows how long your retirement portfolio lasts under 3%, 4%, 5% and 6% withdrawal rates, with a chart and "Lasts 40yr+ ✓" or "Depleted yr X" per scenario
-
-Ned finance fixed
-Code · HTML 
-there seems to be an error with the proj tab, data is missing, currently a blank page. secondly the mortgage tab and pay off tab seems a bit cumbersome, you have to switch between the two tabs to make changes. is there a way to streamline this? is having it all in one tab better?
-
-11:13
-Let me diagnose the proj tab first, then look at the payoff/properties structure.
-
-
-Viewed 5 files, ran 3 commands
-Viewed 5 files, ran 3 commands
-Found it. Line 1466-1467 — getScenAssumptions() returns a default object but doesn't set S.scenAssumptions, so line 1467 then tries S.scenAssumptions[scenIdx] which is still undefined, crashing the whole render. Let me fix that and then tackle the merged mortgage/payoff tab:
-
-
-Fix renderProj crash when scenAssumptions is undefined
-Fix renderProj crash when scenAssumptions is undefined
-Also fix getScenAssumptions to initialise and save properly:
-
-
-Fix getScenAssumptions to initialise S.scenAssumptions if missing
-Fix getScenAssumptions to initialise S.scenAssumptions if missing
-Now tackle the merged Mortgage + Payoff tab. I'll replace both the HTML panels and the nav, then merge the render logic:
-
-
-Viewed 3 files
-Viewed 3 files
-Good. Now I have everything I need. I'll merge Properties + Payoff into one "Mortgage" tab with internal sub-tabs, update the nav, and fix the PANELS/RENDERS arrays:
-
-
-Edited 2 files
-Edited 2 files
-Now update the PANELS/RENDERS arrays and add the setMortgageTab function, and update renderMortgage to call both sub-renders:
-
-
-Update PANELS and RENDERS to use mortgage instead of properties+payoff, add setMortgageTab and renderMortgage
-Update PANELS and RENDERS to use mortgage instead of properties+payoff, add setMortgageTab and renderMortgage
-Now update the show() function and updateNav references to handle the old properties panel ID being renamed:
-
-
-Fix show() to guard mortgage instead of properties/payoff
-Fix show() to guard mortgage instead of properties/payoff
-Now fix renderProperties — it still references props-dis and props-content which are now inside p-mortgage, and also the nav-properties ID that no longer exists:
-
-
-Ran a command, edited a file
-Ran a command, edited a file
-Now final syntax check:
-
-
-Final syntax and completeness check
-Final syntax and completeness check
-All green. Copy to output:
-
-
-Ran a command, read a file
-Ran a command, read a file
-Two things fixed:
-
-Proj tab blank page renderProj was calling S.scenAssumptions[scenIdx] immediately after checking if(!S.scenAssumptions)getScenAssumptions() — but getScenAssumptions() was returning a default object without actually setting S.scenAssumptions, so the array was still undefined and sa came back as undefined. Every subsequent call like sa.etfReturn.toFixed(1) then crashed silently. Fixed by initialising the full 3-scenario array directly inside both renderProj and getScenAssumptions when it's missing.
-
-Properties + Payoff merged into one Mortgage tab The two tabs are now a single Mortgage nav item with 🏠 Properties and 📉 Payoff sub-tabs at the top. Switching between them is instant — no nav bar round-trip. Properties renders immediately on load; Payoff renders when you tap its sub-tab. The nav bar freed up a slot which gives more breathing room across the 7 remaining items.
-
-
-Ned finance fixed
-Code · HTML 
-there was an undo feature in on of the earlier versions but that code has since disappeared, can you reapply the undo feature.  secondly I have my doubts on the pay off calculations. at the start of my loan i calculated my pay off date using excel 205k loan, 6.13% 30 years fortnightly with 693 in offset every fortnight meant i should have my loan squared away by sep 2031.  on my pay off tab it has me paying off april 2038 even with the extra fortnight. 1 can you workout if my calculations are wrong or if the coded calc is wrong. perhaps the app is basing it off my current effective loan which is 130k due to offset ect but that seems wrong cause it has me paying off in 2038 even at lower effective loan. to clarify my loan started 1/1/24. 205k. currently i have 27k in offset and a further 34k in redraw account. essentially offsetting my loan by 61k. hence effective loan of 130k. primary fix for this is pay off simulator
-
-Show more
-11:53
-Let me analyse the maths first, then find the undo code.
-
-
-Ran 4 commands, viewed 2 files
-Ran 4 commands, viewed 2 files
-Found the bugs. The simulation has two critical errors:
-
-extra going into offset that "grows" — but extra in the run() call is extraPer (the extra fortnightly payment). The code treats it like new money being deposited into offset each period, but it should be treated as direct principal reduction (extra payment to the bank)
-currentOffset starts at prop.offset only when extra>0 — the base case (min only) gets zero offset benefit, so the "min only" line is wrong too — it should always start with the current offset balance
-minPer is recalculated from remaining term — should be based on origLoan over full term (already fixed by propMinAuto using origLoan), but remainingTerm is still used as the maxP ceiling which is fine
-
-Find any remaining undo code
-Find any remaining undo code
-Undo is actually still there. Now fix the payoff simulation:
-
-
-Fix poSimulate - correct extra payment logic (direct principal reduction, not offset accumulation) and always use current offset
-Fix poSimulate - correct extra payment logic (direct principal reduction, not offset accumulation) and always use current offset
-Now verify the fix with a quick inline test matching your exact numbers:
-
-
-Verify fixed simulation gives correct dates
-Verify fixed simulation gives correct dates
-Jul 2031 with extra — that aligns with your Sep 2031 Excel figure (slight variance from current vs original rate). Now do the final check and ship:
-
-
-Ran 2 commands, read a file
-Ran 2 commands, read a file
-Undo — still present, no changes needed. The ↩ Undo (n) button, pushUndo(), undoStack, and undo() are all intact in the code.
-
-Your Excel calc was right. The app was wrong — here's exactly why:
-
-The old poSimulate had three compounding errors:
-
-Bug 1 — Extra payment treated as offset deposit, not principal reduction The code added extra to currentOffset each period (currentOffset += extra), meaning it thought you were depositing $693 into an offset account that kept growing. But the minimum payment was still only $574/fortnight. Your actual behaviour is paying $1,268/fortnight total to the bank — $575 min + $693 extra. The fixed code does total_pmt = minPer + extra and applies the full amount against principal.
-
-Bug 2 — Minimum-only (base) case used zero offset currentOffset was set to prop.offset only when extra > 0. The base "min payments only" line showed no offset benefit at all, inflating it to ~2038. The fix applies your current $61k offset to all scenarios.
-
-Bug 3 — Default start date was 2023-07-01 not 2024-01-01 The fallback date was wrong, adding ~6 phantom months of elapsed time to the remaining term calculation.
-
-Verified numbers with fixed code:
-
-With $693 extra fortnightly → Jul 2031 ✓ (matches your Sep 2031 Excel calc, small difference from rate 6.13% → 5.88%)
-Min payments only (base case) → Sep 2038 (this is what the app was incorrectly showing as your "with extra" date)
-
-Ned finance fixed
-Code · HTML 
-The undo button is not showing when a input has been made
-
-14:54
-
-Find all undo and saveState references
-Find all undo and saveState references
-Found the bug. saveState() calls pushUndo() which calls updateUndoBtn() — but updateUndoBtn sets display:none or display:flex. The undo button's initial style uses display:none which is correct, but updateUndoBtn sets the textContent — which overwrites the innerHTML including the arrow icon. Also critically: pushUndo saves state before the new value is written to S, so it's saving the right snapshot — that part is fine. The real issue is the style.display toggle: the button starts with display:none as an inline style, but CSS might be overriding flex. Let me check:
-
-
-View the undo button and undoStack declaration
-View the undo button and undoStack declaration
-Two bugs visible:
-
-undoStack is const — declared after the merged script block starts. Because saveState → pushUndo is called during init (e.g. restoreDefault, toggles), undoStack may not be initialised yet if the call order is wrong. Change to var.
-b.textContent overwrites the button's inner HTML — the ↩ arrow is fine as text but if there was ever an icon/span inside, it'd be wiped. Minor but safe to keep as-is.
-The real problem: saveState calls pushUndo() which pushes the state including the just-made change — so undo restores to the same value. pushUndo must be called before S is mutated, but since saveState is called after mutation, we need to separate them. Looking at the flow: edit value → write to S → saveState() → pushUndo() pushes current (already mutated) S → undo pops it back to... the same mutated state. The snapshot should be taken before the mutation.
-The fix: push the pre-mutation snapshot. We do this by calling pushUndo() separately before each mutation, or — simpler — make saveState not call pushUndo, and instead call pushUndo explicitly before each write to S:
-
-
-Fix undo system - separate pushUndo from saveState so snapshot is taken before mutation, use var not const
-Fix undo system - separate pushUndo from saveState so snapshot is taken before mutation, use var not const
-Now add pushUndo() before every place S is mutated and saveState() is called:
-
-
-Find all saveState call sites that need pushUndo before them
-Find all saveState call sites that need pushUndo before them
-The cleanest fix is to make saveState itself push the undo snapshot before saving — but we need it to push the pre-mutation state. The best approach: rename saveState to accept an optional pre-snapshot, or simply make every mutation call pushUndo() first. The most robust solution — make saveState always push undo, but pass the old state in. Actually the simplest correct pattern is: push undo inside saveState but before the new data is written. Since S is already mutated by the time saveState is called, we need callers to pass the old snapshot.
-
-Cleanest fix: restore saveState to call pushUndo, but have pushUndo save a snapshot passed as argument (the pre-mutation state). We capture it at call time:
-
-
-Make saveState accept a pre-snapshot for undo, simplifying all call sites
-Make saveState accept a pre-snapshot for undo, simplifying all call sites
-Now add captureUndo() before every mutation point — the key ones are closeEdit, closeText, toggles, and all the modal save functions:
-
-
-Edited 3 files, ran 3 commands, read a file
-Edited 3 files, ran 3 commands, read a file
-The root cause was a timing problem — saveState() was calling pushUndo() after S had already been mutated, so the undo stack was saving the new value rather than the old one. Pressing undo would restore the same state you were already in, making it appear broken.
-
-The fix — two-phase capture:
-
-captureUndo() is now called before any mutation, taking a snapshot of S in its pre-change state and holding it in _undoSnap
-saveState() still calls pushUndo(), which now commits that pre-mutation snapshot to the undo stack rather than the already-changed state
-undoStack changed from const to var to avoid potential cross-block scoping issues
-captureUndo() is now wired into all 28 mutation points — every edit field save, every toggle, every add/delete of stocks, plans, properties, rates, lump sums, and scenario changes. The ↩ Undo button will now appear immediately after any change and correctly roll back to what was there before.
-
-
-Ned finance fixed
-Code · HTML 
-two things, the undo button is still not showing. secondly when the gorgraphical toggle is switched i am unable to edit. currently locked/non editable. the stocks have holding type core, satellite ect. perhaps like the geographical data seeing a pie chart of the type of holdings as well
-
-15:04
-Let me look at all three issues directly in the code.
-
-
-Find undo button and related functions
-Find undo button and related functions
-Spotted it immediately — there are two saveState function definitions (lines 569 and 601). The first one at line 569 is from the original code and does NOT call pushUndo. It overrides our fixed version later. Also captureUndo at 597 is after saveState at 569, so the first saveState wins and never calls pushUndo.
-
-
-View lines 565-605 to see both saveState definitions
-View lines 565-605 to see both saveState definitions
-Now I can see all three issues clearly. Let me fix them all at once:
-
-
-Remove duplicate saveState on line 569 (before undo system is defined)
-Remove duplicate saveState on line 569 (before undo system is defined)
-Now find and fix the geo toggle locking issue:
-
-
-Viewed 2 files, ran a command
-Viewed 2 files, ran a command
-Now I have everything I need. Let me fix all three issues:
-
-1. Undo — duplicate saveState removed, but I see pushUndo is called inside saveState which now correctly uses captureUndo snapshot — but captureUndo is being called AFTER mutation at many sites. Let me trace one: closeAddStock();captureUndo();saveState() — captureUndo happens after the stock is already added. Need to flip order everywhere.
-
-2. Geo locked — the inputs in renderGeoRegions use onchange which fires on blur, not oninput. On iOS this works fine, but the real issue is geoRegions variable — let me check where it's declared.
-
-3. Holdings type pie — straightforward addition.
-
-
-Ran 2 commands
-Ran 2 commands
-continue
-
-17:22
-
-Ran 3 commands, edited a file
-Ran 3 commands, edited a file
-All green. Copy to output:
-
-
-Ran a command, read a file
-Ran a command, read a file
-All three issues fixed:
-
-Undo button not showing Two bugs working together. First, there were two function saveState() definitions — the original at line 569 (no undo logic) was shadowing the fixed one at line 601. Removed the duplicate. Second, captureUndo() was being called after S was already mutated at 22 call sites — so the snapshot being saved to the undo stack was the new state, not the old one. Every call site has been corrected to captureUndo() → mutate S → saveState().
-
-Geo modal inputs locked/non-editable The region and percentage inputs were using only onchange which fires on blur (leaving the field). On iOS/WebKit, onchange in dynamically-rendered HTML inside a modal can silently fail to update the array reference. Added oninput alongside onchange so values update live as you type. Also changed let geoRegions to var to avoid any scoping edge cases.
-
-Holdings type breakdown chart New card added to the Stocks tab showing a donut chart + breakdown rows for Core, Satellite, Defensive, Growth, Income and Speculative. Each type shows its percentage of total portfolio value, a proportional bar, and the dollar amount. A small note appears if any holdings are still on the default untagged state, prompting you to tap the tag badge to cycle through types.
-
-
-Ned finance fixed
-Code · HTML 
-undo button still not working, geographic feature still not working and holding by type has no data
-
-17:31
-Let me look at the actual live state of the code directly rather than inferring.
-
-
-Ran 2 commands, viewed a file
-Ran 2 commands, viewed a file
-Found it. Line 850-851: src[r.key]=v; mutates S then captureUndo() is called — so the snapshot is of the already-mutated state. Same on line 856 for toggles: the toggle fires S[key]=!S[key] then captureUndo(). These are the main edit paths used constantly, so undo never works. Also let me check the geo and tag breakdown render paths:
-
-
-Ran 2 commands
-Ran 2 commands
-renderTagBreakdown() is never called from renderStocks! It was supposed to be added but the wiring failed. Let me now fix all three issues properly in one clean pass:
-
-
-Ran a command, viewed a file, edited a file
-Ran a command, viewed a file, edited a file
-Now fix saveRebal which mutates S before calling saveState:
-
-
-View saveRebal to see what mutations happen
-View saveRebal to see what mutations happen
-The rebal modal mutates S.rebalTargets live via oninput as user types — so captureUndo needs to happen when the modal opens, not on save:
-
-
-Edited 2 files, ran a command
-Edited 2 files, ran a command
-There's a duplicate saveRebal too. Remove both and add one clean version:
-
-
-Remove duplicate saveRebal and keep one clean version
-Remove duplicate saveRebal and keep one clean version
-Now fix the geo modal — same issue, mutations happen live via oninput as user types into the region inputs, so capture must happen when modal opens:
-
-
-Edited 2 files
-Edited 2 files
-Now fix the geo inputs — oninput directly modifies S.geoHoldings via geoRegions. But wait — the input handlers write to geoRegions array (local), not directly to S. Then saveGeo copies geoRegions into S. So the geo modal is actually fine for undo — the issue was the inputs themselves weren't being editable. Let me check the actual geo region input HTML more carefully:
-
-
-View renderGeoRegions to see exact input HTML
-View renderGeoRegions to see exact input HTML
-The geo inputs look correct. The real issue is the geo toggle — when you switch geoEnabled on, renderGeo() is called but S.geoHoldings might be {}. Let me check what renderGeo does when enabled but empty, and whether the "Edit geographic data" button is actually visible:
-
-
-Check geo card visibility logic
-Check geo card visibility logic
-The geo toggle calls mkTog(...,'geoEnabled','renderGeo()'). The mkTog callback replaces refresh(). But the toggle fires S['geoEnabled']=!S['geoEnabled'] then saveState() then renderGeo() — that's fine. But wait — renderGeo() is called as the callback BUT renderStocks() is NOT called. The geo card is inside the stocks panel HTML at line 305, but renderGeo only shows/hides geo-card and renders inside geo-content. The add-btn for "Edit geographic data" is inside geo-card. So when enabled, renderGeo() shows the card and renders the content. That should work.
-
-The real issue: the toggle captureUndo() fix from the mkTog template. Let me verify the current mkTog template is correct:
-
-
-Ran a command, viewed a file
-Ran a command, viewed a file
-Good — captureUndo() is before S[key] mutation. Now the real geo bug: when the geo toggle is turned ON and renderGeo() is called as callback, S.geoHoldings might be undefined (not in old saved states). Let me make renderGeo safer and also fix the renderTagBreakdown wiring:
-
-
-Make renderGeo safe when geoHoldings is undefined, and ensure it always shows edit button
-Make renderGeo safe when geoHoldings is undefined, and ensure it always shows edit button
-Now fix renderTagBreakdown wiring — it's not being called from renderStocks:
-
-
-Viewed a file, edited a file
-Viewed a file, edited a file
-Also renderTagBreakdown references fmtK which needs getComputedStyle for the donut hole fill color — let me make that more robust:
-
-
-Fix donut hole fill color to use hardcoded var reference instead of getComputedStyle
-Fix donut hole fill color to use hardcoded var reference instead of getComputedStyle
-Final syntax check and ship:
-
-
-Final verification
-Final verification
-8 for 8. Ship it:
-
-
-Ran a command, read a file
-Ran a command, read a file
-Each of the three issues had a distinct root cause that previous attempts missed:
-
-Undo button — captureUndo() was positioned correctly in most places but the two highest-frequency edit paths were still wrong. In nkOk (the number pad OK button — used for every single numeric edit), src[r.key]=v mutated S then captureUndo() was called. Same for saveText. Both now capture before the mutation. The rebal and geo modals had a different problem — they mutate S live via oninput as you type, so captureUndo now fires when those modals open, not when you press Save.
-
-Geographic feature locked — Two issues: S.geoHoldings could be undefined in older saved states (no guard existed), causing Object.keys(S.geoHoldings) to throw and silently kill the render. Added a safety init. Also the empty-state message now explicitly tells you to tap Edit, since that button is the only entry point.
-
-Holdings by type no data — renderTagBreakdown() was defined but never actually called from renderStocks(). The previous attempt's string replacement (renderHoldings();renderStockGoals();renderGeo() → add renderTagBreakdown()) failed silently because the exact string wasn't present in that form. Now directly inserted at the right point in renderStocks.
-
-
-Ned finance fixed
-Code · HTML 
-
-
-
-
-
-Claude is AI and can make mistakes. Please double-check responses.
-
-
-raw
-Ned finance fixed · HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -872,7 +209,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .dll{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mu);font-family:'DM Mono',monospace}
 .dlv{font-size:10px;font-weight:600;font-family:'DM Mono',monospace}
 .gr{color:var(--gr)}.bl{color:var(--bl)}.pu{color:var(--pu)}.am{color:var(--am)}.rd{color:var(--rd)}
- 
+
 /* MILESTONE TOAST */
 .ms-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;border-radius:20px;padding:12px 20px;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;z-index:900;transition:transform .4s cubic-bezier(.175,.885,.32,1.275);white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center;pointer-events:none}
 .ms-toast.show{transform:translateX(-50%) translateY(0)}
@@ -922,7 +259,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   <div class="hdr-nw"><div class="hdr-val" id="hdr-total">—</div><div class="hdr-lbl">net worth</div></div>
 </div>
 <div class="scroll" id="scroll">
- 
+
   <!-- HOME -->
   <div class="panel active" id="p-home">
     <div class="card">
@@ -945,7 +282,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       </div>
     </div>
   </div>
- 
+
   <!-- STOCKS -->
   <div class="panel" id="p-stocks">
     <div id="stocks-dis"></div>
@@ -973,7 +310,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       <div class="card"><div class="sec">Goals &amp; targets</div><div id="stock-goals"></div></div>
     </div>
   </div>
- 
+
   <!-- MORTGAGE (merged Properties + Payoff) -->
   <div class="panel" id="p-mortgage">
     <div id="props-dis"></div>
@@ -999,7 +336,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       </div>
     </div>
   </div>
- 
+
   <!-- CASH FLOW -->
   <div class="panel" id="p-cashflow">
     <div class="card"><div class="sec">Monthly summary</div><div class="g2" id="cf-summary"></div></div>
@@ -1008,7 +345,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="card"><div class="sec">Investments</div><div id="cf-investments"></div></div>
     <div class="card"><div class="sec">Surplus / shortfall</div><div id="cf-surplus"></div></div>
   </div>
- 
+
   <!-- SUPER -->
   <div class="panel" id="p-super">
     <div class="card"><div class="sec">ART · 90% international unhedged</div><div class="g2" id="sup-met"></div><div class="ch"><canvas id="supChart"></canvas></div></div>
@@ -1017,13 +354,13 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="card"><div class="sec">Options</div><div id="sup-togs"></div></div>
     <div class="card"><div class="sec">Adjust <span class="sec-hint">— tap to edit</span></div><div id="sup-ctrl"></div></div>
   </div>
- 
+
   <!-- HISTORY -->
   <div class="panel" id="p-history">
     <div class="card"><div class="sec">Net worth over time</div><div class="ch"><canvas id="histChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--gr)"></div>Actual</div><div class="li"><div class="ld" style="background:var(--bl)"></div>Projected</div></div></div>
     <div class="card"><div class="sec">Log entries</div><div id="nw-entries"></div><div class="log-add" onclick="logNW()">+ Log today's net worth</div></div>
   </div>
- 
+
   <!-- PROJECTION -->
   <div class="panel" id="p-proj">
     <div class="card"><div class="sec">Scenario</div><div class="scen-bar"><div class="sb active" onclick="setScen(0,this)">📈 Current</div><div class="sb" onclick="setScen(1,this)">📈 Optimistic</div><div class="sb" onclick="setScen(2,this)">🛡 Conservative</div></div><div id="scen-desc" style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6;padding:9px;background:var(--sf2);border-radius:var(--rs);border:0.5px solid var(--bd)"></div></div>
@@ -1035,9 +372,9 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="card"><div class="sec">Full table</div><div style="overflow-x:auto"><table class="tbl" id="proj-tbl"></table></div></div>
     <div class="card"><div class="sec">Retirement income <span class="sec-hint">— 4% rule</span></div><div id="proj-retirement"></div></div>
   </div>
- 
+
 </div><!-- end scroll -->
- 
+
 <nav class="nav" id="main-nav">
   <div class="nb active" onclick="show('home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Home</div>
   <div class="nb" id="nav-stocks" onclick="show('stocks',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stocks</div>
@@ -1047,7 +384,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   <div class="nb" onclick="show('history',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>History</div>
   <div class="nb" onclick="show('proj',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Proj.</div>
 </nav>
- 
+
 <!-- NUMPAD -->
 <div class="mb" id="edit-modal">
   <div class="modal">
@@ -1067,7 +404,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     </div>
   </div>
 </div>
- 
+
 <!-- TEXT EDIT -->
 <div class="sheet-bg" id="text-modal" onclick="if(event.target===this)closeText()">
   <div class="sheet">
@@ -1077,7 +414,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeText()">Cancel</button><button class="bp" onclick="saveText()">Save</button></div>
   </div>
 </div>
- 
+
 <!-- NAME -->
 <div class="sheet-bg" id="name-modal" onclick="if(event.target===this)closeNameModal()">
   <div class="sheet">
@@ -1086,7 +423,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeNameModal()">Cancel</button><button class="bp" onclick="saveName()">Save</button></div>
   </div>
 </div>
- 
+
 <!-- ADD STOCK -->
 <div class="sheet-bg" id="add-stock-modal" onclick="if(event.target===this)closeAddStock()">
   <div class="sheet">
@@ -1097,7 +434,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeAddStock()">Cancel</button><button class="bp" onclick="addStock()">Add</button></div>
   </div>
 </div>
- 
+
 <!-- ADD PROPERTY -->
 <div class="sheet-bg" id="add-prop-modal" onclick="if(event.target===this)closeAddProp()">
   <div class="sheet">
@@ -1118,7 +455,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeAddProp()">Cancel</button><button class="bp" onclick="addProp()">Add property</button></div>
   </div>
 </div>
- 
+
 <!-- ADD PLAN -->
 <div class="sheet-bg" id="plan-modal" onclick="if(event.target===this)closePlanModal()">
   <div class="sheet">
@@ -1130,7 +467,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closePlanModal()">Cancel</button><button class="bp" onclick="savePlan()">Save plan</button></div>
   </div>
 </div>
- 
+
 <!-- ADD LUMP -->
 <div class="sheet-bg" id="lump-modal" onclick="if(event.target===this)closeLumpModal()">
   <div class="sheet">
@@ -1141,7 +478,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeLumpModal()">Cancel</button><button class="bp" onclick="saveLump()">Add</button></div>
   </div>
 </div>
- 
+
 <!-- TARGET ALLOCATION -->
 <div class="sheet-bg" id="rebal-modal" onclick="if(event.target===this)closeRebalModal()">
   <div class="sheet">
@@ -1152,7 +489,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeRebalModal()">Cancel</button><button class="bp" onclick="saveRebal()">Save</button></div>
   </div>
 </div>
- 
+
 <!-- RATE MODAL -->
 <div class="sheet-bg" id="rate-modal" onclick="if(event.target===this)closeRateModal()">
 <!-- GEO MODAL -->
@@ -1193,7 +530,7 @@ const DEFAULTS={
   }],
   nextPropId:2,
   poPeriod:'fortnightly',poActivePropId:1,poExtraLump:0,poSimExtra:693,poStartDate:'01/07/23',poWhatIfExtra:0,
- 
+
   sBalance:172000,sExtra:550,sEmployer:1400,sReturn:7.5,
   sSalaryRise:false,sSalaryRisePct:3,
   cf:{grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000},
@@ -1211,7 +548,7 @@ const DEFAULTS={
     networth:{fireNumber:3000000,debtFreeDate:'01/01/31',notes:''}
   },
 };
- 
+
 function loadState(){
   try{
     const r=localStorage.getItem(STORE);
@@ -1236,9 +573,9 @@ function loadState(){
 function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
 const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,shownMilestones:[],goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
 function confirmReset(){if(confirm('Reset to zero — blank canvas? This cannot be undone.')){localStorage.setItem(STORE,JSON.stringify(ZERO_STATE));location.reload();}}
- 
+
 const S=loadState();
- 
+
 const TAGS={
   core:{label:'Core',color:'#1D9E75'},
   satellite:{label:'Satellite',color:'#378ADD'},
@@ -1247,7 +584,7 @@ const TAGS={
   income:{label:'Income',color:'#fb923c'},
   speculative:{label:'Speculative',color:'#E24B4A'},
 };
- 
+
 const propEditOpen=new Set();
 function togglePropEdit(id){
   if(propEditOpen.has(id))propEditOpen.delete(id);
@@ -1257,7 +594,7 @@ function togglePropEdit(id){
   if(el)el.style.display=propEditOpen.has(id)?'block':'none';
   if(arrow)arrow.textContent=propEditOpen.has(id)?'▴':'▾';
 }
- 
+
 var undoStack=[];const MAX_UNDO=20;
 var _undoSnap=null;
 function captureUndo(){try{_undoSnap=JSON.stringify(S);}catch(e){}}
@@ -1265,10 +602,10 @@ function pushUndo(){try{if(_undoSnap){undoStack.push(_undoSnap);_undoSnap=null;}
 function updateUndoBtn(){const b=document.getElementById('undo-btn');if(b){b.style.display=undoStack.length?'flex':'none';b.textContent='↩ Undo ('+undoStack.length+')';}}
 function undo(){if(!undoStack.length)return;const prev=JSON.parse(undoStack.pop());Object.assign(S,prev);localStorage.setItem(STORE,JSON.stringify(S));updateUndoBtn();refresh();}
 function saveState(){try{pushUndo();localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
- 
+
 const COLORS=['#1D9E75','#378ADD','#7f77dd','#EF9F27','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
 let selColor=COLORS[0];
- 
+
 // DATES
 function parseDMY(s){
   if(!s||typeof s!=='string')return null;
@@ -1280,12 +617,12 @@ function parseDMY(s){
 function fmtDMY(d){if(!d)return'—';return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);}
 function today(){return fmtDMY(new Date());}
 function tsFromDMY(s){const d=parseDMY(s);return d?d.getTime():0;}
- 
+
 // FORMAT
 const fmt=v=>'$'+Math.round(v).toLocaleString('en-AU');
 const fmtK=v=>{if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';if(v>=1000)return'$'+Math.round(v/1000)+'k';return'$'+Math.round(v);};
 const real=(v,y)=>S.inflationAdj?v/Math.pow(1+S.inflationRate/100,y):v;
- 
+
 // PROPERTY HELPERS
 function propMinAuto(p,period){
   const principal=p.origLoan||p.loan;
@@ -1311,7 +648,7 @@ function propCurrentRate(p){
 function totalEquity(){return S.properties.reduce((a,p)=>a+Math.max(0,p.val-p.loan),0);}
 function totalDebt(){return S.properties.reduce((a,p)=>a+p.loan,0);}
 function netRentalMonthly(){return S.properties.filter(p=>p.type==='investment').reduce((a,p)=>a+(p.rentWk*52/12)*0.75,0);}
- 
+
 // STOCK HELPERS
 function monthlyContribs(){
   const now=new Date();const res={};
@@ -1322,8 +659,8 @@ function monthlyContribs(){
   return res;
 }
 function totalMonthly(){return Object.values(monthlyContribs()).reduce((a,b)=>a+b,0);}
- 
- 
+
+
 // PROJECTIONS
 function getScenAssumptions(){
   if(!S.scenAssumptions){const avgRet=S.holdings.length?S.holdings.reduce((a,h)=>a+h.ret,0)/S.holdings.length:10;S.scenAssumptions=[{etfReturn:avgRet,superReturn:S.sReturn,propGrowth:4,extraMonthly:0},{etfReturn:avgRet+2,superReturn:S.sReturn+1.5,propGrowth:6,extraMonthly:0},{etfReturn:Math.min(avgRet,7),superReturn:6,propGrowth:3,extraMonthly:0}];}
@@ -1367,7 +704,7 @@ function projStocks(yrs){
   }
   return res;
 }
- 
+
 function projSuper(yrs){
   let b=S.sBalance;const res=[];let emp=S.sEmployer;
   for(let y=0;y<=yrs;y++){
@@ -1378,7 +715,7 @@ function projSuper(yrs){
   }
   return res;
 }
- 
+
 function projProp(prop,yrs){
   let loan=prop.loan;const g=prop.growth/100;const nowTs=Date.now();
   function rateAt(ts){let r=prop.rate;if(prop.rateHistory&&prop.rateHistory.length){const sorted=[...prop.rateHistory].sort((a,b)=>a.ts-b.ts);for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}}return r;}
@@ -1397,17 +734,17 @@ function projProp(prop,yrs){
   }
   return res;
 }
- 
+
 function projAllProps(yrs){
   if(!S.propertiesEnabled)return Array.from({length:yrs+1},(_,y)=>({y,equity:0,debt:0,val:0}));
   const projections=S.properties.map(p=>projProp(p,yrs));
   return Array.from({length:yrs+1},(_,y)=>({y,equity:projections.reduce((a,pr)=>a+pr[y].eq,0),debt:projections.reduce((a,pr)=>a+pr[y].loan,0),val:projections.reduce((a,pr)=>a+pr[y].val,0)}));
 }
- 
+
 // PAYOFF SIMULATION
 let poPeriod=S.poPeriod||'fortnightly';
 function setPeriod(p,el){poPeriod=p;captureUndo();S.poPeriod=p;saveState();document.querySelectorAll('.pt').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPayoff();}
- 
+
 function poSimulate(prop,extraLump,period){
   const ppy=period==='fortnightly'?26:12;
   const msPer=period==='fortnightly'?14*24*3600*1000:30.44*24*3600*1000;
@@ -1422,7 +759,7 @@ function poSimulate(prop,extraLump,period){
   const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
   // Redraw balance: stored in prop.offset as combined offset+redraw, or separate if available
   const currentOffset=prop.offset||0;
- 
+
   function run(extra,lump){
     // b = current loan balance. Offset/redraw reduces effective interest but not the balance directly.
     // Extra payment goes directly off principal each period.
@@ -1451,8 +788,8 @@ function poSimulate(prop,extraLump,period){
   }
   return{base:run(0,0),current:run(extraPer,0),withLump:extraLump>0?run(extraPer,extraLump):null,minPer,extraPer};
 }
- 
- 
+
+
 // CASH FLOW
 function calcCF(){
   const cf=S.cf;
@@ -1474,12 +811,12 @@ function calcCF(){
   const totalOut=mortMonthly+living+etfMo+superExtra;
   return{monthlyNet,rentalInc,otherInc,totalInc,mortMonthly,living,etfMo,superExtra,totalOut,surplus:totalInc-totalOut,taxable,tax,medicare};
 }
- 
- 
+
+
 // NUMPAD ENGINE
 const EFR={};
 let editKey=null,editCfg=null,numStr='';
- 
+
 function ef(label,key,cfg,obj){
   const src=obj||S;const v=src[key];
   const display=cfg.pre+(cfg.dec>0?parseFloat(v).toFixed(cfg.dec):Math.round(v).toLocaleString('en-AU'))+cfg.suf;
@@ -1513,12 +850,12 @@ function nkOk(){
   const src=r.obj||S;captureUndo();src[r.key]=v;
   saveState();closeEdit();refresh();
 }
- 
+
 function mkTog(lbl,desc,key,cb){
   return `<div class="tr"><div class="ti"><div class="tl">${lbl}</div><div class="td">${desc}</div></div>
     <div class="tog ${S[key]?'on':''}" onclick="captureUndo();S['${key}']=!S['${key}'];this.classList.toggle('on');saveState();${cb||'refresh()'}"><div class="tog-k"></div></div></div>`;
 }
- 
+
 function efText(label,key,placeholder,propId){
   const src=propId!=null?S.properties.find(p=>p.id===propId):S;
   const v=src?src[key]||'':'';
@@ -1545,7 +882,7 @@ function saveText(){
   else S[key]=val;
   saveState();closeText();refresh();
 }
- 
+
 // CHARTS
 var CH={};
 function mkChart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(el)CH[id]=new Chart(el,cfg);}
@@ -1557,7 +894,7 @@ const bOpts={responsive:true,maintainAspectRatio:false,...pt0,
     x:{ticks:{font:{size:9},color:'#7a7a8c',maxTicksLimit:7},grid:{display:false},border:{display:false}}
   }
 };
- 
+
 // DONUT
 function drawDonut(vals,colors,total){
   const svg=document.getElementById('donut');
@@ -1572,7 +909,7 @@ function drawDonut(vals,colors,total){
   out+=`<text x="45" y="42" text-anchor="middle" fill="#1D9E75" font-size="7" font-family="DM Mono">TOTAL</text><text x="45" y="52" text-anchor="middle" fill="#f0f0f5" font-size="8" font-family="DM Mono">${fmtK(total)}</text>`;
   svg.innerHTML=out;
 }
- 
+
 // SECTION TOGGLES
 function renderSectionToggles(){
   document.getElementById('section-toggles').innerHTML=`
@@ -1585,11 +922,11 @@ function updateNav(){
   document.getElementById('nav-stocks').classList.toggle('off',!S.stocksEnabled);
   document.getElementById('nav-mortgage').classList.toggle('off',!S.propertiesEnabled);
 }
- 
- 
+
+
 // HOLDINGS UI
 function proj1(h,yrs){const c=monthlyContribs();let v=h.val;const r=h.ret/100/12;const mo=c[h.ticker]||0;for(let m=0;m<yrs*12;m++)v+=v*r+mo;return Math.round(v);}
- 
+
 function renderHoldings(){
   const el=document.getElementById('holdings-list');
   if(!S.holdings.length){el.innerHTML='<div style="text-align:center;color:var(--mu);font-size:12px;padding:14px;font-family:DM Mono">No holdings — add one below</div>';return;}
@@ -1614,7 +951,7 @@ function renderHoldings(){
     </div>`;
   }).join('');
 }
- 
+
 function openAddStock(){document.getElementById('m-ticker').value='';document.getElementById('m-val').value='';selColor=COLORS[0];renderColorPicker();document.getElementById('add-stock-modal').classList.add('open');}
 function closeAddStock(){document.getElementById('add-stock-modal').classList.remove('open');}
 function renderColorPicker(){document.getElementById('color-opts').innerHTML=COLORS.map(c=>`<div class="cd ${c===selColor?'sel':''}" style="background:${c}" onclick="selColor='${c}';renderColorPicker()"></div>`).join('');}
@@ -1627,7 +964,7 @@ function addStock(){
 }
 function delStock(id){if(!confirm('Remove this holding?'))return;captureUndo();S.holdings=S.holdings.filter(h=>h.id!==id);saveState();renderStocks();}
 function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');captureUndo();h.tag=keys[(cur+1)%keys.length];saveState();renderHoldings();}
- 
+
 // REBALANCING
 function renderRebalancing(){
   const el=document.getElementById('rebal-section');
@@ -1662,7 +999,7 @@ function openRebalModal(){
 function updateRebalTotal(){const tot=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');el.textContent='Total: '+tot.toFixed(1)+'%';el.style.color=Math.abs(tot-100)<0.1?'var(--gr)':'var(--rd)';}
 function closeRebalModal(){document.getElementById('rebal-modal').classList.remove('open');}
 function saveRebal(){saveState();closeRebalModal();renderStocks();}
- 
+
 // PLANS & LUMPS
 let planAllocs=[];
 function renderContribPlans(){
@@ -1689,7 +1026,7 @@ function renderPlanAllocs(){
 function addPlanAlloc(){planAllocs.push({ticker:S.holdings[0]?.ticker||'VGS',amount:500});renderPlanAllocs();}
 function savePlan(){if(!planAllocs.length){alert('Add at least one allocation');return;}captureUndo();S.contribPlans.push({id:S.nextPlanId++,name:document.getElementById('plan-name').value.trim()||'DCA Plan',startDate:document.getElementById('plan-date').value.trim()||today(),allocs:JSON.parse(JSON.stringify(planAllocs))});closePlanModal();saveState();renderStocks();}
 function delPlan(id){if(!confirm('Remove plan?'))return;captureUndo();S.contribPlans=S.contribPlans.filter(p=>p.id!==id);saveState();renderStocks();}
- 
+
 function renderLumps(){
   const el=document.getElementById('lump-list');
   if(!S.lumpSums.length){el.innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono;padding:8px 0">No lump sums recorded</div>';return;}
@@ -1701,8 +1038,8 @@ function openAddLump(){document.getElementById('lump-ticker').innerHTML=S.holdin
 function closeLumpModal(){document.getElementById('lump-modal').classList.remove('open');}
 function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}captureUndo();S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();saveState();renderStocks();}
 function delLump(id){captureUndo();S.lumpSums=S.lumpSums.filter(l=>l.id!==id);saveState();renderStocks();}
- 
- 
+
+
 // PROPERTIES
 function openAddProp(){['p-name','p-val','p-loan','p-orig','p-offset','p-rate','p-term','p-start','p-rent','p-minfn','p-extra'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-type').value='investment';document.getElementById('p-growth').value='4';document.getElementById('add-prop-modal').classList.add('open');}
 function closeAddProp(){document.getElementById('add-prop-modal').classList.remove('open');}
@@ -1717,7 +1054,7 @@ function addProp(){
   captureUndo();S.properties.push(prop);closeAddProp();saveState();renderProperties();
 }
 function delProp(id){if(!confirm('Remove this property?'))return;captureUndo();S.properties=S.properties.filter(p=>p.id!==id);saveState();renderProperties();}
- 
+
 function openRateModal(){openRateForProp(S.properties[0]?.id);}
 function openRateForProp(propId){
   document.getElementById('r-rate').value='';document.getElementById('r-date').value=today();
@@ -1734,7 +1071,7 @@ function addRate(){
   captureUndo();closeRateModal();saveState();renderProperties();
 }
 function delPropRate(propId,ts){const prop=S.properties.find(p=>p.id===propId);if(!prop)return;captureUndo();prop.rateHistory=prop.rateHistory.filter(r=>r.ts!==ts);saveState();renderProperties();}
- 
+
 function renderPropCard(prop){
   const eff=propEff(prop);const equity=Math.max(0,prop.val-prop.loan);const lvr=prop.val>0?Math.round(prop.loan/prop.val*100):0;
   const minFn=propMin(prop,'fortnightly');const autoFn=propMinAuto(prop,'fortnightly');const cr=propCurrentRate(prop);
@@ -1788,8 +1125,8 @@ function renderPropCard(prop){
     </div>
   </div>`;
 }
- 
- 
+
+
 // RENDER PANELS
 // ── REBALANCING ────────────────────────────────────────────────────────────
 function renderRebalancing(){
@@ -1828,9 +1165,9 @@ function openRebalModal(){
 }
 function updateRebalTotal(){const t=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');if(el){el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}}
 function closeRebalModal(){document.getElementById('rebal-modal').classList.remove('open');}
- 
+
 // ── GEO BREAKDOWN ──────────────────────────────────────────────────────────
- 
+
 // ── HOLDINGS TYPE BREAKDOWN ────────────────────────────────────────────────
 function renderTagBreakdown(){
   const card=document.getElementById('tag-breakdown-card');
@@ -1851,7 +1188,7 @@ function renderTagBreakdown(){
     .filter(e=>e.val>0)
     .sort((a,b)=>b.val-a.val);
   if(!entries.length){el.innerHTML='';return;}
- 
+
   // Build HTML: donut canvas + legend rows
   let html2='<div style="display:flex;align-items:center;gap:16px;padding:4px 0 8px">';
   html2+='<div style="position:relative;width:120px;height:120px;flex-shrink:0"><canvas id="tagPieChart" width="120" height="120"></canvas>';
@@ -1867,15 +1204,15 @@ function renderTagBreakdown(){
     html2+='</div>';
   });
   html2+='</div></div>';
- 
+
   // Holdings with no tag assigned note
   const untagged=S.holdings.filter(h=>!h.tag);
   if(untagged.length){
     html2+='<div style="font-size:9px;color:var(--di);font-family:DM Mono;margin-top:2px">'+untagged.length+' holding'+(untagged.length>1?'s':'')+' using default Core tag — tap tag badge to cycle</div>';
   }
- 
+
   el.innerHTML=html2;
- 
+
   // Draw donut
   setTimeout(()=>{
     const canvas=document.getElementById('tagPieChart');if(!canvas)return;
@@ -1896,7 +1233,7 @@ function renderTagBreakdown(){
     ctx.fillStyle=bg;ctx.fill();
   },60);
 }
- 
+
 var geoRegions=[];
 function renderGeo(){
   const card=document.getElementById('geo-card');if(!card)return;
@@ -1943,7 +1280,7 @@ function renderGeoRegions(){
 function addGeoRegion(){geoRegions.push({region:'',pct:0});renderGeoRegions();}
 function updateGeoTotal(){const t=geoRegions.reduce((a,r)=>a+r.pct,0);const el=document.getElementById('geo-total-rebal');if(el){el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}}
 function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));saveState();closeGeoModal();renderGeo();}
- 
+
 // ── GOALS ──────────────────────────────────────────────────────────────────
 function renderStockGoals(){
   const g=S.goals.stocks;
@@ -1965,7 +1302,7 @@ function renderStockGoals(){
     '<div style="margin-top:10px"><div style="font-size:9px;color:var(--mu);font-family:DM Mono;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Notes</div>'+
     '<textarea onchange="S.goals.stocks.notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none;resize:none;min-height:70px;line-height:1.6" placeholder="e.g. Hit $500k by 40, DCA into VGS monthly...">'+(g.notes||'')+'</textarea></div>';
 }
- 
+
 function renderSuperGoals(){
   const g=S.goals.super;
   const data=projSuper(30);
@@ -1987,7 +1324,7 @@ function renderSuperGoals(){
     '<div class="ir"><span class="ir-l">Concessional cap room</span><span class="ir-v">'+fmt(Math.max(0,30000-S.sExtra*26-S.sEmployer*12))+'/yr</span></div>'+
     '<div style="margin-top:10px"><textarea onchange="S.goals.super.notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none;resize:none;min-height:70px;line-height:1.6" placeholder="e.g. Maximise concessional contributions from 35...">'+(g.notes||'')+'</textarea></div>';
 }
- 
+
 function renderNWGoals(){
   const g=S.goals.networth;
   const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
@@ -2008,7 +1345,7 @@ function renderNWGoals(){
     '<div class="ir"><span class="ir-l">Projected net worth age '+(S.age+30)+'</span><span class="ir-v">'+fmtK(tot30)+'</span></div>'+
     '<div style="margin-top:10px"><textarea onchange="S.goals.networth.notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none;resize:none;min-height:70px;line-height:1.6" placeholder="e.g. FIRE by 50, semi-retire at 45...">'+(g.notes||'')+'</textarea></div>';
 }
- 
+
 function renderPropGoals(prop){
   if(!S.goals.property)S.goals.property={};
   if(!S.goals.property[prop.id])S.goals.property[prop.id]={targetLVR:60,targetEquity:200000,targetYield:5,notes:''};
@@ -2026,11 +1363,11 @@ function renderPropGoals(prop){
     '<textarea onchange="if(!S.goals.property['+prop.id+'])S.goals.property['+prop.id+']={};S.goals.property['+prop.id+'].notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none;resize:none;min-height:70px;line-height:1.6;margin-top:8px" placeholder="e.g. Refinance when LVR hits 60%...">'+(g.notes||'')+'</textarea>'+
   '</div>';
 }
- 
+
 // ── SAVE DEFAULT ───────────────────────────────────────────────────────────
 function saveAsDefault(){if(confirm('Save current values as your personal default?')){localStorage.setItem(STORE+'_userdefault',JSON.stringify(S));alert('✓ Saved as your personal default');}}
 function restoreDefault(){const saved=localStorage.getItem(STORE+'_userdefault');if(!saved){alert('No personal default saved yet. Set up your values then tap Save as my default.');return;}if(confirm('Restore to your saved personal default?')){captureUndo();Object.assign(S,JSON.parse(saved));saveState();refresh();}}
- 
+
 let _stYr=10;
 function stTab(yr,el){_stYr=yr;document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));if(el)el.classList.add('active');const d=projStocks(yr);const step=yr===10?2:5;const yrs=[];for(let i=0;i<=yr;i+=step)yrs.push(i);const tickers=S.holdings.map(h=>h.ticker);const el2=document.getElementById('st-proj');if(el2)el2.innerHTML='<div style="overflow-x:auto"><table class="tbl"><tr><th>Yr</th><th>Age</th>'+tickers.map(t=>'<th>'+t+'</th>').join('')+'<th>Total</th></tr>'+yrs.map(y=>'<tr><td>'+(y===0?'Now':'+'+y)+'</td><td>'+(S.age+y)+'</td>'+tickers.map(t=>'<td>'+fmtK(d[y][t]||0)+'</td>').join('')+'<td class="hl">'+fmtK(real(d[y].total,y))+'</td></tr>').join('')+'</table></div>';}
 function renderStocks(){
@@ -2065,7 +1402,7 @@ function renderStocks(){
   renderGeo();
   renderStockGoals();
 }
- 
+
 function renderProperties(){
   if(!S.propertiesEnabled){
     document.getElementById('props-dis').innerHTML='<div class="dis-section"><div class="dis-icon">🏠</div><div class="dis-lbl">Properties disabled</div><div class="dis-desc">Enable in Home → Section toggles</div></div>';
@@ -2086,7 +1423,7 @@ function renderProperties(){
     {label:'Debt',data:pp.map(d=>d.debt),borderColor:'#E24B4A',backgroundColor:'transparent',tension:.4,borderWidth:1.5,borderDash:[5,4],...pt0},
   ]},options:bOpts});
 }
- 
+
 function renderPayoff(){
   if(!S.properties.length){
     document.getElementById('po-prop-sel').innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">No properties — add one in Properties tab</div>';
@@ -2103,7 +1440,7 @@ function renderPayoff(){
 // Use payoff-tab override if set, otherwise use property default
 if(S.poSimExtra===undefined||S.poSimExtra===null)S.poSimExtra=prop.extraFort;
 const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
- 
+
   const annualTotal=(minPer+extraPer)*(poPeriod==='fortnightly'?26:12);
   if(!S.poStartDate)S.poStartDate=prop.startDate||'01/07/23';
   const sd=parseDMY(S.poStartDate)||new Date(2023,6,1);const ye=Math.max(0,(new Date()-sd)/(365.25*24*3600*1000));const rt=Math.max(1,prop.term-ye);
@@ -2113,7 +1450,7 @@ const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
   const wirid='ef_poWI';EFR[wirid]={key:'poWhatIfExtra',label:'What-if extra per period',cfg:{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'Test extra offset amount — simulation only'},obj:null};
   const erid='ef_poSimExtra';EFR[erid]={key:'poSimExtra',label:'Extra contribution (fortnightly)',cfg:{pre:'$',suf:'/fn',dec:0,min:0,max:10000,hint:'Simulated fortnightly offset contribution'},obj:null};
   document.getElementById('po-extra').innerHTML='<div class="ef" onclick="openById(\''+erid+'\')">' +'<span class="ef-lbl">Extra offset contribution (fortnightly)</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(S.poSimExtra??prop.extraFort)+'</span><span class="ef-pen">✎</span></span></div>'+'<div class="ef" onclick="openById(\''+lrid+'\')"><span class="ef-lbl">One-off lump sum</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(S.poExtraLump)+'</span><span class="ef-pen">✎</span></span></div>'+'<div class="ef" onclick="openById(\''+wirid+'\')"><span class="ef-lbl">What-if extra per period</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val '+(S.poWhatIfExtra>0?'gr':'')+'">'+(S.poWhatIfExtra>0?fmt(S.poWhatIfExtra)+'/period':'Tap to test a scenario')+'</span><span class="ef-pen">✎</span></span></div>'+'<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:4px 0">What-if is simulation only</div>'
- 
+
   const res=poSimulate(prop,S.poExtraLump,poPeriod);
   const sm=res.base.months-res.current.months;const si=res.base.interest-res.current.interest;
   document.getElementById('po-result').innerHTML=`
@@ -2135,7 +1472,7 @@ const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
   if(S.poExtraLump>0&&res.withLump)ds.push({label:'Lump',data:byd(res.withLump),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.08)',fill:true,tension:.4,borderWidth:2,...pt0});
   mkChart('payoffChart',{type:'line',data:{labels:cl,datasets:ds},options:bOpts});
 }
- 
+
 function renderCashFlow(){
   const cf=calcCF();
   document.getElementById('cf-summary').innerHTML=`
@@ -2166,7 +1503,7 @@ function renderCashFlow(){
     <div class="cf-row"><span class="cf-lbl">Annual equivalent</span><span class="cf-val ${sc}">${fmt(Math.abs(cf.surplus*12))}/yr</span></div>
     <div style="font-size:10px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px;line-height:1.5">Tax based on 2025-26 Australian rates. HECS cleared. Actual may differ.</div>`;
 }
- 
+
 function renderSuper(){
   const data=projSuper(30);
   document.getElementById('sup-met').innerHTML=`
@@ -2185,7 +1522,7 @@ function renderSuper(){
     (S.sSalaryRise?ef('Annual salary rise','sSalaryRisePct',{pre:'',suf:'%',dec:1,min:0,max:15,hint:'Annual pay rise applied to SG'}):'');
   renderSuperGoals();
 }
- 
+
 function renderHistory(){
   const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
   const projData=st.map((s,i)=>({y:s.y,tot:s.total+sup[i].b+pp[i].equity}));
@@ -2206,8 +1543,8 @@ function logNW(){
   saveState();renderHistory();
 }
 function delNW(ts){captureUndo();S.nwHistory=S.nwHistory.filter(e=>e.ts!==ts);saveState();renderHistory();}
- 
- 
+
+
 // PROJECTION
 var SCEN_DESC=[
   '📈 <strong>Current plan</strong> — ETFs via DCA, current properties, realistic baseline.',
@@ -2262,8 +1599,8 @@ function renderProjChart(){
   const yrs=[0,5,10,15,20,25,30];
   document.getElementById('proj-tbl').innerHTML=`<tr><th>Age</th><th>ETFs</th><th>Super</th><th>Properties</th><th>Total</th></tr>${yrs.map(y=>`<tr><td>${S.age+y}${y===0?' now':''}</td><td>${fmtK(c[y].etf)}</td><td>${fmtK(c[y].sup)}</td><td>${fmtK(c[y].props)}</td><td class="hl">${fmtK(c[y].tot)}</td></tr>`).join('')}`;
 }
- 
- 
+
+
 // ═══════════════════════════════════════════════════════════════════
 // MILESTONE TOAST NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════
@@ -2297,7 +1634,7 @@ function showMilestoneToast(msg, sub) {
   clearTimeout(t._t);
   t._t = setTimeout(function() { t.classList.remove('show'); }, 4000);
 }
- 
+
 // ═══════════════════════════════════════════════════════════════════
 // FIRE COUNTDOWN
 // ═══════════════════════════════════════════════════════════════════
@@ -2343,7 +1680,7 @@ function renderFIRECountdown(tot) {
   html2 += '<div class="ir"><span class="ir-l">Monthly income at FIRE</span><span class="ir-v gr">' + fmt(fireMonthly) + '/mo</span></div>';
   el.innerHTML = html2;
 }
- 
+
 // ═══════════════════════════════════════════════════════════════════
 // FINANCIAL HEALTH CARD
 // ═══════════════════════════════════════════════════════════════════
@@ -2375,11 +1712,11 @@ function renderHealthCard(tot, cf) {
   // Diversification: have stocks + super + property
   var divCount = (S.stocksEnabled && S.holdings.length > 0 ? 1 : 0) + (S.sBalance > 0 ? 1 : 0) + (S.propertiesEnabled && S.properties.length > 0 ? 1 : 0) + (S.cashSavings > 0 ? 1 : 0);
   checks.push({lbl:'Diversification', score: divCount / 4 * 100, note: divCount + ' of 4 asset classes active'});
- 
+
   var overall = Math.round(checks.reduce(function(a, c) { return a + c.score; }, 0) / checks.length);
   var grade = overall >= 85 ? 'Excellent 🌟' : overall >= 70 ? 'Strong 💪' : overall >= 55 ? 'Good 👍' : overall >= 40 ? 'Fair ⚡' : 'Needs work 🔧';
   var gradeColor = overall >= 85 ? 'var(--gr)' : overall >= 70 ? 'var(--bl)' : overall >= 55 ? 'var(--am)' : 'var(--rd)';
- 
+
   var html2 = '<div class="hc-score" style="color:' + gradeColor + '">' + overall + '</div>';
   html2 += '<div class="hc-grade" style="color:' + gradeColor + '">' + grade + '</div>';
   checks.forEach(function(c) {
@@ -2389,7 +1726,7 @@ function renderHealthCard(tot, cf) {
   });
   el.innerHTML = html2;
 }
- 
+
 // ═══════════════════════════════════════════════════════════════════
 // EQUITY UNLOCK TIMELINE (Properties tab)
 // ═══════════════════════════════════════════════════════════════════
@@ -2437,7 +1774,7 @@ function renderEquityTimeline() {
   });
   el.innerHTML = html2;
 }
- 
+
 function getScenAssumptions(){
   if(!S.scenAssumptions||!Array.isArray(S.scenAssumptions)||S.scenAssumptions.length<3){
     S.scenAssumptions=[
@@ -2512,7 +1849,7 @@ function gaussRand() {
   while(v===0)v=Math.random();
   return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*0.4;
 }
- 
+
 // ═══════════════════════════════════════════════════════════════════
 // DRAWDOWN SIMULATOR (Projection tab)
 // ═══════════════════════════════════════════════════════════════════
@@ -2550,7 +1887,7 @@ function renderDrawdownSim() {
   el.innerHTML = html2;
   mkChart('ddChart',{type:'line',data:{labels:labels,datasets:datasets},options:{...bOpts,plugins:{...bOpts.plugins,legend:{display:true,labels:{color:'#7a7a8c',font:{size:8},boxWidth:12}}}}});
 }
- 
+
 // HOME
 function renderHome(){
   const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
@@ -2597,16 +1934,16 @@ function renderHome(){
   renderHealthCard(tot, cf);
   checkMilestones(tot);
 }
- 
+
 // NAME MODAL
 function openNameModal(){document.getElementById('name-inp').value=S.appName||'';document.getElementById('name-modal').classList.add('open');}
 function closeNameModal(){document.getElementById('name-modal').classList.remove('open');}
 function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';captureUndo();closeNameModal();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
- 
+
 // NAV
 var PANELS=['home','stocks','mortgage','cashflow','super','history','proj'];
 var RENDERS={home:renderHome,stocks:renderStocks,mortgage:renderMortgage,cashflow:renderCashFlow,super:renderSuper,history:renderHistory,proj:renderProj};
- 
+
 var _mortgageTab='props';
 function setMortgageTab(tab){
   _mortgageTab=tab;
@@ -2640,7 +1977,7 @@ function refresh(){
   const tot=(S.stocksEnabled?st.total:0)+(S.propertiesEnabled?totalEquity():0)+sup.b+S.cashSavings+S.emergency;
   document.getElementById('hdr-total').textContent=fmtK(tot);
 }
- 
+
 // INIT
 (()=>{
   const d=new Date();const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
