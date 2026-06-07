@@ -256,6 +256,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 <div class="ms-toast" id="ms-toast"><div id="ms-toast-msg">🎉</div><div class="ms-toast-sub" id="ms-toast-sub"></div></div>
 <div class="hdr">
   <div><div class="hdr-name" id="hdr-name" onclick="openNameModal()">Finance</div><div class="hdr-sub" id="hdr-date"></div></div>
+  <div id="undo-btn" onclick="undo()" style="display:none;background:rgba(255,255,255,0.07);border:0.5px solid var(--bd2);border-radius:14px;padding:5px 12px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;color:var(--mu);cursor:pointer;align-items:center;gap:5px;transition:opacity .2s">↩ Undo</div>
   <div class="hdr-nw"><div class="hdr-val" id="hdr-total">—</div><div class="hdr-lbl">net worth</div></div>
 </div>
 <div class="scroll" id="scroll">
@@ -511,8 +512,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeGeoModal()">Cancel</button><button class="bp" onclick="saveGeo()">Save</button></div>
   </div>
 </div>
-<!-- UNDO BUTTON - must be outside ALL modals -->
-<div id="undo-btn" onclick="undo()" style="display:none;position:fixed;bottom:calc(var(--nh) + var(--safe) + 16px);left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a1a28,#2a2a3a);border:0.5px solid var(--bd2);border-radius:20px;padding:10px 20px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--tx);cursor:pointer;z-index:210;align-items:center;gap:8px;box-shadow:0 6px 24px rgba(0,0,0,0.6);white-space:nowrap">↩ Undo</div>
+<!-- UNDO BUTTON is embedded in header -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const STORE='ned_fin_v15';
@@ -607,8 +607,7 @@ var undoStack=[];const MAX_UNDO=20;
 var _undoSnap=null;
 function captureUndo(){try{_undoSnap=JSON.stringify(S);}catch(e){}}
 function pushUndo(){try{if(_undoSnap){undoStack.push(_undoSnap);_undoSnap=null;}else{undoStack.push(JSON.stringify(S));}if(undoStack.length>MAX_UNDO)undoStack.shift();updateUndoBtn();}catch(e){}}
-function updateUndoBtn(){const b=document.getElementById('undo-btn');if(b){b.style.display=undoStack.length?'flex':'none';b.textContent='↩ Undo ('+undoStack.length+')';}}
-function undo(){if(!undoStack.length)return;const prev=JSON.parse(undoStack.pop());Object.assign(S,prev);localStorage.setItem(STORE,JSON.stringify(S));updateUndoBtn();refresh();}
+function updateUndoBtn(){const b=document.getElementById('undo-btn');if(b){b.style.display=undoStack.length?'flex':'none';b.textContent=undoStack.length>1?'↩ Undo ('+undoStack.length+')':'↩ Undo';}}function undo(){if(!undoStack.length)return;const prev=JSON.parse(undoStack.pop());Object.assign(S,prev);localStorage.setItem(STORE,JSON.stringify(S));updateUndoBtn();refresh();}
 function saveState(){try{pushUndo();localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
 
 const COLORS=['#1D9E75','#378ADD','#7f77dd','#EF9F27','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
