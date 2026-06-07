@@ -492,6 +492,14 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 
 <!-- RATE MODAL -->
 <div class="sheet-bg" id="rate-modal" onclick="if(event.target===this)closeRateModal()">
+  <div class="sheet">
+    <div class="sheet-title">Rate change <div class="mx" onclick="closeRateModal()">×</div></div>
+    <div class="field"><label>New rate (%)</label><input id="r-rate" type="number" inputmode="decimal" placeholder="6.13" step="0.01"></div>
+    <div class="field"><label>Effective date (DD/MM/YY)</label><input id="r-date" autocomplete="off"></div>
+    <div class="field"><label>Property</label><select id="r-prop"></select></div>
+    <div class="ma"><button class="bss" onclick="closeRateModal()">Cancel</button><button class="bp" onclick="addRate()">Save</button></div>
+  </div>
+</div>
 <!-- GEO MODAL -->
 <div class="sheet-bg" id="geo-modal" onclick="if(event.target===this)closeGeoModal()">
   <div class="sheet">
@@ -503,8 +511,8 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="ma"><button class="bss" onclick="closeGeoModal()">Cancel</button><button class="bp" onclick="saveGeo()">Save</button></div>
   </div>
 </div>
-<!-- UNDO BUTTON -->
-<div id="undo-btn" onclick="undo()" style="display:none;position:fixed;bottom:calc(var(--nh) + var(--safe) + 12px);left:12px;background:var(--sf);border:0.5px solid var(--bd2);border-radius:20px;padding:8px 14px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;color:var(--tx);cursor:pointer;z-index:190;align-items:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,0.4)">↩ Undo</div>
+<!-- UNDO BUTTON - must be outside ALL modals -->
+<div id="undo-btn" onclick="undo()" style="display:none;position:fixed;bottom:calc(var(--nh) + var(--safe) + 16px);left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a1a28,#2a2a3a);border:0.5px solid var(--bd2);border-radius:20px;padding:10px 20px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--tx);cursor:pointer;z-index:210;align-items:center;gap:8px;box-shadow:0 6px 24px rgba(0,0,0,0.6);white-space:nowrap">↩ Undo</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const STORE='ned_fin_v15';
@@ -963,7 +971,7 @@ function addStock(){
   closeAddStock();saveState();renderStocks();
 }
 function delStock(id){if(!confirm('Remove this holding?'))return;captureUndo();S.holdings=S.holdings.filter(h=>h.id!==id);saveState();renderStocks();}
-function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');captureUndo();h.tag=keys[(cur+1)%keys.length];saveState();renderHoldings();}
+function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');captureUndo();h.tag=keys[(cur+1)%keys.length];saveState();renderHoldings();renderTagBreakdown();}
 
 // REBALANCING
 function renderRebalancing(){
@@ -990,10 +998,16 @@ function openRebalModal(){
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <span style="font-size:13px;font-weight:700;color:${h.color};width:50px">${h.ticker}</span>
       <input type="number" inputmode="decimal" placeholder="0" value="${S.rebalTargets[h.ticker]||0}"
-        oninput="S.rebalTargets['${h.ticker}']=parseFloat(this.value)||0;updateRebalTotal()"
+        data-ticker="${h.ticker}"
+        class="rebal-inp"
         style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--tx);font-family:'DM Mono',monospace;outline:none">
       <span style="color:var(--mu)">%</span>
     </div>`).join('');
+  document.querySelectorAll('.rebal-inp').forEach(inp=>{
+    const update=function(){S.rebalTargets[this.dataset.ticker]=parseFloat(this.value)||0;updateRebalTotal();};
+    inp.addEventListener('input',update);
+    inp.addEventListener('change',update);
+  });
   updateRebalTotal();document.getElementById('rebal-modal').classList.add('open');
 }
 function updateRebalTotal(){const tot=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');el.textContent='Total: '+tot.toFixed(1)+'%';el.style.color=Math.abs(tot-100)<0.1?'var(--gr)':'var(--rd)';}
@@ -1153,19 +1167,6 @@ function renderRebalancing(){
     '</div>';
   }).join('');
 }
-function openRebalModal(){
-  document.getElementById('rebal-inputs').innerHTML=S.holdings.map(h=>
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
-    '<span style="font-size:13px;font-weight:700;color:'+h.color+';width:50px">'+h.ticker+'</span>'+
-    '<input type="number" inputmode="decimal" placeholder="0" value="'+(S.rebalTargets[h.ticker]||0)+'" oninput="S.rebalTargets[\''+h.ticker+'\']=parseFloat(this.value)||0;updateRebalTotal()" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:14px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
-    '<span style="color:var(--mu)">%</span></div>'
-  ).join('');
-  updateRebalTotal();
-  document.getElementById('rebal-modal').classList.add('open');
-}
-function updateRebalTotal(){const t=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');if(el){el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}}
-function closeRebalModal(){document.getElementById('rebal-modal').classList.remove('open');}
-
 // ── GEO BREAKDOWN ──────────────────────────────────────────────────────────
 
 // ── HOLDINGS TYPE BREAKDOWN ────────────────────────────────────────────────
@@ -1271,10 +1272,19 @@ function closeGeoModal(){document.getElementById('geo-modal').classList.remove('
 function renderGeoRegions(){
   document.getElementById('geo-regions').innerHTML=geoRegions.map((r,i)=>
     '<div style="display:flex;gap:7px;margin-bottom:7px;align-items:center">'+
-    '<input placeholder="Region (e.g. USA)" value="'+r.region+'" oninput="geoRegions['+i+'].region=this.value" onchange="geoRegions['+i+'].region=this.value" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
-    '<input type="number" placeholder="%" value="'+r.pct+'" oninput="geoRegions['+i+'].pct=parseFloat(this.value)||0;updateGeoTotal()" onchange="geoRegions['+i+'].pct=parseFloat(this.value)||0;updateGeoTotal()" style="width:70px;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
+    '<input class="geo-region-inp" data-idx="'+i+'" data-field="region" placeholder="Region (e.g. USA)" value="'+r.region+'" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
+    '<input class="geo-pct-inp" data-idx="'+i+'" type="number" placeholder="%" value="'+r.pct+'" style="width:70px;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
     '<span onclick="geoRegions.splice('+i+',1);renderGeoRegions()" style="color:var(--rd);cursor:pointer;font-size:18px;padding:4px">✕</span></div>'
   ).join('');
+  // Attach event listeners after DOM render — avoids iOS inline handler issues
+  document.querySelectorAll('.geo-region-inp').forEach(inp=>{
+    inp.addEventListener('input',function(){geoRegions[parseInt(this.dataset.idx)].region=this.value;});
+    inp.addEventListener('change',function(){geoRegions[parseInt(this.dataset.idx)].region=this.value;});
+  });
+  document.querySelectorAll('.geo-pct-inp').forEach(inp=>{
+    inp.addEventListener('input',function(){geoRegions[parseInt(this.dataset.idx)].pct=parseFloat(this.value)||0;updateGeoTotal();});
+    inp.addEventListener('change',function(){geoRegions[parseInt(this.dataset.idx)].pct=parseFloat(this.value)||0;updateGeoTotal();});
+  });
   updateGeoTotal();
 }
 function addGeoRegion(){geoRegions.push({region:'',pct:0});renderGeoRegions();}
