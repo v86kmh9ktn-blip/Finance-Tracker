@@ -592,10 +592,13 @@ function togglePropEdit(id){
   if(arrow)arrow.textContent=propEditOpen.has(id)?'▴':'▾';
 }
 
-const undoStack=[];const MAX_UNDO=20;
-function pushUndo(){try{undoStack.push(JSON.stringify(S));if(undoStack.length>MAX_UNDO)undoStack.shift();updateUndoBtn();}catch(e){}}
+var undoStack=[];const MAX_UNDO=20;
+var _undoSnap=null;
+function captureUndo(){try{_undoSnap=JSON.stringify(S);}catch(e){}}
+function pushUndo(){try{if(_undoSnap){undoStack.push(_undoSnap);_undoSnap=null;}else{undoStack.push(JSON.stringify(S));}if(undoStack.length>MAX_UNDO)undoStack.shift();updateUndoBtn();}catch(e){}}
 function updateUndoBtn(){const b=document.getElementById('undo-btn');if(b){b.style.display=undoStack.length?'flex':'none';b.textContent='↩ Undo ('+undoStack.length+')';}}
-function undo(){if(!undoStack.length)return;Object.assign(S,JSON.parse(undoStack.pop()));localStorage.setItem(STORE,JSON.stringify(S));updateUndoBtn();refresh();}
+function undo(){if(!undoStack.length)return;const prev=JSON.parse(undoStack.pop());Object.assign(S,prev);localStorage.setItem(STORE,JSON.stringify(S));updateUndoBtn();refresh();}
+function saveState(){try{pushUndo();localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
 
 const COLORS=['#1D9E75','#378ADD','#7f77dd','#EF9F27','#E24B4A','#e879f9','#38bdf8','#fb923c','#a3e635','#f43f5e'];
 let selColor=COLORS[0];
@@ -737,7 +740,7 @@ function projAllProps(yrs){
 
 // PAYOFF SIMULATION
 let poPeriod=S.poPeriod||'fortnightly';
-function setPeriod(p,el){poPeriod=p;S.poPeriod=p;saveState();document.querySelectorAll('.pt').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPayoff();}
+function setPeriod(p,el){poPeriod=p;S.poPeriod=p;captureUndo();saveState();document.querySelectorAll('.pt').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPayoff();}
 
 function poSimulate(prop,extraLump,period){
   const ppy=period==='fortnightly'?26:12;
@@ -842,12 +845,12 @@ function nkOk(){
     document.getElementById('range-hint').style.color='var(--rd)';return;
   }
   const src=r.obj||S;src[r.key]=v;
-  saveState();closeEdit();refresh();
+  captureUndo();saveState();closeEdit();refresh();
 }
 
 function mkTog(lbl,desc,key,cb){
   return `<div class="tr"><div class="ti"><div class="tl">${lbl}</div><div class="td">${desc}</div></div>
-    <div class="tog ${S[key]?'on':''}" onclick="S['${key}']=!S['${key}'];this.classList.toggle('on');saveState();${cb||'refresh()'}"><div class="tog-k"></div></div></div>`;
+    <div class="tog ${S[key]?'on':''}" onclick="S['${key}']=!S['${key}'];this.classList.toggle('on');captureUndo();saveState();${cb||'refresh()'}"><div class="tog-k"></div></div></div>`;
 }
 
 function efText(label,key,placeholder,propId){
@@ -873,7 +876,7 @@ function saveText(){
   const val=document.getElementById('text-inp').value.trim();
   if(pid!==''){const p=S.properties.find(x=>x.id===parseInt(pid));if(p)p[key]=val;}
   else S[key]=val;
-  saveState();closeText();refresh();
+  captureUndo();saveState();closeText();refresh();
 }
 
 // CHARTS
@@ -907,9 +910,9 @@ function drawDonut(vals,colors,total){
 function renderSectionToggles(){
   document.getElementById('section-toggles').innerHTML=`
     <div class="tr"><div class="ti"><div class="tl">📈 Stocks & ETFs</div><div class="td">Include ETF portfolio in net worth and show Stocks tab</div></div>
-      <div class="tog ${S.stocksEnabled?'on':''}" onclick="S.stocksEnabled=!S.stocksEnabled;this.classList.toggle('on');saveState();updateNav();refresh()"><div class="tog-k"></div></div></div>
+      <div class="tog ${S.stocksEnabled?'on':''}" onclick="S.stocksEnabled=!S.stocksEnabled;this.classList.toggle('on');captureUndo();saveState();updateNav();refresh()"><div class="tog-k"></div></div></div>
     <div class="tr"><div class="ti"><div class="tl">🏠 Properties</div><div class="td">Include property equity in net worth and show Properties tab</div></div>
-      <div class="tog ${S.propertiesEnabled?'on':''}" onclick="S.propertiesEnabled=!S.propertiesEnabled;this.classList.toggle('on');saveState();updateNav();refresh()"><div class="tog-k"></div></div></div>`;
+      <div class="tog ${S.propertiesEnabled?'on':''}" onclick="S.propertiesEnabled=!S.propertiesEnabled;this.classList.toggle('on');captureUndo();saveState();updateNav();refresh()"><div class="tog-k"></div></div></div>`;
 }
 function updateNav(){
   document.getElementById('nav-stocks').classList.toggle('off',!S.stocksEnabled);
@@ -953,10 +956,10 @@ function addStock(){
   const val=parseFloat(document.getElementById('m-val').value)||0;
   if(!ticker){alert('Enter a ticker name');return;}
   S.holdings.push({id:S.nextHId++,ticker,val,ret:10,color:selColor});
-  closeAddStock();saveState();renderStocks();
+  closeAddStock();captureUndo();saveState();renderStocks();
 }
-function delStock(id){if(!confirm('Remove this holding?'))return;S.holdings=S.holdings.filter(h=>h.id!==id);saveState();renderStocks();}
-function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');h.tag=keys[(cur+1)%keys.length];saveState();renderHoldings();}
+function delStock(id){if(!confirm('Remove this holding?'))return;S.holdings=S.holdings.filter(h=>h.id!==id);captureUndo();saveState();renderStocks();}
+function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');h.tag=keys[(cur+1)%keys.length];captureUndo();saveState();renderHoldings();}
 
 // REBALANCING
 function renderRebalancing(){
@@ -990,7 +993,7 @@ function openRebalModal(){
 }
 function updateRebalTotal(){const tot=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');el.textContent='Total: '+tot.toFixed(1)+'%';el.style.color=Math.abs(tot-100)<0.1?'var(--gr)':'var(--rd)';}
 function closeRebalModal(){document.getElementById('rebal-modal').classList.remove('open');}
-function saveRebal(){saveState();closeRebalModal();renderStocks();}
+function saveRebal(){captureUndo();saveState();closeRebalModal();renderStocks();}
 
 // PLANS & LUMPS
 let planAllocs=[];
@@ -1016,8 +1019,8 @@ function renderPlanAllocs(){
     </div>`).join('');
 }
 function addPlanAlloc(){planAllocs.push({ticker:S.holdings[0]?.ticker||'VGS',amount:500});renderPlanAllocs();}
-function savePlan(){if(!planAllocs.length){alert('Add at least one allocation');return;}S.contribPlans.push({id:S.nextPlanId++,name:document.getElementById('plan-name').value.trim()||'DCA Plan',startDate:document.getElementById('plan-date').value.trim()||today(),allocs:JSON.parse(JSON.stringify(planAllocs))});closePlanModal();saveState();renderStocks();}
-function delPlan(id){if(!confirm('Remove plan?'))return;S.contribPlans=S.contribPlans.filter(p=>p.id!==id);saveState();renderStocks();}
+function savePlan(){if(!planAllocs.length){alert('Add at least one allocation');return;}S.contribPlans.push({id:S.nextPlanId++,name:document.getElementById('plan-name').value.trim()||'DCA Plan',startDate:document.getElementById('plan-date').value.trim()||today(),allocs:JSON.parse(JSON.stringify(planAllocs))});closePlanModal();captureUndo();saveState();renderStocks();}
+function delPlan(id){if(!confirm('Remove plan?'))return;S.contribPlans=S.contribPlans.filter(p=>p.id!==id);captureUndo();saveState();renderStocks();}
 
 function renderLumps(){
   const el=document.getElementById('lump-list');
@@ -1028,8 +1031,8 @@ function renderLumps(){
 }
 function openAddLump(){document.getElementById('lump-ticker').innerHTML=S.holdings.map(h=>`<option value="${h.ticker}">${h.ticker}</option>`).join('');document.getElementById('lump-amount').value='';document.getElementById('lump-date').value=today();document.getElementById('lump-modal').classList.add('open');}
 function closeLumpModal(){document.getElementById('lump-modal').classList.remove('open');}
-function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();saveState();renderStocks();}
-function delLump(id){S.lumpSums=S.lumpSums.filter(l=>l.id!==id);saveState();renderStocks();}
+function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();captureUndo();saveState();renderStocks();}
+function delLump(id){S.lumpSums=S.lumpSums.filter(l=>l.id!==id);captureUndo();saveState();renderStocks();}
 
 
 // PROPERTIES
@@ -1043,9 +1046,9 @@ function addProp(){
     term:parseFloat(document.getElementById('p-term').value)||30,startDate:document.getElementById('p-start').value.trim()||today(),
     rentWk:parseFloat(document.getElementById('p-rent').value)||0,growth:parseFloat(document.getElementById('p-growth').value)||4,
     minFort:parseFloat(document.getElementById('p-minfn').value)||0,extraFort:parseFloat(document.getElementById('p-extra').value)||0,rateHistory:[]};
-  S.properties.push(prop);closeAddProp();saveState();renderProperties();
+  S.properties.push(prop);closeAddProp();captureUndo();saveState();renderProperties();
 }
-function delProp(id){if(!confirm('Remove this property?'))return;S.properties=S.properties.filter(p=>p.id!==id);saveState();renderProperties();}
+function delProp(id){if(!confirm('Remove this property?'))return;S.properties=S.properties.filter(p=>p.id!==id);captureUndo();saveState();renderProperties();}
 
 function openRateModal(){openRateForProp(S.properties[0]?.id);}
 function openRateForProp(propId){
@@ -1060,9 +1063,9 @@ function addRate(){
   const prop=S.properties.find(p=>p.id===propId);if(!prop)return;
   prop.rateHistory=prop.rateHistory||[];prop.rateHistory.push({rate,date,ts:tsFromDMY(date)||Date.now()});prop.rateHistory.sort((a,b)=>a.ts-b.ts);
   const now=Date.now();const past=prop.rateHistory.filter(r=>r.ts<=now);if(past.length)prop.rate=past[past.length-1].rate;
-  closeRateModal();saveState();renderProperties();
+  closeRateModal();captureUndo();saveState();renderProperties();
 }
-function delPropRate(propId,ts){const prop=S.properties.find(p=>p.id===propId);if(!prop)return;prop.rateHistory=prop.rateHistory.filter(r=>r.ts!==ts);saveState();renderProperties();}
+function delPropRate(propId,ts){const prop=S.properties.find(p=>p.id===propId);if(!prop)return;prop.rateHistory=prop.rateHistory.filter(r=>r.ts!==ts);captureUndo();saveState();renderProperties();}
 
 function renderPropCard(prop){
   const eff=propEff(prop);const equity=Math.max(0,prop.val-prop.loan);const lvr=prop.val>0?Math.round(prop.loan/prop.val*100):0;
@@ -1157,7 +1160,7 @@ function openRebalModal(){
 }
 function updateRebalTotal(){const t=S.holdings.reduce((a,h)=>a+(S.rebalTargets[h.ticker]||0),0);const el=document.getElementById('rebal-total');if(el){el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}}
 function closeRebalModal(){document.getElementById('rebal-modal').classList.remove('open');}
-function saveRebal(){saveState();closeRebalModal();renderStocks();}
+function saveRebal(){captureUndo();saveState();closeRebalModal();renderStocks();}
 
 // ── GEO BREAKDOWN ──────────────────────────────────────────────────────────
 let geoRegions=[];
@@ -1202,7 +1205,7 @@ function renderGeoRegions(){
 }
 function addGeoRegion(){geoRegions.push({region:'',pct:0});renderGeoRegions();}
 function updateGeoTotal(){const t=geoRegions.reduce((a,r)=>a+r.pct,0);const el=document.getElementById('geo-total-rebal');if(el){el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}}
-function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));saveState();closeGeoModal();renderGeo();}
+function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));captureUndo();saveState();closeGeoModal();renderGeo();}
 
 // ── GOALS ──────────────────────────────────────────────────────────────────
 function renderStockGoals(){
@@ -1289,7 +1292,7 @@ function renderPropGoals(prop){
 
 // ── SAVE DEFAULT ───────────────────────────────────────────────────────────
 function saveAsDefault(){if(confirm('Save current values as your personal default?')){localStorage.setItem(STORE+'_userdefault',JSON.stringify(S));alert('✓ Saved as your personal default');}}
-function restoreDefault(){const saved=localStorage.getItem(STORE+'_userdefault');if(!saved){alert('No personal default saved yet. Set up your values then tap Save as my default.');return;}if(confirm('Restore to your saved personal default?')){Object.assign(S,JSON.parse(saved));saveState();refresh();}}
+function restoreDefault(){const saved=localStorage.getItem(STORE+'_userdefault');if(!saved){alert('No personal default saved yet. Set up your values then tap Save as my default.');return;}if(confirm('Restore to your saved personal default?')){Object.assign(S,JSON.parse(saved));captureUndo();saveState();refresh();}}
 
 let _stYr=10;
 function stTab(yr,el){_stYr=yr;document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));if(el)el.classList.add('active');const d=projStocks(yr);const step=yr===10?2:5;const yrs=[];for(let i=0;i<=yr;i+=step)yrs.push(i);const tickers=S.holdings.map(h=>h.ticker);const el2=document.getElementById('st-proj');if(el2)el2.innerHTML='<div style="overflow-x:auto"><table class="tbl"><tr><th>Yr</th><th>Age</th>'+tickers.map(t=>'<th>'+t+'</th>').join('')+'<th>Total</th></tr>'+yrs.map(y=>'<tr><td>'+(y===0?'Now':'+'+y)+'</td><td>'+(S.age+y)+'</td>'+tickers.map(t=>'<td>'+fmtK(d[y][t]||0)+'</td>').join('')+'<td class="hl">'+fmtK(real(d[y].total,y))+'</td></tr>').join('')+'</table></div>';}
@@ -1352,7 +1355,7 @@ function renderPayoff(){
     ['po-setup','po-extra','po-result'].forEach(id=>document.getElementById(id).innerHTML='');return;
   }
   document.getElementById('po-prop-sel').innerHTML=S.properties.map(p=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border-radius:var(--rs);padding:11px 13px;border:0.5px solid ${S.poActivePropId===p.id?'var(--gr-bd)':'var(--bd)'};margin-bottom:6px;cursor:pointer" onclick="S.poActivePropId=${p.id};saveState();renderPayoff()">
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border-radius:var(--rs);padding:11px 13px;border:0.5px solid ${S.poActivePropId===p.id?'var(--gr-bd)':'var(--bd)'};margin-bottom:6px;cursor:pointer" onclick="S.poActivePropId=${p.id};captureUndo();saveState();renderPayoff()">
       <div><div style="font-size:12px;font-weight:600">${p.name}</div><div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px">${p.type==='ppor'?'PPOR':'Investment'} · ${fmtK(p.loan)} loan · ${p.rate.toFixed(2)}%</div></div>
       <div style="width:18px;height:18px;border-radius:50%;background:${S.poActivePropId===p.id?'var(--gr)':'var(--sf3)'};border:2px solid ${S.poActivePropId===p.id?'var(--gr)':'var(--bd2)'};flex-shrink:0"></div>
     </div>`).join('');
@@ -1462,9 +1465,9 @@ function logNW(){
   const st=projStocks(0)[0];const sup=projSuper(0)[0];const pp=projAllProps(0)[0];
   const tot=st.total+sup.b+pp.equity+S.cashSavings+S.emergency;
   S.nwHistory=S.nwHistory||[];S.nwHistory.push({date:today(),val:Math.round(tot),ts:Date.now()});S.nwHistory.sort((a,b)=>a.ts-b.ts);
-  saveState();renderHistory();
+  captureUndo();saveState();renderHistory();
 }
-function delNW(ts){S.nwHistory=S.nwHistory.filter(e=>e.ts!==ts);saveState();renderHistory();}
+function delNW(ts){S.nwHistory=S.nwHistory.filter(e=>e.ts!==ts);captureUndo();captureUndo();saveState();renderHistory();}
 
 
 // PROJECTION
@@ -1474,7 +1477,7 @@ var SCEN_DESC=[
   '🛡 <strong>Conservative</strong> — Lower returns: ETFs capped 7%, super 6%, property 3%.',
 ];
 let savedRets={};
-function setScen(i,el){S.scenario=i;document.querySelectorAll('.sb').forEach((b,j)=>b.classList.toggle('active',j===i));saveState();renderProj();}
+function setScen(i,el){S.scenario=i;captureUndo();document.querySelectorAll('.sb').forEach((b,j)=>b.classList.toggle('active',j===i));saveState();renderProj();}
 function renderProj(){
   document.getElementById('proj-togs').innerHTML=mkTog('Inflation-adjusted','Show values in today\'s purchasing power','inflationAdj');
   if(!S.scenAssumptions||!Array.isArray(S.scenAssumptions)||S.scenAssumptions.length<3){
@@ -1860,7 +1863,7 @@ function renderHome(){
 // NAME MODAL
 function openNameModal(){document.getElementById('name-inp').value=S.appName||'';document.getElementById('name-modal').classList.add('open');}
 function closeNameModal(){document.getElementById('name-modal').classList.remove('open');}
-function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';closeNameModal();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
+function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';closeNameModal();captureUndo();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
 
 // NAV
 var PANELS=['home','stocks','mortgage','cashflow','super','history','proj'];
