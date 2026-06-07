@@ -307,23 +307,30 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     </div>
   </div>
 
-  <!-- PROPERTIES -->
-  <div class="panel" id="p-properties">
+  <!-- MORTGAGE (merged Properties + Payoff) -->
+  <div class="panel" id="p-mortgage">
     <div id="props-dis"></div>
     <div id="props-content">
-      <div class="card"><div class="sec">Your properties</div><div id="prop-list"></div><div class="add-btn" onclick="openAddProp()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add property</div></div>
-      <div class="card"><div class="sec">Combined summary</div><div class="g2" id="prop-summary"></div></div>
-      <div class="card"><div class="sec">Equity unlock timeline</div><div id="equity-timeline"></div></div>
-      <div class="card"><div class="sec">Equity over time</div><div class="ch"><canvas id="propChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--gr)"></div>Total equity</div><div class="li"><div class="ld" style="background:var(--rd)"></div>Total debt</div></div></div>
+      <!-- Sub-tab bar -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <div id="mtab-props" onclick="setMortgageTab('props')" style="flex:1;text-align:center;padding:9px 0;border-radius:var(--rs);background:var(--gr);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace">🏠 Properties</div>
+        <div id="mtab-payoff" onclick="setMortgageTab('payoff')" style="flex:1;text-align:center;padding:9px 0;border-radius:var(--rs);background:var(--sf2);color:var(--mu);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace;border:0.5px solid var(--bd)">📉 Payoff</div>
+      </div>
+      <!-- PROPERTIES SUB-TAB -->
+      <div id="msub-props">
+        <div class="card"><div class="sec">Your properties</div><div id="prop-list"></div><div class="add-btn" onclick="openAddProp()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add property</div></div>
+        <div class="card"><div class="sec">Combined summary</div><div class="g2" id="prop-summary"></div></div>
+        <div class="card"><div class="sec">Equity unlock timeline</div><div id="equity-timeline"></div></div>
+        <div class="card"><div class="sec">Equity over time</div><div class="ch"><canvas id="propChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--gr)"></div>Total equity</div><div class="li"><div class="ld" style="background:var(--rd)"></div>Total debt</div></div></div>
+      </div>
+      <!-- PAYOFF SUB-TAB -->
+      <div id="msub-payoff" style="display:none">
+        <div class="card"><div class="sec">Payment period</div><div class="ptog"><div class="pt active" id="pt-fn" onclick="setPeriod('fortnightly',this)">Fortnightly</div><div class="pt" id="pt-mo" onclick="setPeriod('monthly',this)">Monthly</div></div><div class="sec" style="margin-top:8px">Select property</div><div id="po-prop-sel"></div><div class="sec" style="margin-top:8px">Parameters <span class="sec-hint">— auto-filled from property</span></div><div id="po-setup"></div></div>
+        <div class="card"><div class="sec">Extra payment <span class="sec-hint">— tap to edit</span></div><div id="po-extra"></div></div>
+        <div class="card"><div class="sec">Comparison</div><div id="po-result"></div></div>
+        <div class="card"><div class="sec">Balance over time</div><div class="ch" style="height:200px"><canvas id="payoffChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--mu)"></div>Min only</div><div class="li"><div class="ld" style="background:var(--am)"></div>Current plan</div><div class="li"><div class="ld" style="background:var(--gr)"></div>With lump</div></div></div>
+      </div>
     </div>
-  </div>
-
-  <!-- PAYOFF -->
-  <div class="panel" id="p-payoff">
-    <div class="card"><div class="sec">Payment period</div><div class="ptog"><div class="pt active" id="pt-fn" onclick="setPeriod('fortnightly',this)">Fortnightly</div><div class="pt" id="pt-mo" onclick="setPeriod('monthly',this)">Monthly</div></div><div class="sec" style="margin-top:0">Select property</div><div id="po-prop-sel"></div><div class="sec" style="margin-top:8px">Parameters <span class="sec-hint">— auto-filled from property</span></div><div id="po-setup"></div></div>
-    <div class="card"><div class="sec">Extra payment <span class="sec-hint">— tap to edit</span></div><div id="po-extra"></div></div>
-    <div class="card"><div class="sec">Comparison</div><div id="po-result"></div></div>
-    <div class="card"><div class="sec">Balance over time</div><div class="ch" style="height:200px"><canvas id="payoffChart"></canvas></div><div class="leg"><div class="li"><div class="ld" style="background:var(--mu)"></div>Min only</div><div class="li"><div class="ld" style="background:var(--am)"></div>Current plan</div><div class="li"><div class="ld" style="background:var(--gr)"></div>With lump</div></div></div>
   </div>
 
   <!-- CASH FLOW -->
@@ -367,8 +374,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 <nav class="nav" id="main-nav">
   <div class="nb active" onclick="show('home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Home</div>
   <div class="nb" id="nav-stocks" onclick="show('stocks',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stocks</div>
-  <div class="nb" id="nav-properties" onclick="show('properties',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Properties</div>
-  <div class="nb" onclick="show('payoff',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Payoff</div>
+  <div class="nb" id="nav-mortgage" onclick="show('mortgage',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Mortgage</div>
   <div class="nb" onclick="show('cashflow',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</div>
   <div class="nb" onclick="show('super',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Super</div>
   <div class="nb" onclick="show('history',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>History</div>
@@ -899,7 +905,7 @@ function renderSectionToggles(){
 }
 function updateNav(){
   document.getElementById('nav-stocks').classList.toggle('off',!S.stocksEnabled);
-  document.getElementById('nav-properties').classList.toggle('off',!S.propertiesEnabled);
+  document.getElementById('nav-mortgage').classList.toggle('off',!S.propertiesEnabled);
 }
 
 
@@ -1463,7 +1469,14 @@ let savedRets={};
 function setScen(i,el){S.scenario=i;document.querySelectorAll('.sb').forEach((b,j)=>b.classList.toggle('active',j===i));saveState();renderProj();}
 function renderProj(){
   document.getElementById('proj-togs').innerHTML=mkTog('Inflation-adjusted','Show values in today\'s purchasing power','inflationAdj');
-  if(!S.scenAssumptions)getScenAssumptions();
+  if(!S.scenAssumptions||!Array.isArray(S.scenAssumptions)||S.scenAssumptions.length<3){
+    S.scenAssumptions=[
+      {etfReturn:8,superReturn:7.5,propGrowth:4,extraMonthly:0},
+      {etfReturn:11,superReturn:9,propGrowth:6,extraMonthly:0},
+      {etfReturn:5,superReturn:5.5,propGrowth:2,extraMonthly:0}
+    ];
+    saveState();
+  }
   const scenIdx=S.scenario||0;const sa=S.scenAssumptions[scenIdx];const scenNames=['Current','Optimistic','Conservative'];
   const erRid='ef_proj_er';EFR[erRid]={key:'etfReturn',label:'ETF return (this scenario)',cfg:{pre:'',suf:'%',dec:1,min:0,max:25,hint:'Annual ETF return for this scenario'},obj:sa};
   const srRid='ef_proj_sr';EFR[srRid]={key:'superReturn',label:'Super return (this scenario)',cfg:{pre:'',suf:'%',dec:1,min:0,max:20,hint:'Annual super return for this scenario'},obj:sa};
@@ -1677,9 +1690,15 @@ function renderEquityTimeline() {
 }
 
 function getScenAssumptions(){
+  if(!S.scenAssumptions||!Array.isArray(S.scenAssumptions)||S.scenAssumptions.length<3){
+    S.scenAssumptions=[
+      {etfReturn:8,superReturn:7.5,propGrowth:4,extraMonthly:0},
+      {etfReturn:11,superReturn:9,propGrowth:6,extraMonthly:0},
+      {etfReturn:5,superReturn:5.5,propGrowth:2,extraMonthly:0}
+    ];
+  }
   var idx=S.scenario||0;
-  if(S.scenAssumptions&&S.scenAssumptions[idx])return S.scenAssumptions[idx];
-  return {etfReturn:8,superReturn:7.5,propGrowth:4,extraMonthly:0};
+  return S.scenAssumptions[idx];
 }
 // ═══════════════════════════════════════════════════════════════════
 // MONTE CARLO (Projection tab)
@@ -1836,11 +1855,29 @@ function closeNameModal(){document.getElementById('name-modal').classList.remove
 function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';closeNameModal();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
 
 // NAV
-var PANELS=['home','stocks','properties','payoff','cashflow','super','history','proj'];
-var RENDERS={home:renderHome,stocks:renderStocks,properties:renderProperties,payoff:renderPayoff,cashflow:renderCashFlow,super:renderSuper,history:renderHistory,proj:renderProj};
+var PANELS=['home','stocks','mortgage','cashflow','super','history','proj'];
+var RENDERS={home:renderHome,stocks:renderStocks,mortgage:renderMortgage,cashflow:renderCashFlow,super:renderSuper,history:renderHistory,proj:renderProj};
+
+var _mortgageTab='props';
+function setMortgageTab(tab){
+  _mortgageTab=tab;
+  document.getElementById('msub-props').style.display=tab==='props'?'block':'none';
+  document.getElementById('msub-payoff').style.display=tab==='payoff'?'block':'none';
+  var activeStyle='flex:1;text-align:center;padding:9px 0;border-radius:var(--rs);background:var(--gr);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:\'DM Mono\',monospace';
+  var inactiveStyle='flex:1;text-align:center;padding:9px 0;border-radius:var(--rs);background:var(--sf2);color:var(--mu);font-size:11px;font-weight:700;cursor:pointer;font-family:\'DM Mono\',monospace;border:0.5px solid var(--bd)';
+  document.getElementById('mtab-props').style.cssText=tab==='props'?activeStyle:inactiveStyle;
+  document.getElementById('mtab-payoff').style.cssText=tab==='payoff'?activeStyle:inactiveStyle;
+  if(tab==='props')renderProperties();
+  if(tab==='payoff')renderPayoff();
+}
+function renderMortgage(){
+  // Always render properties data; render payoff only if that sub-tab is active
+  renderProperties();
+  if(_mortgageTab==='payoff')renderPayoff();
+}
 function show(name,el){
   if(name==='stocks'&&!S.stocksEnabled){show('home',document.querySelector('.nb'));return;}
-  if(name==='properties'&&!S.propertiesEnabled){show('home',document.querySelector('.nb'));return;}
+  if(name==='mortgage'&&!S.propertiesEnabled){show('home',document.querySelector('.nb'));return;}
   PANELS.forEach(p=>document.getElementById('p-'+p).classList.toggle('active',p===name));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   if(el)el.classList.add('active');
