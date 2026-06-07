@@ -298,6 +298,10 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       <div class="card"><div class="sec">Portfolio growth</div><div class="g2" id="st-met"></div><div class="ch"><canvas id="stChart"></canvas></div><div class="leg" id="st-leg"></div></div>
       <div class="card"><div class="sec">Projections</div><div class="pills"><div class="pill active" onclick="stTab(10,this)">10 yr</div><div class="pill" onclick="stTab(20,this)">20 yr</div><div class="pill" onclick="stTab(30,this)">30 yr</div></div><div id="st-proj"></div></div>
       <div class="card"><div class="sec">Settings</div><div id="st-settings"></div></div>
+      <div class="card" id="tag-breakdown-card">
+        <div class="sec">Holdings by type</div>
+        <div id="tag-breakdown"></div>
+      </div>
       <div class="card" id="geo-card" style="display:none">
         <div class="sec">Geographic breakdown <span class="sec-hint">— manual entry</span></div>
         <div id="geo-content"></div>
@@ -566,7 +570,6 @@ function loadState(){
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULTS));
 }
-function saveState(){try{pushUndo();localStorage.setItem(STORE,JSON.stringify(S));showSave();}catch(e){}}
 function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
 const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,shownMilestones:[],goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
 function confirmReset(){if(confirm('Reset to zero — blank canvas? This cannot be undone.')){localStorage.setItem(STORE,JSON.stringify(ZERO_STATE));location.reload();}}
@@ -740,7 +743,7 @@ function projAllProps(yrs){
 
 // PAYOFF SIMULATION
 let poPeriod=S.poPeriod||'fortnightly';
-function setPeriod(p,el){poPeriod=p;S.poPeriod=p;captureUndo();saveState();document.querySelectorAll('.pt').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPayoff();}
+function setPeriod(p,el){poPeriod=p;captureUndo();S.poPeriod=p;saveState();document.querySelectorAll('.pt').forEach(x=>x.classList.remove('active'));el.classList.add('active');renderPayoff();}
 
 function poSimulate(prop,extraLump,period){
   const ppy=period==='fortnightly'?26:12;
@@ -955,11 +958,11 @@ function addStock(){
   const ticker=(document.getElementById('m-ticker').value||'').toUpperCase().trim();
   const val=parseFloat(document.getElementById('m-val').value)||0;
   if(!ticker){alert('Enter a ticker name');return;}
-  S.holdings.push({id:S.nextHId++,ticker,val,ret:10,color:selColor});
-  closeAddStock();captureUndo();saveState();renderStocks();
+  captureUndo();S.holdings.push({id:S.nextHId++,ticker,val,ret:10,color:selColor});
+  closeAddStock();saveState();renderStocks();
 }
-function delStock(id){if(!confirm('Remove this holding?'))return;S.holdings=S.holdings.filter(h=>h.id!==id);captureUndo();saveState();renderStocks();}
-function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');h.tag=keys[(cur+1)%keys.length];captureUndo();saveState();renderHoldings();}
+function delStock(id){if(!confirm('Remove this holding?'))return;captureUndo();S.holdings=S.holdings.filter(h=>h.id!==id);saveState();renderStocks();}
+function cycleTag(id){const h=S.holdings.find(x=>x.id===id);if(!h)return;const keys=Object.keys(TAGS);const cur=keys.indexOf(h.tag||'core');captureUndo();h.tag=keys[(cur+1)%keys.length];saveState();renderHoldings();}
 
 // REBALANCING
 function renderRebalancing(){
@@ -1019,8 +1022,8 @@ function renderPlanAllocs(){
     </div>`).join('');
 }
 function addPlanAlloc(){planAllocs.push({ticker:S.holdings[0]?.ticker||'VGS',amount:500});renderPlanAllocs();}
-function savePlan(){if(!planAllocs.length){alert('Add at least one allocation');return;}S.contribPlans.push({id:S.nextPlanId++,name:document.getElementById('plan-name').value.trim()||'DCA Plan',startDate:document.getElementById('plan-date').value.trim()||today(),allocs:JSON.parse(JSON.stringify(planAllocs))});closePlanModal();captureUndo();saveState();renderStocks();}
-function delPlan(id){if(!confirm('Remove plan?'))return;S.contribPlans=S.contribPlans.filter(p=>p.id!==id);captureUndo();saveState();renderStocks();}
+function savePlan(){if(!planAllocs.length){alert('Add at least one allocation');return;}captureUndo();S.contribPlans.push({id:S.nextPlanId++,name:document.getElementById('plan-name').value.trim()||'DCA Plan',startDate:document.getElementById('plan-date').value.trim()||today(),allocs:JSON.parse(JSON.stringify(planAllocs))});closePlanModal();saveState();renderStocks();}
+function delPlan(id){if(!confirm('Remove plan?'))return;captureUndo();S.contribPlans=S.contribPlans.filter(p=>p.id!==id);saveState();renderStocks();}
 
 function renderLumps(){
   const el=document.getElementById('lump-list');
@@ -1031,8 +1034,8 @@ function renderLumps(){
 }
 function openAddLump(){document.getElementById('lump-ticker').innerHTML=S.holdings.map(h=>`<option value="${h.ticker}">${h.ticker}</option>`).join('');document.getElementById('lump-amount').value='';document.getElementById('lump-date').value=today();document.getElementById('lump-modal').classList.add('open');}
 function closeLumpModal(){document.getElementById('lump-modal').classList.remove('open');}
-function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();captureUndo();saveState();renderStocks();}
-function delLump(id){S.lumpSums=S.lumpSums.filter(l=>l.id!==id);captureUndo();saveState();renderStocks();}
+function saveLump(){const amount=parseFloat(document.getElementById('lump-amount').value)||0;if(!amount){alert('Enter an amount');return;}captureUndo();S.lumpSums.push({id:S.nextLumpId++,ticker:document.getElementById('lump-ticker').value,amount,date:document.getElementById('lump-date').value.trim()||today()});closeLumpModal();saveState();renderStocks();}
+function delLump(id){captureUndo();S.lumpSums=S.lumpSums.filter(l=>l.id!==id);saveState();renderStocks();}
 
 
 // PROPERTIES
@@ -1046,9 +1049,9 @@ function addProp(){
     term:parseFloat(document.getElementById('p-term').value)||30,startDate:document.getElementById('p-start').value.trim()||today(),
     rentWk:parseFloat(document.getElementById('p-rent').value)||0,growth:parseFloat(document.getElementById('p-growth').value)||4,
     minFort:parseFloat(document.getElementById('p-minfn').value)||0,extraFort:parseFloat(document.getElementById('p-extra').value)||0,rateHistory:[]};
-  S.properties.push(prop);closeAddProp();captureUndo();saveState();renderProperties();
+  captureUndo();S.properties.push(prop);closeAddProp();saveState();renderProperties();
 }
-function delProp(id){if(!confirm('Remove this property?'))return;S.properties=S.properties.filter(p=>p.id!==id);captureUndo();saveState();renderProperties();}
+function delProp(id){if(!confirm('Remove this property?'))return;captureUndo();S.properties=S.properties.filter(p=>p.id!==id);saveState();renderProperties();}
 
 function openRateModal(){openRateForProp(S.properties[0]?.id);}
 function openRateForProp(propId){
@@ -1063,9 +1066,9 @@ function addRate(){
   const prop=S.properties.find(p=>p.id===propId);if(!prop)return;
   prop.rateHistory=prop.rateHistory||[];prop.rateHistory.push({rate,date,ts:tsFromDMY(date)||Date.now()});prop.rateHistory.sort((a,b)=>a.ts-b.ts);
   const now=Date.now();const past=prop.rateHistory.filter(r=>r.ts<=now);if(past.length)prop.rate=past[past.length-1].rate;
-  closeRateModal();captureUndo();saveState();renderProperties();
+  captureUndo();closeRateModal();saveState();renderProperties();
 }
-function delPropRate(propId,ts){const prop=S.properties.find(p=>p.id===propId);if(!prop)return;prop.rateHistory=prop.rateHistory.filter(r=>r.ts!==ts);captureUndo();saveState();renderProperties();}
+function delPropRate(propId,ts){const prop=S.properties.find(p=>p.id===propId);if(!prop)return;captureUndo();prop.rateHistory=prop.rateHistory.filter(r=>r.ts!==ts);saveState();renderProperties();}
 
 function renderPropCard(prop){
   const eff=propEff(prop);const equity=Math.max(0,prop.val-prop.loan);const lvr=prop.val>0?Math.round(prop.loan/prop.val*100):0;
@@ -1163,7 +1166,74 @@ function closeRebalModal(){document.getElementById('rebal-modal').classList.remo
 function saveRebal(){captureUndo();saveState();closeRebalModal();renderStocks();}
 
 // ── GEO BREAKDOWN ──────────────────────────────────────────────────────────
-let geoRegions=[];
+
+// ── HOLDINGS TYPE BREAKDOWN ────────────────────────────────────────────────
+function renderTagBreakdown(){
+  const card=document.getElementById('tag-breakdown-card');
+  const el=document.getElementById('tag-breakdown');
+  if(!el)return;
+  if(!S.holdings||!S.holdings.length){card.style.display='none';return;}
+  card.style.display='block';
+  const total=S.holdings.reduce((a,h)=>a+h.val,0);
+  if(!total){el.innerHTML='';return;}
+  // Aggregate by tag
+  const byTag={};
+  S.holdings.forEach(h=>{
+    const tag=h.tag||'core';
+    byTag[tag]=(byTag[tag]||0)+h.val;
+  });
+  const entries=Object.entries(TAGS)
+    .map(([key,def])=>({key,label:def.label,color:def.color,val:byTag[key]||0}))
+    .filter(e=>e.val>0)
+    .sort((a,b)=>b.val-a.val);
+  if(!entries.length){el.innerHTML='';return;}
+
+  // Build HTML: donut canvas + legend rows
+  let html2='<div style="display:flex;align-items:center;gap:16px;padding:4px 0 8px">';
+  html2+='<div style="position:relative;width:120px;height:120px;flex-shrink:0"><canvas id="tagPieChart" width="120" height="120"></canvas>';
+  html2+='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center"><div style="font-size:10px;color:var(--mu);font-family:DM Mono;line-height:1.2">TOTAL</div><div style="font-size:12px;font-weight:700;font-family:DM Mono;color:var(--tx)">'+fmtK(total)+'</div></div></div>';
+  html2+='<div style="flex:1">';
+  entries.forEach(e=>{
+    const pct=(e.val/total*100);
+    html2+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">';
+    html2+='<div style="width:9px;height:9px;border-radius:2px;flex-shrink:0;background:'+e.color+'"></div>';
+    html2+='<div style="flex:1"><div style="font-size:11px;font-family:DM Mono;color:var(--tx)">'+e.label+'</div>';
+    html2+='<div style="height:3px;background:var(--sf3);border-radius:2px;margin-top:3px;overflow:hidden"><div style="height:100%;width:'+pct.toFixed(1)+'%;background:'+e.color+';border-radius:2px;transition:width .5s ease"></div></div></div>';
+    html2+='<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;font-family:DM Mono;color:'+e.color+'">'+pct.toFixed(1)+'%</div><div style="font-size:9px;color:var(--di);font-family:DM Mono">'+fmtK(e.val)+'</div></div>';
+    html2+='</div>';
+  });
+  html2+='</div></div>';
+
+  // Holdings with no tag assigned note
+  const untagged=S.holdings.filter(h=>!h.tag);
+  if(untagged.length){
+    html2+='<div style="font-size:9px;color:var(--di);font-family:DM Mono;margin-top:2px">'+untagged.length+' holding'+(untagged.length>1?'s':'')+' using default Core tag — tap tag badge to cycle</div>';
+  }
+
+  el.innerHTML=html2;
+
+  // Draw donut
+  setTimeout(()=>{
+    const canvas=document.getElementById('tagPieChart');if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    const cx=60,cy=60,r=55,inner=30;
+    let angle=-Math.PI/2;
+    const totalVal=entries.reduce((a,e)=>a+e.val,0);
+    entries.forEach(e=>{
+      const slice=(e.val/totalVal)*2*Math.PI;
+      ctx.beginPath();ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,angle,angle+slice);
+      ctx.fillStyle=e.color;ctx.fill();
+      angle+=slice;
+    });
+    // donut hole
+    ctx.beginPath();ctx.arc(cx,cy,inner,0,2*Math.PI);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--sf').trim()||'#1a1a24';
+    ctx.fill();
+  },60);
+}
+
+var geoRegions=[];
 function renderGeo(){
   const card=document.getElementById('geo-card');if(!card)return;
   if(!S.geoEnabled){card.style.display='none';return;}
@@ -1197,15 +1267,15 @@ function closeGeoModal(){document.getElementById('geo-modal').classList.remove('
 function renderGeoRegions(){
   document.getElementById('geo-regions').innerHTML=geoRegions.map((r,i)=>
     '<div style="display:flex;gap:7px;margin-bottom:7px;align-items:center">'+
-    '<input placeholder="Region (e.g. USA)" value="'+r.region+'" onchange="geoRegions['+i+'].region=this.value" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
-    '<input type="number" placeholder="%" value="'+r.pct+'" onchange="geoRegions['+i+'].pct=parseFloat(this.value)||0;updateGeoTotal()" style="width:70px;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
+    '<input placeholder="Region (e.g. USA)" value="'+r.region+'" oninput="geoRegions['+i+'].region=this.value" onchange="geoRegions['+i+'].region=this.value" style="flex:1;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
+    '<input type="number" placeholder="%" value="'+r.pct+'" oninput="geoRegions['+i+'].pct=parseFloat(this.value)||0;updateGeoTotal()" onchange="geoRegions['+i+'].pct=parseFloat(this.value)||0;updateGeoTotal()" style="width:70px;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none">'+
     '<span onclick="geoRegions.splice('+i+',1);renderGeoRegions()" style="color:var(--rd);cursor:pointer;font-size:18px;padding:4px">✕</span></div>'
   ).join('');
   updateGeoTotal();
 }
 function addGeoRegion(){geoRegions.push({region:'',pct:0});renderGeoRegions();}
 function updateGeoTotal(){const t=geoRegions.reduce((a,r)=>a+r.pct,0);const el=document.getElementById('geo-total-rebal');if(el){el.textContent='Total: '+t.toFixed(1)+'%';el.style.color=Math.abs(t-100)<0.1?'var(--gr)':'var(--rd)';}}
-function saveGeo(){const ticker=document.getElementById('geo-ticker').value;S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));captureUndo();saveState();closeGeoModal();renderGeo();}
+function saveGeo(){const ticker=document.getElementById('geo-ticker').value;captureUndo();S.geoHoldings[ticker]=JSON.parse(JSON.stringify(geoRegions));saveState();closeGeoModal();renderGeo();}
 
 // ── GOALS ──────────────────────────────────────────────────────────────────
 function renderStockGoals(){
@@ -1292,7 +1362,7 @@ function renderPropGoals(prop){
 
 // ── SAVE DEFAULT ───────────────────────────────────────────────────────────
 function saveAsDefault(){if(confirm('Save current values as your personal default?')){localStorage.setItem(STORE+'_userdefault',JSON.stringify(S));alert('✓ Saved as your personal default');}}
-function restoreDefault(){const saved=localStorage.getItem(STORE+'_userdefault');if(!saved){alert('No personal default saved yet. Set up your values then tap Save as my default.');return;}if(confirm('Restore to your saved personal default?')){Object.assign(S,JSON.parse(saved));captureUndo();saveState();refresh();}}
+function restoreDefault(){const saved=localStorage.getItem(STORE+'_userdefault');if(!saved){alert('No personal default saved yet. Set up your values then tap Save as my default.');return;}if(confirm('Restore to your saved personal default?')){captureUndo();Object.assign(S,JSON.parse(saved));saveState();refresh();}}
 
 let _stYr=10;
 function stTab(yr,el){_stYr=yr;document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));if(el)el.classList.add('active');const d=projStocks(yr);const step=yr===10?2:5;const yrs=[];for(let i=0;i<=yr;i+=step)yrs.push(i);const tickers=S.holdings.map(h=>h.ticker);const el2=document.getElementById('st-proj');if(el2)el2.innerHTML='<div style="overflow-x:auto"><table class="tbl"><tr><th>Yr</th><th>Age</th>'+tickers.map(t=>'<th>'+t+'</th>').join('')+'<th>Total</th></tr>'+yrs.map(y=>'<tr><td>'+(y===0?'Now':'+'+y)+'</td><td>'+(S.age+y)+'</td>'+tickers.map(t=>'<td>'+fmtK(d[y][t]||0)+'</td>').join('')+'<td class="hl">'+fmtK(real(d[y].total,y))+'</td></tr>').join('')+'</table></div>';}
@@ -1355,7 +1425,7 @@ function renderPayoff(){
     ['po-setup','po-extra','po-result'].forEach(id=>document.getElementById(id).innerHTML='');return;
   }
   document.getElementById('po-prop-sel').innerHTML=S.properties.map(p=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border-radius:var(--rs);padding:11px 13px;border:0.5px solid ${S.poActivePropId===p.id?'var(--gr-bd)':'var(--bd)'};margin-bottom:6px;cursor:pointer" onclick="S.poActivePropId=${p.id};captureUndo();saveState();renderPayoff()">
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border-radius:var(--rs);padding:11px 13px;border:0.5px solid ${S.poActivePropId===p.id?'var(--gr-bd)':'var(--bd)'};margin-bottom:6px;cursor:pointer" onclick="captureUndo();S.poActivePropId=${p.id};saveState();renderPayoff()">
       <div><div style="font-size:12px;font-weight:600">${p.name}</div><div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px">${p.type==='ppor'?'PPOR':'Investment'} · ${fmtK(p.loan)} loan · ${p.rate.toFixed(2)}%</div></div>
       <div style="width:18px;height:18px;border-radius:50%;background:${S.poActivePropId===p.id?'var(--gr)':'var(--sf3)'};border:2px solid ${S.poActivePropId===p.id?'var(--gr)':'var(--bd2)'};flex-shrink:0"></div>
     </div>`).join('');
@@ -1465,9 +1535,9 @@ function logNW(){
   const st=projStocks(0)[0];const sup=projSuper(0)[0];const pp=projAllProps(0)[0];
   const tot=st.total+sup.b+pp.equity+S.cashSavings+S.emergency;
   S.nwHistory=S.nwHistory||[];S.nwHistory.push({date:today(),val:Math.round(tot),ts:Date.now()});S.nwHistory.sort((a,b)=>a.ts-b.ts);
-  captureUndo();saveState();renderHistory();
+  saveState();renderHistory();
 }
-function delNW(ts){S.nwHistory=S.nwHistory.filter(e=>e.ts!==ts);captureUndo();captureUndo();saveState();renderHistory();}
+function delNW(ts){captureUndo();S.nwHistory=S.nwHistory.filter(e=>e.ts!==ts);saveState();renderHistory();}
 
 
 // PROJECTION
@@ -1477,7 +1547,7 @@ var SCEN_DESC=[
   '🛡 <strong>Conservative</strong> — Lower returns: ETFs capped 7%, super 6%, property 3%.',
 ];
 let savedRets={};
-function setScen(i,el){S.scenario=i;captureUndo();document.querySelectorAll('.sb').forEach((b,j)=>b.classList.toggle('active',j===i));saveState();renderProj();}
+function setScen(i,el){captureUndo();S.scenario=i;document.querySelectorAll('.sb').forEach((b,j)=>b.classList.toggle('active',j===i));saveState();renderProj();}
 function renderProj(){
   document.getElementById('proj-togs').innerHTML=mkTog('Inflation-adjusted','Show values in today\'s purchasing power','inflationAdj');
   if(!S.scenAssumptions||!Array.isArray(S.scenAssumptions)||S.scenAssumptions.length<3){
@@ -1863,7 +1933,7 @@ function renderHome(){
 // NAME MODAL
 function openNameModal(){document.getElementById('name-inp').value=S.appName||'';document.getElementById('name-modal').classList.add('open');}
 function closeNameModal(){document.getElementById('name-modal').classList.remove('open');}
-function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';closeNameModal();captureUndo();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
+function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';captureUndo();closeNameModal();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
 
 // NAV
 var PANELS=['home','stocks','mortgage','cashflow','super','history','proj'];
