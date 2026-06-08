@@ -841,19 +841,32 @@ function projSuper(yrs){
 }
 
 function projProp(prop,yrs){
-  let loan=prop.loan;const g=prop.growth/100;const nowTs=Date.now();
+  let loan=prop.loan;
+  const g=prop.growth/100;
+  const nowTs=Date.now();
   function rateAt(ts){let r=prop.rate;if(prop.rateHistory&&prop.rateHistory.length){const sorted=[...prop.rateHistory].sort((a,b)=>a.ts-b.ts);for(const rh of sorted){if(rh.ts<=ts)r=rh.rate;}}return r;}
-  const minFn=propMin(prop,'fortnightly');const total=minFn+prop.extraFort;
+  // minFn = contracted minimum fortnightly repayment (based on origLoan)
+  const minFn=propMin(prop,'fortnightly');
+  // extraFort = extra fortnightly repayment direct to principal (ON TOP of min)
+  const extraFort=prop.extraFort||0;
   const res=[];
   for(let y=0;y<=yrs;y++){
     const val=prop.val*Math.pow(1+g,y);
-    res.push({y,val:Math.round(val),loan:Math.round(Math.max(loan,0)),eq:Math.round(real(Math.max(val-loan,0),y))});
+    const loanNow=Math.max(0,loan);
+    // equity = property value minus remaining loan (both nominal, no inflation adjustment)
+    const eq=Math.max(0,val-loanNow);
+    res.push({y,val:Math.round(val),loan:Math.round(loanNow),eq:Math.round(eq)});
+    // Simulate 26 fortnights of repayments for this year
     for(let f=0;f<26;f++){
-      if(loan<=0)break;
+      if(loan<=0){loan=0;break;}
       const ts=nowTs+(y*26+f)*14*24*3600*1000;
       const r=rateAt(ts)/100/26;
-      const eff=Math.max(0,loan-prop.offset);
-      loan-=(total/26-eff*r);
+      // Effective balance = loan minus offset account balance (offset reduces interest)
+      const eff=Math.max(0,loan-(prop.offset||0));
+      const interest=eff*r;
+      // Total principal reduction = min payment + extra - interest
+      const principalPaid=minFn+extraFort-interest;
+      if(principalPaid>0)loan-=principalPaid;
     }
   }
   return res;
