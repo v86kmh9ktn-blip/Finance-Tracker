@@ -211,7 +211,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .gr{color:var(--gr)}.bl{color:var(--bl)}.pu{color:var(--pu)}.am{color:var(--am)}.rd{color:var(--rd)}
 
 /* MILESTONE TOAST */
-.ms-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;border-radius:20px;padding:12px 20px;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;z-index:900;transition:transform .4s cubic-bezier(.175,.885,.32,1.275);white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center;pointer-events:none}
+.ms-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;border-radius:20px;padding:12px 20px;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;z-index:900;transition:transform .4s cubic-bezier(.175,.885,.32,1.275);white-space:normal;max-width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center;pointer-events:none;word-break:break-word}
 .ms-toast.show{transform:translateX(-50%) translateY(0)}
 .ms-toast-sub{font-size:10px;font-weight:400;font-family:'DM Mono',monospace;opacity:.85;margin-top:2px}
 /* FIRE COUNTDOWN */
@@ -2750,43 +2750,58 @@ function autoApplyDCA() {
   return null;
 }
 
+function getMortgagePayDates(prop, upToTs) {
+  // Generate all payment dates from anchor up to now
+  // Uses prop.repayFreq ('fortnightly'|'monthly'|'weekly') and prop.repayAnchor (DD/MM/YY)
+  const freq = prop.repayFreq || S.poPeriod || 'fortnightly';
+  const anchor = parseDMY(prop.repayAnchor || prop.startDate || S.poStartDate);
+  if(!anchor) return [];
+  const MS_FORT = 14*24*3600*1000;
+  const dates = [];
+  let d = new Date(anchor.getTime());
+  // Step forward to first date >= anchor that is <= now
+  const now = upToTs;
+  while(d.getTime() <= now) {
+    if(d.getTime() > (prop.lastApplied||0)) dates.push(new Date(d));
+    if(freq === 'fortnightly') d = new Date(d.getTime() + MS_FORT);
+    else if(freq === 'weekly') d = new Date(d.getTime() + 7*24*3600*1000);
+    else { // monthly — same day next month
+      const m = d.getMonth()+1; const y = d.getFullYear()+(m>11?1:0);
+      d = new Date(y, m%12, d.getDate());
+    }
+  }
+  return dates;
+}
+
 function autoApplyMortgage() {
   if(!S.autoApplyEnabled) return null;
   if(!S.properties||!S.properties.length) return null;
   const now = Date.now();
-  const MS_FORT = 14 * 24 * 3600 * 1000;
-  const MS_MONTH = 30.44 * 24 * 3600 * 1000;
   let results = [];
   let changed = false;
 
   for(const prop of S.properties) {
     if(prop.loan <= 0) continue;
-    const period = S.poPeriod||'fortnightly';
-    const msPer = period === 'fortnightly' ? MS_FORT : MS_MONTH;
-    const ppy = period === 'fortnightly' ? 26 : 12;
-    // anchor date: loan start date
-    const startDate = parseDMY(prop.startDate||S.poStartDate);
-    if(!startDate) continue;
-    if(!prop.lastApplied) prop.lastApplied = startDate.getTime();
-    const elapsed = now - prop.lastApplied;
-    const periods = Math.floor(elapsed / msPer);
-    if(periods <= 0) continue;
+    const freq = prop.repayFreq || S.poPeriod || 'fortnightly';
+    const ppy = freq==='fortnightly'?26:freq==='weekly'?52:12;
+    const payDates = getMortgagePayDates(prop, now);
+    if(!payDates.length) continue;
 
-    const minPer = propMin(prop, period);
-    const extraPer = period === 'fortnightly' ? (S.poSimExtra||prop.extraFort||0) : (S.poSimExtra||prop.extraFort||0)*26/12;
+    const minPer = propMin(prop, freq==='monthly'?'monthly':'fortnightly');
+    const extraPer = freq==='monthly'
+      ? (S.poSimExtra||prop.extraFort||0)*26/12
+      : (S.poSimExtra||prop.extraFort||0);
     const rPer = propCurrentRate(prop) / 100 / ppy;
     let loan = prop.loan;
     let totalInterest = 0;
-    let totalPrincipal = 0;
 
-    for(let p = 0; p < periods; p++) {
+    for(const pd of payDates) {
       if(loan <= 0){loan=0;break;}
       const eff = Math.max(0, loan - (prop.offset||0));
       const interest = eff * rPer;
       const principal = minPer + extraPer - interest;
       if(principal > 0) {
         loan = Math.max(0, loan - principal);
-        totalPrincipal += principal;
         totalInterest += interest;
       }
     }
@@ -2794,8 +2809,8 @@ function autoApplyMortgage() {
     if(Math.abs(loan - prop.loan) > 1) {
       const reduced = prop.loan - loan;
       prop.loan = Math.round(loan);
-      prop.lastApplied = prop.lastApplied + (periods * msPer);
-      results.push({name:prop.name, periods, reduced:Math.round(reduced), newBalance:Math.round(loan), totalInterest:Math.round(totalInterest)});
+      prop.lastApplied = payDates[payDates.length-1].getTime();
+      results.push({name:prop.name, periods:payDates.length, reduced:Math.round(reduced), newBalance:Math.round(loan), totalInterest:Math.round(totalInterest), freq});
       changed = true;
     }
   }
@@ -2810,11 +2825,11 @@ function autoApplyMortgage() {
 function showAutoApplyBanner(dcaResult, mortResult) {
   const msgs = [];
   if(dcaResult) {
-    msgs.push(`📈 DCA auto-applied — ${fmt(dcaResult.totalAdded)} added across ${dcaResult.periods} period${dcaResult.periods>1?'s':''}`);
+    msgs.push(`📈 DCA +${fmt(dcaResult.totalAdded)} · ${dcaResult.periods} period${dcaResult.periods>1?'s':''} applied`);
   }
   if(mortResult && mortResult.results.length) {
     mortResult.results.forEach(r => {
-      msgs.push(`🏠 Mortgage auto-updated — ${fmt(r.reduced)} principal paid over ${r.periods} period${r.periods>1?'s':''} · balance now ${fmt(r.newBalance)}`);
+      msgs.push(`🏠 ${r.name} −${fmt(r.reduced)} · balance ${fmt(r.newBalance)}`);
     });
   }
   if(!msgs.length) return;
@@ -2826,26 +2841,75 @@ function showAutoApplyBanner(dcaResult, mortResult) {
 
 function renderAutoApplyStatus() {
   const now = Date.now();
-  const MS_MONTH = 30.44 * 24 * 3600 * 1000;
-  const MS_FORT = 14 * 24 * 3600 * 1000;
+  const MS_FORT = 14*24*3600*1000;
   let lines = [];
+
   // DCA status
   for(const plan of S.contribPlans||[]) {
     if(!plan.lastApplied) continue;
-    const daysAgo = Math.round((now - plan.lastApplied) / (24*3600*1000));
-    const nextIn = Math.round((MS_MONTH - (now - plan.lastApplied)) / (24*3600*1000));
-    lines.push(`<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;padding:3px 0">${plan.name}: last applied ${daysAgo===0?'today':daysAgo+'d ago'} · next in ~${Math.max(0,nextIn)}d</div>`);
+    const daysAgo = Math.round((now - plan.lastApplied)/(24*3600*1000));
+    const nextIn = Math.max(0, Math.round((30.44*24*3600*1000 - (now - plan.lastApplied))/(24*3600*1000)));
+    lines.push('<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;padding:3px 0">'
+      +plan.name+': last applied '+(daysAgo===0?'today':daysAgo+'d ago')+' · next in ~'+nextIn+'d</div>');
   }
-  // Mortgage status
-  for(const prop of S.properties||[]) {
-    if(!prop.lastApplied) continue;
-    const period = S.poPeriod||'fortnightly';
-    const ms = period==='fortnightly'?MS_FORT:MS_MONTH;
-    const daysAgo = Math.round((now - prop.lastApplied) / (24*3600*1000));
-    const nextIn = Math.round((ms - (now - prop.lastApplied)) / (24*3600*1000));
-    lines.push(`<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;padding:3px 0">${prop.name}: repayment last applied ${daysAgo===0?'today':daysAgo+'d ago'} · next in ~${Math.max(0,nextIn)}d</div>`);
+
+  // Mortgage status + schedule editor per property
+  for(let i=0;i<(S.properties||[]).length;i++){
+    const prop = S.properties[i];
+    const freq = prop.repayFreq||S.poPeriod||'fortnightly';
+    const anchor = prop.repayAnchor||prop.startDate||'';
+    const daysAgo = prop.lastApplied ? Math.round((now-prop.lastApplied)/(24*3600*1000)) : null;
+    // Next payment date
+    let nextDateStr = '';
+    if(anchor) {
+      const dates = getMortgagePayDates(prop, now + 35*24*3600*1000);
+      const future = dates.filter(d=>d.getTime()>now);
+      if(future.length) nextDateStr = fmtDMY(future[0]);
+    }
+    lines.push('<div style="padding:8px 0;border-top:0.5px solid var(--bd);margin-top:6px">'
+      +'<div style="font-size:11px;font-weight:700;margin-bottom:8px">'+prop.name+' repayment schedule</div>'
+      // Frequency selector
+      +'<div style="margin-bottom:8px"><div style="font-size:9px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:5px">FREQUENCY</div>'
+      +'<div style="display:flex;gap:6px">'
+      +['fortnightly','monthly','weekly'].map(f=>'<div onclick="setRepayFreq('+i+',\''+f+'\')" style="flex:1;text-align:center;padding:7px 0;border-radius:var(--rs);font-size:10px;font-weight:700;font-family:\'DM Mono\',monospace;cursor:pointer;border:0.5px solid '+(freq===f?'var(--gr)':'var(--bd)')+';background:'+(freq===f?'var(--gr)22':'var(--sf2)')+';color:'+(freq===f?'var(--gr)':'var(--mu)')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</div>').join('')
+      +'</div></div>'
+      // Anchor date
+      +'<div style="margin-bottom:6px"><div style="font-size:9px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:5px">FIRST PAYMENT DATE (your payday anchor)</div>'
+      +'<input class="repay-anchor-inp" data-idx="'+i+'" value="'+anchor+'" placeholder="DD/MM/YY — e.g. your first Thursday payday" '
+      +'style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:12px;color:var(--tx);font-family:\'DM Mono\',monospace;box-sizing:border-box"></div>'
+      +(daysAgo!==null?'<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace">Last applied: '+(daysAgo===0?'today':daysAgo+'d ago')+(nextDateStr?' · Next: '+nextDateStr:'')+'</div>':'')
+      +'</div>');
   }
-  return lines.join('') || '';
+
+  // Attach listeners after render via setTimeout
+  setTimeout(()=>{
+    document.querySelectorAll('.repay-anchor-inp').forEach(inp=>{
+      inp.addEventListener('change',function(){
+        const idx=parseInt(this.dataset.idx);
+        if(S.properties[idx]){
+          captureUndo();
+          S.properties[idx].repayAnchor=this.value.trim();
+          S.properties[idx].lastApplied=null; // reset so it recalculates from new anchor
+          saveState();
+        }
+      });
+    });
+  },100);
+
+  return lines.join('');
+}
+
+function setRepayFreq(idx, freq) {
+  if(!S.properties[idx]) return;
+  captureUndo();
+  S.properties[idx].repayFreq = freq;
+  S.properties[idx].lastApplied = null; // reset anchor tracking
+  saveState();
+  // Re-render whichever panel is showing the status
+  const el1 = document.getElementById('po-auto-status');
+  const el2 = document.getElementById('st-settings');
+  if(el1) el1.innerHTML = mkTog('Auto-apply repayments on open','Automatically reduce loan balance each time you open the app based on elapsed periods','autoApplyEnabled','runAutoApply();renderPayoff()')+renderAutoApplyStatus();
+  if(el2) renderStocks();
 }
 
 function runAutoApply() {
