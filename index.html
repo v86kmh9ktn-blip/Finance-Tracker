@@ -527,7 +527,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 <div class="sheet-bg" id="text-modal" onclick="if(event.target===this)closeText()">
   <div class="sheet">
     <div class="sheet-title"><span id="text-lbl">Edit</span><div class="mx" onclick="closeText()">×</div></div>
-    <input type="hidden" id="text-key"><input type="hidden" id="text-prop-id">
+    <input type="hidden" id="text-key"><input type="hidden" id="text-prop-id"><input type="hidden" id="text-obj-key">
     <div class="field"><input id="text-inp" autocomplete="off" autocorrect="off" spellcheck="false" style="font-size:18px;padding:14px"></div>
     <div class="ma"><button class="bss" onclick="closeText()">Cancel</button><button class="bp" onclick="saveText()">Save</button></div>
   </div>
@@ -980,19 +980,21 @@ function mkTog(lbl,desc,key,cb){
     <div class="tog ${S[key]?'on':''}" onclick="captureUndo();S['${key}']=!S['${key}'];this.classList.toggle('on');saveState();${cb||'refresh()'}"><div class="tog-k"></div></div></div>`;
 }
 
-function efText(label,key,placeholder,propId){
-  const src=propId!=null?S.properties.find(p=>p.id===propId):S;
+function efText(label,key,placeholder,propId,obj){
+  const src=obj?obj:(propId!=null?S.properties.find(p=>p.id===propId):S);
   const v=src?src[key]||'':'';
-  return `<div class="ef" onclick="openText('${key}','${label}','${placeholder||''}',${propId!=null?propId:'null'})">
+  const objKey=obj?'__goals_stocks':'';
+  return `<div class="ef" onclick="openText('${key}','${label}','${placeholder||''}',${propId!=null?propId:'null'},'${objKey}')">
     <span class="ef-lbl">${label}</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${v||'—'}</span><span class="ef-pen">✎</span></span></div>`;
 }
-function openText(key,label,placeholder,propId){
-  const src=propId!=null?S.properties.find(p=>p.id===propId):S;
+function openText(key,label,placeholder,propId,objKey){
+  const src=objKey==='__goals_stocks'?S.goals.stocks:(propId!=null?S.properties.find(p=>p.id===propId):S);
   document.getElementById('text-lbl').textContent=label;
   document.getElementById('text-inp').value=src?src[key]||'':'';
   document.getElementById('text-inp').placeholder=placeholder||'';
   document.getElementById('text-key').value=key;
   document.getElementById('text-prop-id').value=propId!=null?propId:'';
+  document.getElementById('text-obj-key').value=objKey||'';
   document.getElementById('text-modal').classList.add('open');
   setTimeout(()=>document.getElementById('text-inp').focus(),100);
 }
@@ -1000,9 +1002,11 @@ function closeText(){document.getElementById('text-modal').classList.remove('ope
 function saveText(){
   const key=document.getElementById('text-key').value;
   const pid=document.getElementById('text-prop-id').value;
+  const objKey=document.getElementById('text-obj-key')?.value||'';
   const val=document.getElementById('text-inp').value.trim();
   captureUndo();
-  if(pid!==''){const p=S.properties.find(x=>x.id===parseInt(pid));if(p)p[key]=val;}
+  if(objKey==='__goals_stocks'){S.goals.stocks[key]=val;}
+  else if(pid!==''){const p=S.properties.find(x=>x.id===parseInt(pid));if(p)p[key]=val;}
   else S[key]=val;
   saveState();closeText();refresh();
 }
@@ -1068,7 +1072,7 @@ function renderHoldings(){
       </div>
       <div class="h-tiles">
         <div class="h-tile" onclick="openById('${vrid}')"><div class="h-tile-l">VALUE</div><div class="h-tile-v gr">${fmtK(h.val)}</div><div class="h-tile-hint">tap ✎</div></div>
-        <div class="h-tile"><div class="h-tile-l">/MONTH</div><div class="h-tile-v bl">+${fmtK(mo)}</div><div class="h-tile-hint">via plans</div></div>
+        <div class="h-tile"><div class="h-tile-l">/MONTH</div><div class="h-tile-v bl">+${fmt(mo)}</div><div class="h-tile-hint">via plans</div></div>
         <div class="h-tile" onclick="openById('${rrid}')"><div class="h-tile-l">RETURN</div><div class="h-tile-v am">${h.ret.toFixed(1)}%</div><div class="h-tile-hint">tap ✎</div></div>
       </div>
       <div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:7px">10yr → ${fmtK(proj1(h,10))}</div>
@@ -1422,7 +1426,7 @@ function renderStockGoals(){
       '<span style="font-size:12px;font-weight:700;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">Proj. '+fmtK(projAtTarget)+' vs '+fmtK(g.targetValue)+'</span>'+
     '</div>'+
     '<div class="ef" onclick="openById(\''+trid+'\')"><span class="ef-lbl">Target portfolio value</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetValue)+'</span><span class="ef-pen">✎</span></span></div>'+
-    efText('Target date (DD/MM/YY)','targetDate','01/01/36',null)+
+    efText('Target date (DD/MM/YY)','targetDate','01/01/36',null,g)+
     '<div class="ef" onclick="openById(\''+tmid+'\')"><span class="ef-lbl">Target monthly contribution</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetMonthly)+'/mo</span><span class="ef-pen">✎</span></span></div>'+
     '<div class="ir"><span class="ir-l">Actual monthly DCA</span><span class="ir-v '+(totalMonthly()>=(g.targetMonthly||0)?'gr':'rd')+'">'+fmt(totalMonthly())+'/mo</span></div>'+
     '<div style="margin-top:10px"><div style="font-size:9px;color:var(--mu);font-family:DM Mono;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Notes</div>'+
@@ -2158,72 +2162,80 @@ var _taxFY = '2025-26';
 
 function calcTaxForFY(grossIncome, salaryPackaging, fy) {
   const yr = AU_TAX_YEARS[fy] || AU_TAX_YEARS['2025-26'];
-  const taxable = Math.max(0, grossIncome - salaryPackaging);
-  let tax = 0;
-  yr.brackets.forEach(b => {
-    if(taxable > b.min) tax += (Math.min(taxable, b.max===Infinity?taxable:b.max) - b.min) * b.rate;
-  });
-  // LMITO (Low and Middle Income Tax Offset)
-  let lmito = 0;
-  if(yr.lmitoMax > 0) {
-    if(taxable <= 37500) lmito = Math.min(yr.lmitoMax, 255 + (taxable-18200)*0.075);
-    else if(taxable <= 48000) lmito = yr.lmitoMax;
-    else if(taxable <= yr.lmitoPhaseOut) lmito = yr.lmitoMax - (taxable-48000)*0.03;
+  function computeTax(inc) {
+    let tax = 0;
+    yr.brackets.forEach(b => {
+      if(inc > b.min) tax += (Math.min(inc, b.max===Infinity?inc:b.max) - b.min) * b.rate;
+    });
+    let lmito = 0;
+    if(yr.lmitoMax > 0) {
+      if(inc <= 37500) lmito = Math.min(yr.lmitoMax, 255 + (inc-18200)*0.075);
+      else if(inc <= 48000) lmito = yr.lmitoMax;
+      else if(inc <= yr.lmitoPhaseOut) lmito = yr.lmitoMax - (inc-48000)*0.03;
+    }
+    let lito = 0;
+    if(inc <= 37500) lito = 700;
+    else if(inc <= 45000) lito = 700 - (inc-37500)*0.05;
+    else if(inc <= 66667) lito = 325 - (inc-45000)*0.015;
+    const medicare = inc > yr.medicareThreshold ? inc * 0.02 : 0;
+    const netTax = Math.max(0, tax - lito - lmito);
+    const marginalRate = yr.brackets.filter(b=>inc>b.min).pop()?.rate||0;
+    return {tax, lito, lmito, netTax, medicare, marginalRate};
   }
-  // LITO
-  let lito = 0;
-  if(taxable <= 37500) lito = 700;
-  else if(taxable <= 45000) lito = 700 - (taxable-37500)*0.05;
-  else if(taxable <= 66667) lito = 325 - (taxable-45000)*0.015;
-  const medicare = taxable > yr.medicareThreshold ? taxable * 0.02 : 0;
-  const netTax = Math.max(0, tax - lito - lmito);
-  const packSaving = grossIncome > 0 ? calcTaxForFY(grossIncome, 0, fy).netTax - netTax : 0;
-  const takeHome = taxable - netTax - medicare + salaryPackaging;
-  return {taxable, tax, lito, lmito, netTax, medicare, takeHome, packSaving, marginalRate: yr.brackets.filter(b=>taxable>b.min).pop()?.rate||0};
+  const taxable = Math.max(0, grossIncome - salaryPackaging);
+  const t = computeTax(taxable);
+  // packSaving: tax without packaging minus tax with packaging
+  const tNoPkg = computeTax(Math.max(0, grossIncome));
+  const packSaving = salaryPackaging > 0 ? tNoPkg.netTax - t.netTax : 0;
+  const takeHome = taxable - t.netTax - t.medicare + salaryPackaging;
+  return {taxable, tax:t.tax, lito:t.lito, lmito:t.lmito, netTax:t.netTax, medicare:t.medicare, takeHome, packSaving, marginalRate:t.marginalRate};
 }
 
 function renderTaxEstimator() {
   const el = document.getElementById('cf-tax'); if(!el) return;
+  if(!S.cf){S.cf={grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0};}
   const cf = S.cf;
+  if(!cf.grossIncome){el.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:6px 0">Enter your gross income in the Income section above to see tax breakdown.</div>';return;}
   const fyKeys = Object.keys(AU_TAX_YEARS);
-  // FY selector tabs
-  let html2 = '<div class="fy-tab">' + fyKeys.map(k=>`<div class="fy-pill${k===_taxFY?' active':''}" onclick="_taxFY=\'${k}\';renderTaxEstimator()">${AU_TAX_YEARS[k].name.split(' ')[1]}</div>`).join('') + '</div>';
+  // Use data-fy attribute — no quote escaping needed
+  let html2 = '<div class="fy-tab">' + fyKeys.map(k=>'<div class="fy-pill'+(k===_taxFY?' active':'')+'" data-fy="'+k+'" onclick="setTaxFY(this)">'+AU_TAX_YEARS[k].name.replace('FY ','').replace(' (projected)','*')+'</div>').join('') + '</div>';
   const t = calcTaxForFY(cf.grossIncome, cf.salaryPackaging, _taxFY);
   const yr = AU_TAX_YEARS[_taxFY];
-  // Summary metrics
-  html2 += `<div class="g2" style="margin-bottom:10px">
-    <div class="met"><div class="ml">Taxable income</div><div class="mv" style="color:var(--am)">${fmt(t.taxable)}</div></div>
-    <div class="met"><div class="ml">Net tax payable</div><div class="mv rd">${fmt(t.netTax)}</div></div>
-    <div class="met"><div class="ml">Take-home (annual)</div><div class="mv gr">${fmt(t.takeHome)}</div></div>
-    <div class="met"><div class="ml">Pkg saves annually</div><div class="mv gr">${fmt(Math.round(t.packSaving))}</div></div>
-  </div>`;
-  // Tax band breakdown
+  html2 += '<div class="g2" style="margin-bottom:10px">'
+    +'<div class="met"><div class="ml">Taxable income</div><div class="mv" style="color:var(--am)">'+fmt(t.taxable)+'</div></div>'
+    +'<div class="met"><div class="ml">Net tax payable</div><div class="mv rd">'+fmt(t.netTax)+'</div></div>'
+    +'<div class="met"><div class="ml">Take-home (annual)</div><div class="mv gr">'+fmt(t.takeHome)+'</div></div>'
+    +'<div class="met"><div class="ml">Pkg saves annually</div><div class="mv gr">'+fmt(Math.round(t.packSaving))+'</div></div>'
+    +'</div>';
   const colors = ['var(--gr)','var(--bl)','var(--am)','var(--rd)','#e879f9'];
-  html2 += '<div style="margin-bottom:4px">';
+  html2 += '<div>';
   yr.brackets.filter(b=>b.rate>0).forEach((b,i) => {
     const bandIncome = t.taxable > b.min ? Math.min(t.taxable, b.max===Infinity?t.taxable:b.max) - b.min : 0;
     if(bandIncome <= 0) return;
     const bandTax = bandIncome * b.rate;
     const fillPct = Math.min(100, bandIncome / (b.max===Infinity?t.taxable:b.max-b.min) * 100);
-    html2 += `<div class="tax-band">
-      <div class="tax-band-lbl">${(b.rate*100).toFixed(0)}¢/$</div>
-      <div class="tax-band-bar"><div class="tax-band-fill" style="width:${fillPct.toFixed(0)}%;background:${colors[i]}"></div></div>
-      <div class="tax-band-amt" style="color:${colors[i]}">${fmt(Math.round(bandTax))}</div>
-    </div>`;
+    html2 += '<div class="tax-band"><div class="tax-band-lbl">'+Math.round(b.rate*100)+'¢/$</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:'+fillPct.toFixed(0)+'%;background:'+colors[i]+'"></div></div><div class="tax-band-amt" style="color:'+colors[i]+'">'+fmt(Math.round(bandTax))+'</div></div>';
   });
-  if(t.lito > 0) html2 += `<div class="tax-band"><div class="tax-band-lbl" style="color:var(--gr)">LITO offset</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:100%;background:var(--gr)"></div></div><div class="tax-band-amt" style="color:var(--gr)">-${fmt(Math.round(t.lito))}</div></div>`;
-  if(t.lmito > 0) html2 += `<div class="tax-band"><div class="tax-band-lbl" style="color:var(--gr)">LMITO</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:100%;background:var(--gr)"></div></div><div class="tax-band-amt" style="color:var(--gr)">-${fmt(Math.round(t.lmito))}</div></div>`;
-  html2 += `<div class="tax-band"><div class="tax-band-lbl">Medicare</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:${(t.medicare/t.taxable*100).toFixed(0)}%;background:var(--di)"></div></div><div class="tax-band-amt">${fmt(Math.round(t.medicare))}</div></div>`;
+  if(t.lito>0) html2+='<div class="tax-band"><div class="tax-band-lbl" style="color:var(--gr)">LITO</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:100%;background:var(--gr)"></div></div><div class="tax-band-amt" style="color:var(--gr)">-'+fmt(Math.round(t.lito))+'</div></div>';
+  if(t.lmito>0) html2+='<div class="tax-band"><div class="tax-band-lbl" style="color:var(--gr)">LMITO</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:100%;background:var(--gr)"></div></div><div class="tax-band-amt" style="color:var(--gr)">-'+fmt(Math.round(t.lmito))+'</div></div>';
+  if(t.medicare>0) html2+='<div class="tax-band"><div class="tax-band-lbl">Medicare</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:'+(t.medicare/Math.max(1,t.taxable)*100).toFixed(0)+'%;background:var(--di)"></div></div><div class="tax-band-amt">'+fmt(Math.round(t.medicare))+'</div></div>';
   html2 += '</div>';
-  html2 += `<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:6px;line-height:1.5">Effective rate: ${(t.netTax/Math.max(1,t.taxable)*100).toFixed(1)}% · Marginal rate: ${(t.marginalRate*100).toFixed(0)}% · ${_taxFY.includes('projected')||parseInt(_taxFY)>=2026?'Rates projected — verify with ATO':'Based on confirmed ATO rates'}</div>`;
+  html2 += '<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;margin-top:6px;line-height:1.5">Effective rate: '+(t.netTax/Math.max(1,t.taxable)*100).toFixed(1)+'% · Marginal: '+(t.marginalRate*100).toFixed(0)+'% · '+(parseInt(_taxFY)>=2026?'* Projected rates — verify with ATO':'Based on confirmed ATO rates')+'</div>';
   el.innerHTML = html2;
+  // Re-attach click handlers via event delegation (data-fy approach)
+  el.querySelectorAll('.fy-pill').forEach(pill=>{
+    pill.addEventListener('click',function(){setTaxFY(this);});
+  });
 }
+
+function setTaxFY(el){_taxFY=el.dataset.fy;renderTaxEstimator();}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EXPENSE BREAKDOWN DONUT
 // ═══════════════════════════════════════════════════════════════════════════
 function renderExpenseBreakdown() {
   const el = document.getElementById('cf-expenses'); if(!el) return;
+  if(!S.cf){el.innerHTML='';return;}
   const cf = S.cf; const cfData = calcCF();
   const cats = [
     {lbl:'Mortgage', val:cfData.mortMonthly, color:'#E24B4A'},
@@ -2262,6 +2274,7 @@ function renderExpenseBreakdown() {
 // ═══════════════════════════════════════════════════════════════════════════
 function renderSurplusAlloc() {
   const el = document.getElementById('cf-alloc'); if(!el) return;
+  if(!S.cf){el.innerHTML='';return;}
   const cfData = calcCF();
   const surplus = cfData.surplus;
   if(surplus <= 0) {
@@ -2312,6 +2325,7 @@ function buildChecklist() {
   // Insurance renewals
   const ins = S.insurances||[];
   ins.forEach(i => {
+    if(!i||!i.renewal) return;
     const d = parseDMY(i.renewal); if(!d) return;
     const daysLeft = Math.round((d-now)/(1000*60*60*24));
     if(daysLeft < 60) items.push({title:`${i.name} renewal`, sub:`Due ${i.renewal} · ${daysLeft<0?'OVERDUE':daysLeft+' days'}`, color:daysLeft<0?'var(--rd)':'var(--am)', badge:'INSURE', urgency:0});
