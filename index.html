@@ -2744,7 +2744,7 @@ function autoApplyDCA() {
   }
 
   if(changed) {
-    saveState();
+    silentSave();
     return {type:'dca', periods:periodsApplied, totalAdded:Math.round(totalAdded)};
   }
   return null;
@@ -2816,7 +2816,7 @@ function autoApplyMortgage() {
   }
 
   if(changed) {
-    saveState();
+    silentSave();
     return {type:'mortgage', results};
   }
   return null;
@@ -3000,10 +3000,16 @@ function setRepayFreq(idx, freq) {
   if(el2) renderStocks();
 }
 
+function silentSave(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}}
+
 function runAutoApply() {
   const dca = autoApplyDCA();
   const mort = autoApplyMortgage();
-  if(dca || mort) showAutoApplyBanner(dca, mort);
+  if(dca || mort){
+    showAutoApplyBanner(dca, mort);
+    // Refresh home so updated values (loan balance, holding values) are visible
+    renderHome();
+  }
 }
 if(S.poPeriod==='monthly'){document.getElementById('pt-fn').classList.remove('active');document.getElementById('pt-mo').classList.add('active');poPeriod='monthly';}
 if(!S.poActivePropId&&S.properties.length)S.poActivePropId=S.properties[0].id;
@@ -3012,8 +3018,9 @@ if(!S.shownMilestones)S.shownMilestones=[];
 _shownMilestones=S.shownMilestones;
 if(S.autoApplyEnabled===undefined)S.autoApplyEnabled=true;
 updateNav();renderColorPicker();
-runAutoApply();
 renderHome();
+// Run auto-apply after first paint so home screen renders immediately
+setTimeout(()=>{ runAutoApply(); if(runAutoApply._needsRefresh){renderHome();runAutoApply._needsRefresh=false;} },400);
 </script>
 
 <!-- INSURANCE MODAL -->
