@@ -1564,7 +1564,7 @@ function renderStocks(){
     mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj')+
     mkTog('Geographic breakdown','Manually track country allocation per ETF','geoEnabled','renderGeo()')+
     mkTog('Auto-apply DCA on open','Automatically add monthly contributions to holding values each time you open the app','autoApplyEnabled','runAutoApply();refresh()')+
-    renderAutoApplyStatus();
+    renderDCAAutoStatus();
   renderRebalancing();
   renderDCABasis();
   renderTagBreakdown();
@@ -1598,7 +1598,7 @@ function renderPayoff(){
   if(autoEl){
     autoEl.innerHTML=
       mkTog('Auto-apply repayments on open','Automatically reduce loan balance each time you open the app based on elapsed periods','autoApplyEnabled','runAutoApply();renderPayoff()')+
-      renderAutoApplyStatus();
+      renderMortgageAutoStatus();
   }
   if(!S.properties.length){
     document.getElementById('po-prop-sel').innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">No properties — add one in Properties tab</div>';
@@ -1671,7 +1671,7 @@ function renderCashFlow(){
     ef('Monthly living expenses','livingExpenses',{pre:'$',suf:'/mo',dec:0,min:0,max:30000,hint:'All living costs excluding investments'},S.cf);
   document.getElementById('cf-investments').innerHTML=`
     <div class="cf-row"><span class="cf-lbl">ETF contributions</span><span class="cf-val cf-neg">${fmt(cf.etfMo)}/mo</span></div>
-    <div class="cf-row"><span class="cf-lbl">Super extra (${S.sExtra}/fn)</span><span class="cf-val cf-neg">${fmt(cf.superExtra)}/mo</span></div>`;
+    <div class="cf-row"><span class="cf-lbl">Super extra (${fmt(S.sExtra)}/fn = ${fmt(Math.round(S.sExtra*26/12))}/mo)</span><span class="cf-val cf-neg">${fmt(cf.superExtra)}/mo</span></div>`;
   const sc=cf.surplus>=0?'cf-pos':'cf-neg';
   document.getElementById('cf-surplus').innerHTML=`
     <div class="cf-row"><span class="cf-lbl">Total income</span><span class="cf-val cf-pos">${fmt(cf.totalInc)}/mo</span></div>
@@ -2839,10 +2839,115 @@ function showAutoApplyBanner(dcaResult, mortResult) {
   });
 }
 
-function renderAutoApplyStatus() {
+function renderDCAAutoStatus() {
+  // DCA plans only — shown in Stocks settings
   const now = Date.now();
-  const MS_FORT = 14*24*3600*1000;
   let lines = [];
+  for(const plan of S.contribPlans||[]) {
+    if(!plan.lastApplied) {
+      lines.push('<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;padding:3px 0">'+plan.name+': not yet applied — will run next open</div>');
+      continue;
+    }
+    const daysAgo = Math.round((now - plan.lastApplied)/(24*3600*1000));
+    const nextIn = Math.max(0, Math.round((30.44*24*3600*1000 - (now - plan.lastApplied))/(24*3600*1000)));
+    const total = (plan.allocs||[]).reduce((a,x)=>a+x.amount,0);
+    lines.push('<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;padding:3px 0">'
+      +'<span style="color:var(--bl)">'+plan.name+'</span> · '
+      +fmt(total)+'/mo · last applied '+(daysAgo===0?'today':daysAgo+'d ago')+' · next in ~'+nextIn+'d</div>');
+  }
+  if(!lines.length) lines.push('<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;padding:3px 0">No active DCA plans — add a plan in the contributions section above.</div>');
+  return lines.join('');
+}
+
+function renderMortgageAutoStatus() {
+  // Mortgage repayment schedule — shown in Payoff tab only
+  const now = Date.now();
+  let lines = [];
+
+  if(!(S.properties||[]).length) {
+    return '<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;padding:6px 0">No properties set up yet.</div>';
+  }
+
+  for(let i=0;i<S.properties.length;i++){
+    const prop = S.properties[i];
+    const freq = prop.repayFreq || 'fortnightly';
+    const anchor = prop.repayAnchor || '';
+
+    // Smart info: calculate min payment and show what will be auto-applied
+    const minFort = propMin(prop, 'fortnightly');
+    const minMo = propMin(prop, 'monthly');
+    const minDisplay = freq==='monthly' ? minMo : minFort;
+    const extraDisplay = freq==='monthly'
+      ? (S.poSimExtra||prop.extraFort||0)*26/12
+      : (S.poSimExtra||prop.extraFort||0);
+    const totalDisplay = minDisplay + extraDisplay;
+    const rateDisplay = propCurrentRate(prop);
+
+    // Next payment
+    let nextDateStr = '— set anchor date below';
+    if(anchor) {
+      try {
+        const futureDates = getMortgagePayDates(prop, now + 35*24*3600*1000);
+        const future = futureDates.filter(d=>d.getTime()>now);
+        if(future.length) nextDateStr = fmtDMY(future[0]);
+      } catch(e){}
+    }
+
+    const daysAgo = prop.lastApplied ? Math.round((now-prop.lastApplied)/(24*3600*1000)) : null;
+
+    lines.push(
+      '<div style="padding:8px 0'+(i>0?';border-top:0.5px solid var(--bd)':'')+'">'
+
+      // Property name + smart summary
+      +'<div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--tx)">'+prop.name+'</div>'
+
+      // Smart info card
+      +'<div style="background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
+      +'<div><div style="font-size:8px;color:var(--mu);font-family:\'DM Mono\',monospace">REPAYMENT</div><div style="font-size:12px;font-weight:700;font-family:\'DM Mono\',monospace;color:var(--gr)">'+fmt(Math.round(totalDisplay))+'</div><div style="font-size:8px;color:var(--di);font-family:\'DM Mono\',monospace">per '+freq.replace('tnightly','tnight')+'</div></div>'
+      +'<div><div style="font-size:8px;color:var(--mu);font-family:\'DM Mono\',monospace">NEXT PAYMENT</div><div style="font-size:12px;font-weight:700;font-family:\'DM Mono\',monospace;color:var(--bl)">'+nextDateStr+'</div></div>'
+      +'<div><div style="font-size:8px;color:var(--mu);font-family:\'DM Mono\',monospace">MIN REPAYMENT</div><div style="font-size:11px;font-weight:600;font-family:\'DM Mono\',monospace">'+fmt(Math.round(minDisplay))+'/'+freq.replace('tnightly','tnight').replace('monthly','mo')+'</div></div>'
+      +'<div><div style="font-size:8px;color:var(--mu);font-family:\'DM Mono\',monospace">EXTRA (OFFSET)</div><div style="font-size:11px;font-weight:600;font-family:\'DM Mono\',monospace;color:var(--pu)">'+fmt(Math.round(extraDisplay))+'/'+freq.replace('tnightly','tnight').replace('monthly','mo')+'</div></div>'
+      +'<div><div style="font-size:8px;color:var(--mu);font-family:\'DM Mono\',monospace">INTEREST RATE</div><div style="font-size:11px;font-weight:600;font-family:\'DM Mono\',monospace">'+rateDisplay.toFixed(2)+'% p.a.</div></div>'
+      +(daysAgo!==null?'<div><div style="font-size:8px;color:var(--mu);font-family:\'DM Mono\',monospace">LAST APPLIED</div><div style="font-size:11px;font-weight:600;font-family:\'DM Mono\',monospace">'+(daysAgo===0?'Today':daysAgo+'d ago')+'</div></div>':'')
+      +'</div></div>'
+
+      // Frequency selector
+      +'<div style="margin-bottom:10px"><div style="font-size:9px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:5px;letter-spacing:.06em">REPAYMENT FREQUENCY</div>'
+      +'<div style="display:flex;gap:6px">'
+      +['fortnightly','monthly','weekly'].map(f=>'<div onclick="setRepayFreq('+i+',\''+f+'\')" style="flex:1;text-align:center;padding:7px 0;border-radius:var(--rs);font-size:10px;font-weight:700;font-family:\'DM Mono\',monospace;cursor:pointer;border:0.5px solid '+(freq===f?'var(--gr)':'var(--bd)')+';background:'+(freq===f?'var(--gr)22':'var(--sf2)')+';color:'+(freq===f?'var(--gr)':'var(--mu)')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</div>').join('')
+      +'</div></div>'
+
+      // Anchor date
+      +'<div><div style="font-size:9px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:5px;letter-spacing:.06em">PAYDAY ANCHOR DATE</div>'
+      +'<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;margin-bottom:6px;line-height:1.5">Enter the date of your first (or most recent) repayment — e.g. if paid every Thursday fortnight, enter that Thursday\'s date.</div>'
+      +'<input class="repay-anchor-inp" data-idx="'+i+'" value="'+anchor+'" placeholder="DD/MM/YY — e.g. 12/06/26" '
+      +'style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:\'DM Mono\',monospace;box-sizing:border-box;outline:none"></div>'
+
+      +'</div>'
+    );
+  }
+
+  // Attach listeners
+  setTimeout(()=>{
+    document.querySelectorAll('.repay-anchor-inp').forEach(inp=>{
+      inp.addEventListener('change',function(){
+        const idx=parseInt(this.dataset.idx);
+        const val=this.value.trim();
+        if(!val||!S.properties[idx]) return;
+        captureUndo();
+        S.properties[idx].repayAnchor=val;
+        S.properties[idx].lastApplied=null;
+        saveState();
+        // refresh the status display
+        const el=document.getElementById('po-auto-status');
+        if(el) el.innerHTML=mkTog('Auto-apply repayments on open','Automatically reduce loan balance each time you open the app based on elapsed periods','autoApplyEnabled','runAutoApply();renderPayoff()')+renderMortgageAutoStatus();
+      });
+    });
+  },100);
+
+  return lines.join('');
+}
 
   // DCA status
   for(const plan of S.contribPlans||[]) {
@@ -2882,23 +2987,6 @@ function renderAutoApplyStatus() {
   }
 
   // Attach listeners after render via setTimeout
-  setTimeout(()=>{
-    document.querySelectorAll('.repay-anchor-inp').forEach(inp=>{
-      inp.addEventListener('change',function(){
-        const idx=parseInt(this.dataset.idx);
-        if(S.properties[idx]){
-          captureUndo();
-          S.properties[idx].repayAnchor=this.value.trim();
-          S.properties[idx].lastApplied=null; // reset so it recalculates from new anchor
-          saveState();
-        }
-      });
-    });
-  },100);
-
-  return lines.join('');
-}
-
 function setRepayFreq(idx, freq) {
   if(!S.properties[idx]) return;
   captureUndo();
@@ -2908,7 +2996,7 @@ function setRepayFreq(idx, freq) {
   // Re-render whichever panel is showing the status
   const el1 = document.getElementById('po-auto-status');
   const el2 = document.getElementById('st-settings');
-  if(el1) el1.innerHTML = mkTog('Auto-apply repayments on open','Automatically reduce loan balance each time you open the app based on elapsed periods','autoApplyEnabled','runAutoApply();renderPayoff()')+renderAutoApplyStatus();
+  if(el1) el1.innerHTML = mkTog('Auto-apply repayments on open','Automatically reduce loan balance each time you open the app based on elapsed periods','autoApplyEnabled','runAutoApply();renderPayoff()')+renderMortgageAutoStatus();
   if(el2) renderStocks();
 }
 
