@@ -917,14 +917,33 @@ function poSimulate(prop,extraLump,period){
 // CASH FLOW
 function calcCF(){
   const cf=S.cf;
-  const taxable=cf.grossIncome-cf.salaryPackaging;
+  // Super salary sacrifice reduces taxable income (pre-tax contribution)
+  const superSacrifice=S.sExtra*26; // annual salary sacrifice
+  const taxable=Math.max(0,cf.grossIncome-cf.salaryPackaging-superSacrifice);
   let tax=0;
   if(taxable>190000)tax=51667+(taxable-190000)*0.45;
   else if(taxable>135000)tax=31288+(taxable-135000)*0.37;
   else if(taxable>45000)tax=5092+(taxable-45000)*0.325;
   else if(taxable>18200)tax=(taxable-18200)*0.19;
   const medicare=taxable*0.02;
-  const monthlyNet=(taxable-tax-medicare+cf.salaryPackaging)/12;
+  // HECS/HELP repayment — if employer incorrectly withholds, toggle on to match payslip
+  // Rates 2025-26: scales from 1% at $54,435 to 10% above $151,201
+  let hecs=0;
+  if(S.hasHECS){
+    if(taxable>151200)hecs=taxable*0.10;
+    else if(taxable>140800)hecs=taxable*0.09;
+    else if(taxable>132500)hecs=taxable*0.085;
+    else if(taxable>122300)hecs=taxable*0.08;
+    else if(taxable>113000)hecs=taxable*0.075;
+    else if(taxable>103766)hecs=taxable*0.07;
+    else if(taxable>95010)hecs=taxable*0.065;
+    else if(taxable>86799)hecs=taxable*0.06;
+    else if(taxable>78521)hecs=taxable*0.055;
+    else if(taxable>70104)hecs=taxable*0.05;
+    else if(taxable>61874)hecs=taxable*0.045;
+    else if(taxable>54435)hecs=taxable*0.01;
+  }
+  const monthlyNet=(taxable-tax-medicare-hecs+cf.salaryPackaging)/12;
   const mortMonthly=S.properties.reduce((a,p)=>{const mf=propMin(p,'fortnightly');return a+(mf+p.extraFort)*26/12;},0);
   const rentalInc=netRentalMonthly();
   const etfMo=totalMonthly();
@@ -933,7 +952,7 @@ function calcCF(){
   const otherInc=cf.otherIncome;
   const totalInc=monthlyNet+rentalInc+otherInc;
   const totalOut=mortMonthly+living+etfMo+superExtra;
-  return{monthlyNet,rentalInc,otherInc,totalInc,mortMonthly,living,etfMo,superExtra,totalOut,surplus:totalInc-totalOut,taxable,tax,medicare};
+  return{monthlyNet,rentalInc,otherInc,totalInc,mortMonthly,living,etfMo,superExtra,totalOut,surplus:totalInc-totalOut,taxable,tax,medicare,hecs,superSacrifice};
 }
 
 
@@ -1615,8 +1634,11 @@ function renderCashFlow(){
     ef('Gross annual income','grossIncome',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Total gross income including OT'},S.cf)+
     ef('Salary packaging (annual)','salaryPackaging',{pre:'$',suf:'/yr',dec:0,min:0,max:30000,hint:'Annual salary packaging amount'},S.cf)+
     ef('Other monthly income','otherIncome',{pre:'$',suf:'/mo',dec:0,min:0,max:50000,hint:'Rental, dividends, side income etc.'},S.cf)+
+    `<div class="ir"><span class="ir-l">Super salary sacrifice</span><span class="ir-v pu">${fmt(Math.round(S.sExtra*26))}/yr — reduces taxable income</span></div>`+
+    `<div class="ir"><span class="ir-l">Est. taxable income</span><span class="ir-v am">${fmt(cf.taxable)}</span></div>`+
     `<div class="ir"><span class="ir-l">Est. monthly take-home</span><span class="ir-v gr">${fmt(cf.monthlyNet)}</span></div>`+
-    `<div class="ir"><span class="ir-l">Net rental income</span><span class="ir-v gr">${fmt(cf.rentalInc)}/mo</span></div>`;
+    `<div class="ir"><span class="ir-l">Net rental income</span><span class="ir-v gr">${fmt(cf.rentalInc)}/mo</span></div>`+
+    mkTog('Employer withholds HECS/HELP','Toggle on if your employer deducts HECS even though you have no debt — shows payslip-accurate tax and refund at year end','hasHECS','renderCashFlow()');
   const propRows=S.properties.map(p=>{const mf=propMin(p,'fortnightly');const t=(mf+p.extraFort)*26/12;return `<div class="cf-row"><span class="cf-lbl">${p.name}</span><span class="cf-val cf-neg">${fmt(t)}/mo</span></div>`;}).join('');
   document.getElementById('cf-commitments').innerHTML=
     `<div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 4px;border-bottom:0.5px solid var(--bd2)">Mortgage repayments</div>`+propRows+
@@ -2160,8 +2182,9 @@ const AU_TAX_YEARS = {
 };
 var _taxFY = '2025-26';
 
-function calcTaxForFY(grossIncome, salaryPackaging, fy) {
+function calcTaxForFY(grossIncome, salaryPackaging, fy, superSacrifice, includeHECS) {
   const yr = AU_TAX_YEARS[fy] || AU_TAX_YEARS['2025-26'];
+  const ss = superSacrifice || 0;
   function computeTax(inc) {
     let tax = 0;
     yr.brackets.forEach(b => {
@@ -2182,13 +2205,28 @@ function calcTaxForFY(grossIncome, salaryPackaging, fy) {
     const marginalRate = yr.brackets.filter(b=>inc>b.min).pop()?.rate||0;
     return {tax, lito, lmito, netTax, medicare, marginalRate};
   }
-  const taxable = Math.max(0, grossIncome - salaryPackaging);
+  const taxable = Math.max(0, grossIncome - salaryPackaging - ss);
   const t = computeTax(taxable);
-  // packSaving: tax without packaging minus tax with packaging
-  const tNoPkg = computeTax(Math.max(0, grossIncome));
+  const tNoPkg = computeTax(Math.max(0, grossIncome - ss));
   const packSaving = salaryPackaging > 0 ? tNoPkg.netTax - t.netTax : 0;
-  const takeHome = taxable - t.netTax - t.medicare + salaryPackaging;
-  return {taxable, tax:t.tax, lito:t.lito, lmito:t.lmito, netTax:t.netTax, medicare:t.medicare, takeHome, packSaving, marginalRate:t.marginalRate};
+  // HECS/HELP repayment rates 2025-26
+  let hecs = 0;
+  if(includeHECS) {
+    if(taxable>151200)hecs=taxable*0.10;
+    else if(taxable>140800)hecs=taxable*0.09;
+    else if(taxable>132500)hecs=taxable*0.085;
+    else if(taxable>122300)hecs=taxable*0.08;
+    else if(taxable>113000)hecs=taxable*0.075;
+    else if(taxable>103766)hecs=taxable*0.07;
+    else if(taxable>95010)hecs=taxable*0.065;
+    else if(taxable>86799)hecs=taxable*0.06;
+    else if(taxable>78521)hecs=taxable*0.055;
+    else if(taxable>70104)hecs=taxable*0.05;
+    else if(taxable>61874)hecs=taxable*0.045;
+    else if(taxable>54435)hecs=taxable*0.01;
+  }
+  const takeHome = taxable - t.netTax - t.medicare - hecs + salaryPackaging;
+  return {taxable, tax:t.tax, lito:t.lito, lmito:t.lmito, netTax:t.netTax, medicare:t.medicare, hecs, takeHome, packSaving, superSacrifice:ss, marginalRate:t.marginalRate};
 }
 
 function renderTaxEstimator() {
@@ -2199,10 +2237,10 @@ function renderTaxEstimator() {
   const fyKeys = Object.keys(AU_TAX_YEARS);
   // Use data-fy attribute — no quote escaping needed
   let html2 = '<div class="fy-tab">' + fyKeys.map(k=>'<div class="fy-pill'+(k===_taxFY?' active':'')+'" data-fy="'+k+'" onclick="setTaxFY(this)">'+AU_TAX_YEARS[k].name.replace('FY ','').replace(' (projected)','*')+'</div>').join('') + '</div>';
-  const t = calcTaxForFY(cf.grossIncome, cf.salaryPackaging, _taxFY);
+  const t = calcTaxForFY(cf.grossIncome, cf.salaryPackaging, _taxFY, S.sExtra*26, S.hasHECS);
   const yr = AU_TAX_YEARS[_taxFY];
   html2 += '<div class="g2" style="margin-bottom:10px">'
-    +'<div class="met"><div class="ml">Taxable income</div><div class="mv" style="color:var(--am)">'+fmt(t.taxable)+'</div></div>'
+    +'<div class="met"><div class="ml">Taxable income</div><div class="mv" style="color:var(--am)">'+fmt(t.taxable)+'</div><div class="mss">after pkg + super sacrifice</div></div>'
     +'<div class="met"><div class="ml">Net tax payable</div><div class="mv rd">'+fmt(t.netTax)+'</div></div>'
     +'<div class="met"><div class="ml">Take-home (annual)</div><div class="mv gr">'+fmt(t.takeHome)+'</div></div>'
     +'<div class="met"><div class="ml">Pkg saves annually</div><div class="mv gr">'+fmt(Math.round(t.packSaving))+'</div></div>'
@@ -2219,8 +2257,10 @@ function renderTaxEstimator() {
   if(t.lito>0) html2+='<div class="tax-band"><div class="tax-band-lbl" style="color:var(--gr)">LITO</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:100%;background:var(--gr)"></div></div><div class="tax-band-amt" style="color:var(--gr)">-'+fmt(Math.round(t.lito))+'</div></div>';
   if(t.lmito>0) html2+='<div class="tax-band"><div class="tax-band-lbl" style="color:var(--gr)">LMITO</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:100%;background:var(--gr)"></div></div><div class="tax-band-amt" style="color:var(--gr)">-'+fmt(Math.round(t.lmito))+'</div></div>';
   if(t.medicare>0) html2+='<div class="tax-band"><div class="tax-band-lbl">Medicare</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:'+(t.medicare/Math.max(1,t.taxable)*100).toFixed(0)+'%;background:var(--di)"></div></div><div class="tax-band-amt">'+fmt(Math.round(t.medicare))+'</div></div>';
+  if(t.hecs>0) html2+='<div class="tax-band"><div class="tax-band-lbl" style="color:var(--am)">HECS/HELP</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:'+(Math.min(100,t.hecs/Math.max(1,t.taxable)*100*3)).toFixed(0)+'%;background:var(--am)"></div></div><div class="tax-band-amt" style="color:var(--am)">'+fmt(Math.round(t.hecs))+'</div></div>';
+  if(t.superSacrifice>0) html2+='<div class="tax-band"><div class="tax-band-lbl" style="color:var(--pu)">Super sac.</div><div class="tax-band-bar"><div class="tax-band-fill" style="width:100%;background:var(--pu)22"></div></div><div class="tax-band-amt" style="color:var(--pu)">-'+fmt(Math.round(t.superSacrifice))+' saved</div></div>';
   html2 += '</div>';
-  html2 += '<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;margin-top:6px;line-height:1.5">Effective rate: '+(t.netTax/Math.max(1,t.taxable)*100).toFixed(1)+'% · Marginal: '+(t.marginalRate*100).toFixed(0)+'% · '+(parseInt(_taxFY)>=2026?'* Projected rates — verify with ATO':'Based on confirmed ATO rates')+'</div>';
+  html2 += '<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;margin-top:6px;line-height:1.5">Effective rate: '+(t.netTax/Math.max(1,t.taxable)*100).toFixed(1)+'% · Marginal: '+(t.marginalRate*100).toFixed(0)+'%'+(t.hecs>0?' · HECS withholding refunded at tax time if no debt':'')+(parseInt(_taxFY)>=2026?' · * Projected rates':' · Confirmed ATO rates')+'</div>';
   el.innerHTML = html2;
   // Re-attach click handlers via event delegation (data-fy approach)
   el.querySelectorAll('.fy-pill').forEach(pill=>{
