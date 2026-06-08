@@ -424,6 +424,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       </div>
       <!-- PAYOFF SUB-TAB -->
       <div id="msub-payoff" style="display:none">
+        <div class="card"><div class="sec">Auto-apply settings</div><div id="po-auto-status"></div></div>
         <div class="card"><div class="sec">Payment period</div><div class="ptog"><div class="pt active" id="pt-fn" onclick="setPeriod('fortnightly',this)">Fortnightly</div><div class="pt" id="pt-mo" onclick="setPeriod('monthly',this)">Monthly</div></div><div class="sec" style="margin-top:8px">Select property</div><div id="po-prop-sel"></div><div class="sec" style="margin-top:8px">Parameters <span class="sec-hint">— auto-filled from property</span></div><div id="po-setup"></div></div>
         <div class="card"><div class="sec">Extra payment <span class="sec-hint">— tap to edit</span></div><div id="po-extra"></div></div>
         <div class="card"><div class="sec">Comparison</div><div id="po-result"></div></div>
@@ -1558,7 +1559,12 @@ function renderStocks(){
   }
   document.querySelectorAll('#p-stocks .pill').forEach(p=>{p.onclick=function(){document.querySelectorAll('#p-stocks .pill').forEach(x=>x.classList.remove('active'));this.classList.add('active');stYr=parseInt(this.textContent);renderStockProj();};});
   renderStockProj();
-  document.getElementById('st-settings').innerHTML=ef('Inflation rate','inflationRate',{pre:'',suf:'%',dec:1,min:0,max:10,hint:'Used when inflation adjustment is on'})+mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj')+mkTog('Geographic breakdown','Manually track country allocation per ETF','geoEnabled','renderGeo()');
+  document.getElementById('st-settings').innerHTML=
+    ef('Inflation rate','inflationRate',{pre:'',suf:'%',dec:1,min:0,max:10,hint:'Used when inflation adjustment is on'})+
+    mkTog('Inflation-adjusted view','Show projected values in today\'s purchasing power','inflationAdj')+
+    mkTog('Geographic breakdown','Manually track country allocation per ETF','geoEnabled','renderGeo()')+
+    mkTog('Auto-apply DCA on open','Automatically add monthly contributions to holding values each time you open the app','autoApplyEnabled','runAutoApply();refresh()')+
+    renderAutoApplyStatus();
   renderRebalancing();
   renderDCABasis();
   renderTagBreakdown();
@@ -1588,6 +1594,12 @@ function renderProperties(){
 }
 
 function renderPayoff(){
+  const autoEl=document.getElementById('po-auto-status');
+  if(autoEl){
+    autoEl.innerHTML=
+      mkTog('Auto-apply repayments on open','Automatically reduce loan balance each time you open the app based on elapsed periods','autoApplyEnabled','runAutoApply();renderPayoff()')+
+      renderAutoApplyStatus();
+  }
   if(!S.properties.length){
     document.getElementById('po-prop-sel').innerHTML='<div style="color:var(--mu);font-size:11px;font-family:DM Mono">No properties — add one in Properties tab</div>';
     ['po-setup','po-extra','po-result'].forEach(id=>document.getElementById(id).innerHTML='');return;
@@ -2693,12 +2705,163 @@ function refresh(){
   const d=new Date();const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   document.getElementById('hdr-date').textContent=days[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
 })();
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTO-APPLY: DCA + MORTGAGE — runs on every app open
+// ═══════════════════════════════════════════════════════════════════════════
+function autoApplyDCA() {
+  if(!S.autoApplyEnabled) return null;
+  if(!S.contribPlans||!S.contribPlans.length) return null;
+  if(!S.holdings||!S.holdings.length) return null;
+  const now = Date.now();
+  const MS_MONTH = 30.44 * 24 * 3600 * 1000;
+  let totalAdded = 0;
+  let periodsApplied = 0;
+  let changed = false;
+
+  for(const plan of S.contribPlans) {
+    const start = parseDMY(plan.startDate);
+    if(!start || start > new Date()) continue;
+    // lastApplied: timestamp of last time this plan was auto-applied
+    if(!plan.lastApplied) plan.lastApplied = start.getTime();
+    // How many full months have elapsed since lastApplied?
+    const elapsed = now - plan.lastApplied;
+    const periods = Math.floor(elapsed / MS_MONTH);
+    if(periods <= 0) continue;
+    // Apply each period's contributions to holding values
+    for(const alloc of plan.allocs) {
+      const h = S.holdings.find(x => x.ticker === alloc.ticker);
+      if(!h) continue;
+      // Each period: add contribution + apply monthly return on holding
+      const monthlyReturn = (h.ret||10) / 100 / 12;
+      for(let p = 0; p < periods; p++) {
+        h.val = Math.round(h.val * (1 + monthlyReturn) + alloc.amount);
+        totalAdded += alloc.amount;
+      }
+      changed = true;
+    }
+    plan.lastApplied = plan.lastApplied + (periods * MS_MONTH);
+    periodsApplied = Math.max(periodsApplied, periods);
+  }
+
+  if(changed) {
+    saveState();
+    return {type:'dca', periods:periodsApplied, totalAdded:Math.round(totalAdded)};
+  }
+  return null;
+}
+
+function autoApplyMortgage() {
+  if(!S.autoApplyEnabled) return null;
+  if(!S.properties||!S.properties.length) return null;
+  const now = Date.now();
+  const MS_FORT = 14 * 24 * 3600 * 1000;
+  const MS_MONTH = 30.44 * 24 * 3600 * 1000;
+  let results = [];
+  let changed = false;
+
+  for(const prop of S.properties) {
+    if(prop.loan <= 0) continue;
+    const period = S.poPeriod||'fortnightly';
+    const msPer = period === 'fortnightly' ? MS_FORT : MS_MONTH;
+    const ppy = period === 'fortnightly' ? 26 : 12;
+    // anchor date: loan start date
+    const startDate = parseDMY(prop.startDate||S.poStartDate);
+    if(!startDate) continue;
+    if(!prop.lastApplied) prop.lastApplied = startDate.getTime();
+    const elapsed = now - prop.lastApplied;
+    const periods = Math.floor(elapsed / msPer);
+    if(periods <= 0) continue;
+
+    const minPer = propMin(prop, period);
+    const extraPer = period === 'fortnightly' ? (S.poSimExtra||prop.extraFort||0) : (S.poSimExtra||prop.extraFort||0)*26/12;
+    const rPer = propCurrentRate(prop) / 100 / ppy;
+    let loan = prop.loan;
+    let totalInterest = 0;
+    let totalPrincipal = 0;
+
+    for(let p = 0; p < periods; p++) {
+      if(loan <= 0){loan=0;break;}
+      const eff = Math.max(0, loan - (prop.offset||0));
+      const interest = eff * rPer;
+      const principal = minPer + extraPer - interest;
+      if(principal > 0) {
+        loan = Math.max(0, loan - principal);
+        totalPrincipal += principal;
+        totalInterest += interest;
+      }
+    }
+
+    if(Math.abs(loan - prop.loan) > 1) {
+      const reduced = prop.loan - loan;
+      prop.loan = Math.round(loan);
+      prop.lastApplied = prop.lastApplied + (periods * msPer);
+      results.push({name:prop.name, periods, reduced:Math.round(reduced), newBalance:Math.round(loan), totalInterest:Math.round(totalInterest)});
+      changed = true;
+    }
+  }
+
+  if(changed) {
+    saveState();
+    return {type:'mortgage', results};
+  }
+  return null;
+}
+
+function showAutoApplyBanner(dcaResult, mortResult) {
+  const msgs = [];
+  if(dcaResult) {
+    msgs.push(`📈 DCA auto-applied — ${fmt(dcaResult.totalAdded)} added across ${dcaResult.periods} period${dcaResult.periods>1?'s':''}`);
+  }
+  if(mortResult && mortResult.results.length) {
+    mortResult.results.forEach(r => {
+      msgs.push(`🏠 Mortgage auto-updated — ${fmt(r.reduced)} principal paid over ${r.periods} period${r.periods>1?'s':''} · balance now ${fmt(r.newBalance)}`);
+    });
+  }
+  if(!msgs.length) return;
+  // Show sequentially as toasts
+  msgs.forEach((msg, i) => {
+    setTimeout(() => showMilestoneToast(msg, 'Auto-updated from real-world activity'), i * 4500);
+  });
+}
+
+function renderAutoApplyStatus() {
+  const now = Date.now();
+  const MS_MONTH = 30.44 * 24 * 3600 * 1000;
+  const MS_FORT = 14 * 24 * 3600 * 1000;
+  let lines = [];
+  // DCA status
+  for(const plan of S.contribPlans||[]) {
+    if(!plan.lastApplied) continue;
+    const daysAgo = Math.round((now - plan.lastApplied) / (24*3600*1000));
+    const nextIn = Math.round((MS_MONTH - (now - plan.lastApplied)) / (24*3600*1000));
+    lines.push(`<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;padding:3px 0">${plan.name}: last applied ${daysAgo===0?'today':daysAgo+'d ago'} · next in ~${Math.max(0,nextIn)}d</div>`);
+  }
+  // Mortgage status
+  for(const prop of S.properties||[]) {
+    if(!prop.lastApplied) continue;
+    const period = S.poPeriod||'fortnightly';
+    const ms = period==='fortnightly'?MS_FORT:MS_MONTH;
+    const daysAgo = Math.round((now - prop.lastApplied) / (24*3600*1000));
+    const nextIn = Math.round((ms - (now - prop.lastApplied)) / (24*3600*1000));
+    lines.push(`<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;padding:3px 0">${prop.name}: repayment last applied ${daysAgo===0?'today':daysAgo+'d ago'} · next in ~${Math.max(0,nextIn)}d</div>`);
+  }
+  return lines.join('') || '';
+}
+
+function runAutoApply() {
+  const dca = autoApplyDCA();
+  const mort = autoApplyMortgage();
+  if(dca || mort) showAutoApplyBanner(dca, mort);
+}
 if(S.poPeriod==='monthly'){document.getElementById('pt-fn').classList.remove('active');document.getElementById('pt-mo').classList.add('active');poPeriod='monthly';}
 if(!S.poActivePropId&&S.properties.length)S.poActivePropId=S.properties[0].id;
 if(!S.cf)S.cf={grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpenses:3000};
 if(!S.shownMilestones)S.shownMilestones=[];
 _shownMilestones=S.shownMilestones;
-updateNav();renderColorPicker();renderHome();
+if(S.autoApplyEnabled===undefined)S.autoApplyEnabled=true;
+updateNav();renderColorPicker();
+runAutoApply();
+renderHome();
 </script>
 
 <!-- INSURANCE MODAL -->
