@@ -341,6 +341,33 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .act-title{font-size:11px;font-weight:600}
 .act-sub{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px}
 .act-badge{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:8px;flex-shrink:0}
+
+/* GOALS TAB */
+.goal-card{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:14px;margin-bottom:10px}
+.goal-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.goal-icon{font-size:22px;width:38px;height:38px;background:var(--sf3);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.goal-title{font-size:13px;font-weight:700;flex:1}
+.goal-tag{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:8px}
+.goal-progress-wrap{height:6px;background:var(--sf3);border-radius:3px;overflow:hidden;margin:8px 0 5px}
+.goal-progress-bar{height:100%;border-radius:3px;transition:width .6s ease}
+.goal-meta{display:flex;justify-content:space-between;font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:3px}
+.goal-rows{margin-top:10px;border-top:0.5px solid var(--bd);padding-top:8px}
+.goals-sub-tabs{display:flex;gap:5px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;padding-bottom:2px}
+.goals-sub-tabs::-webkit-scrollbar{display:none}
+.gst{padding:6px 12px;border-radius:12px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;white-space:nowrap;border:0.5px solid var(--bd);background:var(--sf2);color:var(--mu)}
+.gst.active{background:var(--gr);color:#fff;border-color:var(--gr)}
+/* CGT */
+.cgt-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:0.5px solid var(--bd)}
+.cgt-row:last-child{border-bottom:none}
+.cgt-ticker{font-size:12px;font-weight:700;font-family:'DM Mono',monospace;width:46px;flex-shrink:0}
+.cgt-detail{flex:1;font-size:9px;color:var(--di);font-family:'DM Mono',monospace;line-height:1.5}
+.cgt-val{font-size:12px;font-weight:700;font-family:'DM Mono',monospace;text-align:right;flex-shrink:0}
+.cgt-settings{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.cgt-sfield{background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);padding:8px 10px}
+.cgt-sfield label{font-size:8px;color:var(--mu);font-family:'DM Mono',monospace;display:block;margin-bottom:4px;letter-spacing:.05em}
+.cgt-sfield input{background:transparent;border:none;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:var(--tx);width:100%;outline:none}
+/* REDRAW */
+.redraw-badge{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:8px;background:rgba(55,138,221,0.12);color:var(--bl)}
 </style>
 </head>
 <body>
@@ -393,6 +420,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       <div class="card"><div class="sec">Projections</div><div class="pills"><div class="pill active" onclick="stTab(10,this)">10 yr</div><div class="pill" onclick="stTab(20,this)">20 yr</div><div class="pill" onclick="stTab(30,this)">30 yr</div></div><div id="st-proj"></div></div>
       <div class="card"><div class="sec">Settings</div><div id="st-settings"></div></div>
       <div class="card"><div class="sec">DCA cost basis</div><div id="dca-basis"></div></div>
+      <div class="card"><div class="sec">📊 CGT estimator</div><div id="cgt-settings"></div><div id="cgt-rows"></div></div>
       <div class="card" id="tag-breakdown-card">
         <div class="sec">Holdings by type</div>
         <div id="tag-breakdown"></div>
@@ -481,6 +509,22 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   </div>
 
   <!-- PROJECTION -->
+  <!-- GOALS -->
+  <div class="panel" id="p-goals">
+    <div class="card">
+      <div class="sec">Goals tracker</div>
+      <div class="goals-sub-tabs" id="goals-sub-tabs">
+        <div class="gst active" onclick="setGoalsTab('all',this)">All goals</div>
+        <div class="gst" onclick="setGoalsTab('networth',this)">Net worth</div>
+        <div class="gst" onclick="setGoalsTab('stocks',this)">Stocks</div>
+        <div class="gst" onclick="setGoalsTab('super',this)">Super</div>
+        <div class="gst" onclick="setGoalsTab('property',this)">Property</div>
+      </div>
+      <div id="goals-content"></div>
+    </div>
+  </div>
+
+  <!-- PROJECTIONS -->
   <div class="panel" id="p-proj">
     <div class="card"><div class="sec">Scenario</div><div class="scen-bar"><div class="sb active" onclick="setScen(0,this)">📈 Current</div><div class="sb" onclick="setScen(1,this)">📈 Optimistic</div><div class="sb" onclick="setScen(2,this)">🛡 Conservative</div></div><div id="scen-desc" style="font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.6;padding:9px;background:var(--sf2);border-radius:var(--rs);border:0.5px solid var(--bd)"></div></div>
     <div class="card"><div class="sec">Options</div><div id="proj-togs"></div></div>
@@ -501,6 +545,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   <div class="nb" onclick="show('cashflow',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</div>
   <div class="nb" onclick="show('super',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Super</div>
   <div class="nb" onclick="show('history',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 7 22 7 22 12"/></svg>Progress</div>
+  <div class="nb" onclick="show('goals',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Goals</div>
   <div class="nb" onclick="show('proj',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Proj.</div>
 </nav>
 
@@ -649,7 +694,7 @@ const DEFAULTS={
   lumpSums:[],nextLumpId:1,
   properties:[{
     id:1,name:'Current home',type:'ppor',
-    val:255000,loan:158500,origLoan:205000,offset:60000,
+    val:255000,loan:158500,origLoan:205000,offset:27000,redraw:34000,
     rate:5.88,term:30,startDate:'01/07/23',
     rentWk:0,growth:4,minFort:0,extraFort:693,
     rateHistory:[{rate:6.13,date:'01/06/26',ts:new Date(2026,5,1).getTime()}]
@@ -697,7 +742,7 @@ function loadState(){
   return JSON.parse(JSON.stringify(DEFAULTS));
 }
 function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
-const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,shownMilestones:[],insurances:[],goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}}};
+const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,shownMilestones:[],insurances:[],goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}},cgtSettings:{marginalRate:37,discountEligible:true,discountRate:50}};
 function confirmReset(){if(confirm('Reset to zero — blank canvas? This cannot be undone.')){localStorage.setItem(STORE,JSON.stringify(ZERO_STATE));location.reload();}}
 
 const S=loadState();
@@ -1039,6 +1084,9 @@ function saveText(){
   const val=document.getElementById('text-inp').value.trim();
   captureUndo();
   if(objKey==='__goals_stocks'){S.goals.stocks[key]=val;}
+  else if(objKey==='__goals_nw'){S.goals.networth[key]=val;}
+  else if(objKey==='__goals_super'){S.goals.super[key]=val;}
+  else if(objKey&&objKey.startsWith('__goals_prop_')){const pid2=parseInt(objKey.replace('__goals_prop_',''));if(!S.goals.property[pid2])S.goals.property[pid2]={};S.goals.property[pid2][key]=val;}
   else if(pid!==''){const p=S.properties.find(x=>x.id===parseInt(pid));if(p)p[key]=val;}
   else S[key]=val;
   saveState();closeText();refresh();
@@ -1567,6 +1615,7 @@ function renderStocks(){
     renderDCAAutoStatus();
   renderRebalancing();
   renderDCABasis();
+  renderCGT();
   renderTagBreakdown();
   renderGeo();
   renderStockGoals();
@@ -2609,6 +2658,275 @@ function renderDCABasis() {
 }
 
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CGT ESTIMATOR
+// ═══════════════════════════════════════════════════════════════════════════
+function renderCGT() {
+  const sEl = document.getElementById('cgt-settings');
+  const rEl = document.getElementById('cgt-rows');
+  if(!sEl || !rEl) return;
+  if(!S.cgtSettings) S.cgtSettings = {marginalRate:37, discountEligible:true, discountRate:50};
+  const cgt = S.cgtSettings;
+
+  // Settings fields — editable marginal rate and discount rate
+  sEl.innerHTML = '<div class="cgt-settings">'
+    + '<div class="cgt-sfield"><label>MARGINAL TAX RATE %</label><input type="number" inputmode="decimal" class="cgt-inp" data-key="marginalRate" value="'+cgt.marginalRate+'" min="0" max="50" step="1"></div>'
+    + '<div class="cgt-sfield"><label>CGT DISCOUNT %</label><input type="number" inputmode="decimal" class="cgt-inp" data-key="discountRate" value="'+cgt.discountRate+'" min="0" max="100" step="1"></div>'
+    + '</div>'
+    + '<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;margin-bottom:10px;line-height:1.5">50% discount applies to assets held >12 months. Update rates if CGT rules change. Estimates only — consult your accountant.</div>';
+
+  // Attach listeners
+  setTimeout(()=>{
+    sEl.querySelectorAll('.cgt-inp').forEach(inp => {
+      inp.addEventListener('change', function() {
+        captureUndo();
+        S.cgtSettings[this.dataset.key] = parseFloat(this.value)||0;
+        saveState(); renderCGT();
+      });
+    });
+  }, 60);
+
+  if(!S.holdings || !S.holdings.length) {
+    rEl.innerHTML = '<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:4px 0">Add holdings with cost basis to estimate CGT.</div>';
+    return;
+  }
+
+  const holdings = S.holdings.filter(h => h.costBasis > 0 && h.val > h.costBasis);
+  if(!holdings.length) {
+    rEl.innerHTML = '<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:4px 0">No unrealised gains found. Set cost basis on each holding to calculate.</div>';
+    return;
+  }
+
+  let totalGain = 0, totalCGT = 0, totalNetProceeds = 0;
+  let rows = '';
+
+  holdings.forEach(h => {
+    const gain = h.val - h.costBasis;
+    const discountedGain = cgt.discountEligible ? gain * (1 - cgt.discountRate/100) : gain;
+    const taxOnGain = discountedGain * cgt.marginalRate / 100;
+    const netProceeds = h.val - taxOnGain;
+    totalGain += gain;
+    totalCGT += taxOnGain;
+    totalNetProceeds += netProceeds;
+    const effectiveRate = (taxOnGain / gain * 100).toFixed(1);
+
+    rows += '<div class="cgt-row">'
+      + '<div class="cgt-ticker" style="color:'+h.color+'">'+h.ticker+'</div>'
+      + '<div class="cgt-detail">'
+      + 'Cost: '+fmtK(h.costBasis)+' · Value: '+fmtK(h.val)+'<br>'
+      + 'Gain: '+fmtK(gain)+' · Discounted: '+fmtK(Math.round(discountedGain))+'<br>'
+      + 'Effective CGT rate: '+effectiveRate+'%'
+      + '</div>'
+      + '<div class="cgt-val" style="color:var(--rd)">'+fmt(Math.round(taxOnGain))+'<div style="font-size:8px;color:var(--di);font-family:\'DM Mono\',monospace;margin-top:1px">if sold now</div></div>'
+      + '</div>';
+  });
+
+  // Portfolio total row
+  rows += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--bd2);margin-top:4px">'
+    + '<div><div style="font-size:11px;font-weight:700">Total portfolio CGT</div>'
+    + '<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;margin-top:2px">If all '+holdings.length+' holdings sold today</div></div>'
+    + '<div style="text-align:right">'
+    + '<div style="font-size:15px;font-weight:700;font-family:\'DM Mono\',monospace;color:var(--rd)">'+fmt(Math.round(totalCGT))+'</div>'
+    + '<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;margin-top:2px">Net proceeds: '+fmt(Math.round(totalNetProceeds))+'</div>'
+    + '</div></div>';
+
+  rEl.innerHTML = rows;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GOALS TAB
+// ═══════════════════════════════════════════════════════════════════════════
+var _goalsTab = 'all';
+
+function setGoalsTab(tab, el) {
+  _goalsTab = tab;
+  document.querySelectorAll('.gst').forEach(x => x.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderGoalsContent();
+}
+
+function renderGoals() {
+  renderGoalsContent();
+}
+
+function goalProgress(current, target) {
+  if(!target || target <= 0) return 0;
+  return Math.min(100, (current / target) * 100);
+}
+
+function goalTimelineEst(targetDate, targetValue, currentValue, monthlyGrowth) {
+  // If target date set, use it
+  if(targetDate) {
+    const d = parseDMY(targetDate);
+    if(d) {
+      const months = Math.round((d - new Date()) / (1000*60*60*24*30.44));
+      if(months <= 0) return {label: 'Target date passed', color:'var(--rd)'};
+      const yrs = Math.floor(months/12), mos = months%12;
+      return {label: (yrs>0?yrs+'yr ':'')+(mos>0?mos+'mo':''), color:'var(--bl)'};
+    }
+  }
+  // Estimate from growth rate
+  if(targetValue && currentValue && monthlyGrowth > 0) {
+    const needed = targetValue - currentValue;
+    if(needed <= 0) return {label:'✓ Achieved', color:'var(--gr)'};
+    const months = Math.ceil(needed / monthlyGrowth);
+    const yrs = Math.floor(months/12), mos = months%12;
+    return {label:'~'+(yrs>0?yrs+'yr ':'')+(mos>0?mos+'mo':'at this rate'), color:'var(--am)'};
+  }
+  return {label:'Set target to estimate', color:'var(--di)'};
+}
+
+function mkGoalCard(icon, title, tag, tagColor, pct, metricRows, notes, noteKey, noteObj, timeEst) {
+  const barColor = pct >= 100 ? 'var(--gr)' : pct >= 60 ? 'var(--bl)' : pct >= 30 ? 'var(--am)' : 'var(--rd)';
+  return '<div class="goal-card">'
+    + '<div class="goal-header">'
+    + '<div class="goal-icon">'+icon+'</div>'
+    + '<div class="goal-title">'+title+'</div>'
+    + '<div class="goal-tag" style="background:'+tagColor+'22;color:'+tagColor+'">'+tag+'</div>'
+    + '</div>'
+    + '<div class="goal-progress-wrap"><div class="goal-progress-bar" style="width:'+pct.toFixed(0)+'%;background:'+barColor+'"></div></div>'
+    + '<div class="goal-meta"><span>'+pct.toFixed(0)+'% to goal</span>'
+    + (timeEst ? '<span style="color:'+timeEst.color+'">'+timeEst.label+'</span>' : '')
+    + '</div>'
+    + '<div class="goal-rows">'+metricRows+'</div>'
+    + '<div style="margin-top:10px">'
+    + '<div style="font-size:9px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:4px;letter-spacing:.05em">NOTES</div>'
+    + '<textarea data-notekey="'+noteKey+'" class="goal-note-ta" style="width:100%;background:var(--sf3);border:0.5px solid var(--bd);border-radius:var(--rs);padding:9px;font-size:11px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none;resize:none;min-height:60px;line-height:1.6;box-sizing:border-box" placeholder="Add notes, strategy, reminders...">'+(notes||'')+'</textarea>'
+    + '</div>'
+    + '</div>';
+}
+
+function ir2(lbl, val, color) {
+  return '<div class="ir"><span class="ir-l">'+lbl+'</span><span class="ir-v" style="color:'+(color||'var(--tx)')+'">'+val+'</span></div>';
+}
+
+function renderGoalsContent() {
+  const el = document.getElementById('goals-content');
+  if(!el) return;
+  const g = S.goals;
+  if(!g.stocks) g.stocks = {targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''};
+  if(!g.super) g.super = {targetAtRetirement:0,targetDrawdown:0,notes:''};
+  if(!g.networth) g.networth = {fireNumber:0,debtFreeDate:'',notes:''};
+  if(!g.property) g.property = {};
+
+  const st = projStocks(30)[0]; const sup = projSuper(30)[0]; const pp = projAllProps(30)[0];
+  const currentStocks = S.stocksEnabled ? st.total : S.holdings.reduce((a,h)=>a+h.val,0);
+  const currentSuper = S.sBalance;
+  const currentNW = currentStocks + (S.propertiesEnabled?totalEquity():0) + currentSuper + S.cashSavings + S.emergency;
+  const cfData = calcCF();
+  const monthlyStockGrowth = (totalMonthly()||0) + currentStocks*0.08/12;
+
+  let html2 = '';
+
+  // ── NET WORTH GOAL ──────────────────────────────────────────────────────
+  if(_goalsTab === 'all' || _goalsTab === 'networth') {
+    const gn = g.networth;
+    const fireN = gn.fireNumber || 0;
+    const pct = fireN > 0 ? goalProgress(currentNW, fireN) : 0;
+    const fireMonthly = fireN * 0.04 / 12;
+    const timeEst = goalTimelineEst(gn.debtFreeDate, fireN, currentNW, cfData.surplus > 0 ? cfData.surplus : 1000);
+    const rows = ir2('Current net worth', fmt(Math.round(currentNW)), 'var(--gr)')
+      + (fireN>0 ? ir2('FIRE target', fmt(fireN), 'var(--bl)') : efText('Set FIRE number','fireNumber','e.g. 2000000',null,{obj:'__goals_nw'}))
+      + (fireN>0 ? ir2('Still needed', fmt(Math.round(Math.max(0,fireN-currentNW))), 'var(--am)') : '')
+      + (fireN>0 ? ir2('Monthly at 4% rule', fmt(Math.round(fireMonthly))+'/mo', 'var(--gr)') : '')
+      + efText('Debt-free target date','debtFreeDate','DD/MM/YY',null,{obj:'__goals_nw'});
+    html2 += mkGoalCard('🌟','Net worth & FIRE','NET WORTH','#378ADD', pct, rows, gn.notes, 'networth', gn, fireN>0?timeEst:null);
+  }
+
+  // ── STOCKS GOAL ─────────────────────────────────────────────────────────
+  if(_goalsTab === 'all' || _goalsTab === 'stocks') {
+    const gs = g.stocks;
+    const targetV = gs.targetValue || 0;
+    const pct = targetV > 0 ? goalProgress(currentStocks, targetV) : 0;
+    const timeEst = goalTimelineEst(gs.targetDate, targetV, currentStocks, monthlyStockGrowth);
+    const rows = ir2('Current ETF portfolio', fmt(Math.round(currentStocks)), 'var(--bl)')
+      + efText('Portfolio target ($)','targetValue','e.g. 500000',null,{obj:'__goals_stocks'})
+      + efText('Target date','targetDate','DD/MM/YY',null,{obj:'__goals_stocks'})
+      + efText('Monthly contribution target','targetMonthly','e.g. 2000',null,{obj:'__goals_stocks'})
+      + ir2('Current monthly DCA', fmt(Math.round(totalMonthly()||0))+'/mo', (totalMonthly()||0)>=(gs.targetMonthly||0)?'var(--gr)':'var(--am)');
+    html2 += mkGoalCard('📈','ETF portfolio','STOCKS','#378ADD', pct, rows, gs.notes, 'stocks', gs, targetV>0?timeEst:null);
+  }
+
+  // ── SUPER GOAL ──────────────────────────────────────────────────────────
+  if(_goalsTab === 'all' || _goalsTab === 'super') {
+    const gsu = g.super;
+    const targetRet = gsu.targetAtRetirement || 0;
+    const pct = targetRet > 0 ? goalProgress(currentSuper, targetRet) : 0;
+    const superMonthlyGrowth = currentSuper * ((S.sReturn||7.5)/100) / 12 + (S.sEmployer||0) + (S.sExtra||0)*26/12;
+    const timeEst = goalTimelineEst('', targetRet, currentSuper, superMonthlyGrowth);
+    const preservAge = 60;
+    const yrsToPreserv = Math.max(0, preservAge - S.age);
+    const projAtPreserv = projSuper(Math.min(40,yrsToPreserv+1))[Math.min(yrsToPreserv, 40)];
+    const rows = ir2('Current super balance', fmt(Math.round(currentSuper)), 'var(--pu)')
+      + ir2('Projected at age 60', fmtK(projAtPreserv?.b||currentSuper), 'var(--pu)')
+      + efText('Target at retirement','targetAtRetirement','e.g. 1500000',null,{obj:'__goals_super'})
+      + efText('Target monthly drawdown','targetDrawdown','e.g. 6000',null,{obj:'__goals_super'})
+      + ir2('Annual contributions', fmt(Math.round((S.sExtra||0)*26+(S.sEmployer||0)*12))+'/yr');
+    html2 += mkGoalCard('🔵','Superannuation','SUPER','#7f77dd', pct, rows, gsu.notes, 'super', gsu, targetRet>0?timeEst:null);
+  }
+
+  // ── PROPERTY GOALS ──────────────────────────────────────────────────────
+  if(_goalsTab === 'all' || _goalsTab === 'property') {
+    (S.properties||[]).forEach(prop => {
+      if(!g.property[prop.id]) g.property[prop.id] = {targetLVR:40,targetEquity:300000,targetYield:5,notes:''};
+      const gp = g.property[prop.id];
+      const currentLVR = prop.val > 0 ? (prop.loan/prop.val*100) : 100;
+      const currentEq = Math.max(0, prop.val - prop.loan);
+      const targetEq = gp.targetEquity || 300000;
+      const pct = goalProgress(currentEq, targetEq);
+      const payoffProj = projProp(prop, 30);
+      let payoffYear = payoffProj.find(p=>p.loan<=0);
+      const timeEst = payoffYear ? {label:'Paid off in ~'+payoffYear.y+'yr', color:'var(--gr)'} : null;
+      const rows = ir2('Current equity', fmt(Math.round(currentEq)), 'var(--gr)')
+        + ir2('Current LVR', currentLVR.toFixed(1)+'%', currentLVR<=40?'var(--gr)':currentLVR<=60?'var(--bl)':'var(--am)')
+        + ir2('Current loan', fmt(Math.round(prop.loan)), 'var(--rd)')
+        + ir2('Property value', fmt(Math.round(prop.val)))
+        + efText('Equity target','targetEquity','e.g. 400000',null,{obj:'__goals_prop_'+prop.id})
+        + efText('Target LVR %','targetLVR','e.g. 40',null,{obj:'__goals_prop_'+prop.id});
+      html2 += mkGoalCard('🏠', prop.name||'Property', 'PROPERTY', '#1D9E75', pct, rows, gp.notes, 'prop_'+prop.id, gp, timeEst);
+    });
+    if(!(S.properties||[]).length) {
+      html2 += '<div style="font-size:11px;color:var(--di);font-family:DM Mono;padding:12px 0;text-align:center">No properties added yet</div>';
+    }
+  }
+
+  el.innerHTML = html2 || '<div style="font-size:11px;color:var(--di);font-family:DM Mono;padding:12px 0;text-align:center">Select a goal category above</div>';
+
+  // Wire up note textareas
+  setTimeout(()=>{
+    el.querySelectorAll('.goal-note-ta').forEach(ta => {
+      ta.addEventListener('change', function() {
+        const key = this.dataset.notekey;
+        captureUndo();
+        if(key === 'networth') S.goals.networth.notes = this.value;
+        else if(key === 'stocks') S.goals.stocks.notes = this.value;
+        else if(key === 'super') S.goals.super.notes = this.value;
+        else if(key.startsWith('prop_')) {
+          const pid = parseInt(key.replace('prop_',''));
+          if(S.goals.property[pid]) S.goals.property[pid].notes = this.value;
+        }
+        saveState();
+      });
+    });
+    // Wire up ef fields - they use EFR registered fields
+    el.querySelectorAll('[id^="ef-"]').forEach(field => {
+      // EFR handles these automatically
+    });
+  }, 80);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REDRAW — added to property rendering
+// ═══════════════════════════════════════════════════════════════════════════
+function totalRedraw() {
+  return (S.properties||[]).reduce((a,p)=>a+(p.redraw||0),0);
+}
+function totalOffsetAndRedraw() {
+  return (S.properties||[]).reduce((a,p)=>a+(p.offset||0)+(p.redraw||0),0);
+}
+
+
 // HOME
 function renderHome(){
   const st=projStocks(30);const sup=projSuper(30);const pp=projAllProps(30);
@@ -2663,8 +2981,8 @@ function closeNameModal(){document.getElementById('name-modal').classList.remove
 function saveName(){S.appName=document.getElementById('name-inp').value.trim()||'Finance';captureUndo();closeNameModal();saveState();document.getElementById('hdr-name').textContent=S.appName;document.getElementById('settings-name-val').textContent=S.appName;}
 
 // NAV
-var PANELS=['home','stocks','mortgage','cashflow','super','history','proj'];
-var RENDERS={home:renderHome,stocks:renderStocks,mortgage:renderMortgage,cashflow:renderCashFlow,super:renderSuper,history:renderHistory,proj:renderProj};
+var PANELS=['home','stocks','mortgage','cashflow','super','history','goals','proj'];
+var RENDERS={home:renderHome,stocks:renderStocks,mortgage:renderMortgage,cashflow:renderCashFlow,super:renderSuper,history:renderHistory,goals:renderGoals,proj:renderProj};
 
 var _mortgageTab='props';
 function setMortgageTab(tab){
