@@ -806,7 +806,7 @@ function propMin(p,period){
   if(period==='fortnightly'&&p.minFort>0)return p.minFort;
   return propMinAuto(p,period);
 }
-function propEff(p){return Math.max(0,p.loan-p.offset);}
+function propEff(p){return Math.max(0,p.loan-(p.offset||0)-(p.redraw||0));}
 function propCurrentRate(p){
   const now=Date.now();let r=p.rate;
   if(p.rateHistory&&p.rateHistory.length){
@@ -1058,15 +1058,29 @@ function mkTog(lbl,desc,key,cb){
     <div class="tog ${S[key]?'on':''}" onclick="captureUndo();S['${key}']=!S['${key}'];this.classList.toggle('on');saveState();${cb||'refresh()'}"><div class="tog-k"></div></div></div>`;
 }
 
-function efText(label,key,placeholder,propId,obj){
-  const src=obj?obj:(propId!=null?S.properties.find(p=>p.id===propId):S);
-  const v=src?src[key]||'':'';
-  const objKey=obj?'__goals_stocks':'';
+function efText(label,key,placeholder,propId,goalsCtx){
+  // goalsCtx: {src: actualObjectToReadFrom, objKey: 'string for saveText routing'}
+  let src, objKey='';
+  if(goalsCtx && goalsCtx.src){
+    src = goalsCtx.src;
+    objKey = goalsCtx.objKey||'';
+  } else if(propId!=null){
+    src = S.properties.find(p=>p.id===propId);
+  } else {
+    src = S;
+  }
+  const v = src ? (src[key]||'') : '';
   return `<div class="ef" onclick="openText('${key}','${label}','${placeholder||''}',${propId!=null?propId:'null'},'${objKey}')">
     <span class="ef-lbl">${label}</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${v||'—'}</span><span class="ef-pen">✎</span></span></div>`;
 }
 function openText(key,label,placeholder,propId,objKey){
-  const src=objKey==='__goals_stocks'?S.goals.stocks:(propId!=null?S.properties.find(p=>p.id===propId):S);
+  let src;
+  if(objKey==='__goals_stocks') src=S.goals.stocks;
+  else if(objKey==='__goals_nw') src=S.goals.networth;
+  else if(objKey==='__goals_super') src=S.goals.super;
+  else if(objKey&&objKey.startsWith('__goals_prop_')){const pid2=parseInt(objKey.replace('__goals_prop_',''));src=(S.goals.property&&S.goals.property[pid2])||{};}
+  else if(propId!=null) src=S.properties.find(p=>p.id===propId);
+  else src=S;
   document.getElementById('text-lbl').textContent=label;
   document.getElementById('text-inp').value=src?src[key]||'':'';
   document.getElementById('text-inp').placeholder=placeholder||'';
@@ -1265,7 +1279,7 @@ function addProp(){
     offset:parseFloat(document.getElementById('p-offset').value)||0,rate:parseFloat(document.getElementById('p-rate').value)||5.88,
     term:parseFloat(document.getElementById('p-term').value)||30,startDate:document.getElementById('p-start').value.trim()||today(),
     rentWk:parseFloat(document.getElementById('p-rent').value)||0,growth:parseFloat(document.getElementById('p-growth').value)||4,
-    minFort:parseFloat(document.getElementById('p-minfn').value)||0,extraFort:parseFloat(document.getElementById('p-extra').value)||0,rateHistory:[]};
+    minFort:parseFloat(document.getElementById('p-minfn').value)||0,extraFort:parseFloat(document.getElementById('p-extra').value)||0,redraw:0,rateHistory:[]};
   captureUndo();S.properties.push(prop);closeAddProp();saveState();renderProperties();
 }
 function delProp(id){if(!confirm('Remove this property?'))return;captureUndo();S.properties=S.properties.filter(p=>p.id!==id);saveState();renderProperties();}
@@ -1295,7 +1309,8 @@ function renderPropCard(prop){
     {k:'val',l:'Current value',c:{pre:'$',suf:'',dec:0,min:0,max:10000000,hint:'Current property value'}},
     {k:'loan',l:'Loan balance',c:{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Current outstanding loan'}},
     {k:'origLoan',l:'Original loan (auto-calc basis)',c:{pre:'$',suf:'',dec:0,min:0,max:5000000,hint:'Used to calculate minimum payment'}},
-    {k:'offset',l:'Offset account',c:{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Offset balance'}},
+    {k:'offset',l:'Offset account',c:{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Funds in offset account — reduces interest, always accessible'}},
+    {k:'redraw',l:'Redraw available',c:{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Extra repayments available to redraw — may have tax implications if investment property'}},
     {k:'rate',l:'Interest rate',c:{pre:'',suf:'%',dec:2,min:0,max:20,hint:'Current rate (or log change below)'}},
     {k:'term',l:'Loan term (years)',c:{pre:'',suf:' yrs',dec:0,min:1,max:40,hint:'Original loan term'}},
     {k:'minFort',l:'Bank min. fortnightly (0=auto)',c:{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'0 uses auto-calc from original loan'}},
@@ -1317,6 +1332,8 @@ function renderPropCard(prop){
     <div class="prop-g3">
       <div class="prop-met"><div class="prop-met-l">Value</div><div class="prop-met-v bl">${fmtK(prop.val)}</div></div>
       <div class="prop-met"><div class="prop-met-l">Loan</div><div class="prop-met-v rd">${fmtK(prop.loan)}</div></div>
+      <div class="prop-met"><div class="prop-met-l">Offset</div><div class="prop-met-v bl">${fmtK(prop.offset||0)}</div></div>
+      <div class="prop-met"><div class="prop-met-l">Redraw</div><div class="prop-met-v bl">${fmtK(prop.redraw||0)}</div></div>
       <div class="prop-met"><div class="prop-met-l">Effective</div><div class="prop-met-v">${fmtK(eff)}</div></div>
       <div class="prop-met"><div class="prop-met-l">LVR</div><div class="prop-met-v ${lvr<=80?'gr':'rd'}">${lvr}%</div></div>
       <div class="prop-met"><div class="prop-met-l">Rate</div><div class="prop-met-v am">${cr.toFixed(2)}%</div></div>
@@ -1507,7 +1524,7 @@ function renderStockGoals(){
       '<span style="font-size:12px;font-weight:700;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">Proj. '+fmtK(projAtTarget)+' vs '+fmtK(g.targetValue)+'</span>'+
     '</div>'+
     '<div class="ef" onclick="openById(\''+trid+'\')"><span class="ef-lbl">Target portfolio value</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetValue)+'</span><span class="ef-pen">✎</span></span></div>'+
-    efText('Target date (DD/MM/YY)','targetDate','01/01/36',null,g)+
+    efText('Target date (DD/MM/YY)','targetDate','01/01/36',null,{src:g,objKey:'__goals_stocks'})+
     '<div class="ef" onclick="openById(\''+tmid+'\')"><span class="ef-lbl">Target monthly contribution</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetMonthly)+'/mo</span><span class="ef-pen">✎</span></span></div>'+
     '<div class="ir"><span class="ir-l">Actual monthly DCA</span><span class="ir-v '+(totalMonthly()>=(g.targetMonthly||0)?'gr':'rd')+'">'+fmt(totalMonthly())+'/mo</span></div>'+
     '<div style="margin-top:10px"><div style="font-size:9px;color:var(--mu);font-family:DM Mono;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Notes</div>'+
@@ -2827,10 +2844,10 @@ function renderGoalsContent() {
     const fireMonthly = fireN * 0.04 / 12;
     const timeEst = goalTimelineEst(gn.debtFreeDate, fireN, currentNW, cfData.surplus > 0 ? cfData.surplus : 1000);
     const rows = ir2('Current net worth', fmt(Math.round(currentNW)), 'var(--gr)')
-      + (fireN>0 ? ir2('FIRE target', fmt(fireN), 'var(--bl)') : efText('Set FIRE number','fireNumber','e.g. 2000000',null,{obj:'__goals_nw'}))
+      + (fireN>0 ? ir2('FIRE target', fmt(fireN), 'var(--bl)') : efText('Set FIRE number','fireNumber','e.g. 2000000',null,{src:S.goals.networth,objKey:'__goals_nw'}))
       + (fireN>0 ? ir2('Still needed', fmt(Math.round(Math.max(0,fireN-currentNW))), 'var(--am)') : '')
       + (fireN>0 ? ir2('Monthly at 4% rule', fmt(Math.round(fireMonthly))+'/mo', 'var(--gr)') : '')
-      + efText('Debt-free target date','debtFreeDate','DD/MM/YY',null,{obj:'__goals_nw'});
+      + efText('Debt-free target date','debtFreeDate','DD/MM/YY',null,{src:S.goals.networth,objKey:'__goals_nw'});
     html2 += mkGoalCard('🌟','Net worth & FIRE','NET WORTH','#378ADD', pct, rows, gn.notes, 'networth', gn, fireN>0?timeEst:null);
   }
 
@@ -2841,9 +2858,9 @@ function renderGoalsContent() {
     const pct = targetV > 0 ? goalProgress(currentStocks, targetV) : 0;
     const timeEst = goalTimelineEst(gs.targetDate, targetV, currentStocks, monthlyStockGrowth);
     const rows = ir2('Current ETF portfolio', fmt(Math.round(currentStocks)), 'var(--bl)')
-      + efText('Portfolio target ($)','targetValue','e.g. 500000',null,{obj:'__goals_stocks'})
-      + efText('Target date','targetDate','DD/MM/YY',null,{obj:'__goals_stocks'})
-      + efText('Monthly contribution target','targetMonthly','e.g. 2000',null,{obj:'__goals_stocks'})
+      + efText('Portfolio target ($)','targetValue','e.g. 500000',null,{src:S.goals.stocks,objKey:'__goals_stocks'})
+      + efText('Target date','targetDate','DD/MM/YY',null,{src:S.goals.stocks,objKey:'__goals_stocks'})
+      + efText('Monthly contribution target','targetMonthly','e.g. 2000',null,{src:S.goals.stocks,objKey:'__goals_stocks'})
       + ir2('Current monthly DCA', fmt(Math.round(totalMonthly()||0))+'/mo', (totalMonthly()||0)>=(gs.targetMonthly||0)?'var(--gr)':'var(--am)');
     html2 += mkGoalCard('📈','ETF portfolio','STOCKS','#378ADD', pct, rows, gs.notes, 'stocks', gs, targetV>0?timeEst:null);
   }
@@ -2860,8 +2877,8 @@ function renderGoalsContent() {
     const projAtPreserv = projSuper(Math.min(40,yrsToPreserv+1))[Math.min(yrsToPreserv, 40)];
     const rows = ir2('Current super balance', fmt(Math.round(currentSuper)), 'var(--pu)')
       + ir2('Projected at age 60', fmtK(projAtPreserv?.b||currentSuper), 'var(--pu)')
-      + efText('Target at retirement','targetAtRetirement','e.g. 1500000',null,{obj:'__goals_super'})
-      + efText('Target monthly drawdown','targetDrawdown','e.g. 6000',null,{obj:'__goals_super'})
+      + efText('Target at retirement','targetAtRetirement','e.g. 1500000',null,{src:S.goals.super,objKey:'__goals_super'})
+      + efText('Target monthly drawdown','targetDrawdown','e.g. 6000',null,{src:S.goals.super,objKey:'__goals_super'})
       + ir2('Annual contributions', fmt(Math.round((S.sExtra||0)*26+(S.sEmployer||0)*12))+'/yr');
     html2 += mkGoalCard('🔵','Superannuation','SUPER','#7f77dd', pct, rows, gsu.notes, 'super', gsu, targetRet>0?timeEst:null);
   }
@@ -2882,8 +2899,8 @@ function renderGoalsContent() {
         + ir2('Current LVR', currentLVR.toFixed(1)+'%', currentLVR<=40?'var(--gr)':currentLVR<=60?'var(--bl)':'var(--am)')
         + ir2('Current loan', fmt(Math.round(prop.loan)), 'var(--rd)')
         + ir2('Property value', fmt(Math.round(prop.val)))
-        + efText('Equity target','targetEquity','e.g. 400000',null,{obj:'__goals_prop_'+prop.id})
-        + efText('Target LVR %','targetLVR','e.g. 40',null,{obj:'__goals_prop_'+prop.id});
+        + efText('Equity target','targetEquity','e.g. 400000',null,{src:gp,objKey:'__goals_prop_'+prop.id})
+        + efText('Target LVR %','targetLVR','e.g. 40',null,{src:gp,objKey:'__goals_prop_'+prop.id});
       html2 += mkGoalCard('🏠', prop.name||'Property', 'PROPERTY', '#1D9E75', pct, rows, gp.notes, 'prop_'+prop.id, gp, timeEst);
     });
     if(!(S.properties||[]).length) {
