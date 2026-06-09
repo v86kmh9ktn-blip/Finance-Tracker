@@ -195,11 +195,11 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .save-banner.show{transform:translateY(0)}
 .reset-btn{background:var(--rd-bg);border:0.5px solid var(--rd-bd);color:var(--rd);border-radius:var(--rs);padding:12px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;font-family:'DM Mono',monospace;width:100%;margin-top:4px}
 .panel{display:none}.panel.active{display:block}
-@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.panel.active .card{animation:fu .2s ease both}
-.panel.active .card:nth-child(2){animation-delay:.04s}
-.panel.active .card:nth-child(3){animation-delay:.08s}
-.panel.active .card:nth-child(4){animation-delay:.12s}
+.panel--animated .card{animation:fu .25s ease both}
+.panel--animated .card:nth-child(2){animation-delay:.05s}
+.panel--animated .card:nth-child(3){animation-delay:.10s}
+.panel--animated .card:nth-child(4){animation-delay:.15s}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .hero{text-align:center;padding:16px 0 4px}
 .hero-val{font-size:34px;font-weight:700;letter-spacing:-2px;color:var(--gr)}
 .hero-lbl{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px;letter-spacing:.08em;text-transform:uppercase}
@@ -2686,7 +2686,11 @@ function renderMortgage(){
 function show(name,el){
   if(name==='stocks'&&!S.stocksEnabled){show('home',document.querySelector('.nb'));return;}
   if(name==='mortgage'&&!S.propertiesEnabled){show('home',document.querySelector('.nb'));return;}
-  PANELS.forEach(p=>document.getElementById('p-'+p).classList.toggle('active',p===name));
+  PANELS.forEach(p=>{
+    const panel=document.getElementById('p-'+p);
+    panel.classList.remove('active','panel--animated');
+    if(p===name){panel.classList.add('active');requestAnimationFrame(()=>panel.classList.add('panel--animated'));}
+  });
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   if(el)el.classList.add('active');
   document.getElementById('scroll').scrollTop=0;
@@ -2949,44 +2953,6 @@ function renderMortgageAutoStatus() {
   return lines.join('');
 }
 
-  // DCA status
-  for(const plan of S.contribPlans||[]) {
-    if(!plan.lastApplied) continue;
-    const daysAgo = Math.round((now - plan.lastApplied)/(24*3600*1000));
-    const nextIn = Math.max(0, Math.round((30.44*24*3600*1000 - (now - plan.lastApplied))/(24*3600*1000)));
-    lines.push('<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace;padding:3px 0">'
-      +plan.name+': last applied '+(daysAgo===0?'today':daysAgo+'d ago')+' · next in ~'+nextIn+'d</div>');
-  }
-
-  // Mortgage status + schedule editor per property
-  for(let i=0;i<(S.properties||[]).length;i++){
-    const prop = S.properties[i];
-    const freq = prop.repayFreq||S.poPeriod||'fortnightly';
-    const anchor = prop.repayAnchor||prop.startDate||'';
-    const daysAgo = prop.lastApplied ? Math.round((now-prop.lastApplied)/(24*3600*1000)) : null;
-    // Next payment date
-    let nextDateStr = '';
-    if(anchor) {
-      const dates = getMortgagePayDates(prop, now + 35*24*3600*1000);
-      const future = dates.filter(d=>d.getTime()>now);
-      if(future.length) nextDateStr = fmtDMY(future[0]);
-    }
-    lines.push('<div style="padding:8px 0;border-top:0.5px solid var(--bd);margin-top:6px">'
-      +'<div style="font-size:11px;font-weight:700;margin-bottom:8px">'+prop.name+' repayment schedule</div>'
-      // Frequency selector
-      +'<div style="margin-bottom:8px"><div style="font-size:9px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:5px">FREQUENCY</div>'
-      +'<div style="display:flex;gap:6px">'
-      +['fortnightly','monthly','weekly'].map(f=>'<div onclick="setRepayFreq('+i+',\''+f+'\')" style="flex:1;text-align:center;padding:7px 0;border-radius:var(--rs);font-size:10px;font-weight:700;font-family:\'DM Mono\',monospace;cursor:pointer;border:0.5px solid '+(freq===f?'var(--gr)':'var(--bd)')+';background:'+(freq===f?'var(--gr)22':'var(--sf2)')+';color:'+(freq===f?'var(--gr)':'var(--mu)')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</div>').join('')
-      +'</div></div>'
-      // Anchor date
-      +'<div style="margin-bottom:6px"><div style="font-size:9px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:5px">FIRST PAYMENT DATE (your payday anchor)</div>'
-      +'<input class="repay-anchor-inp" data-idx="'+i+'" value="'+anchor+'" placeholder="DD/MM/YY — e.g. your first Thursday payday" '
-      +'style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:12px;color:var(--tx);font-family:\'DM Mono\',monospace;box-sizing:border-box"></div>'
-      +(daysAgo!==null?'<div style="font-size:9px;color:var(--di);font-family:\'DM Mono\',monospace">Last applied: '+(daysAgo===0?'today':daysAgo+'d ago')+(nextDateStr?' · Next: '+nextDateStr:'')+'</div>':'')
-      +'</div>');
-  }
-
-  // Attach listeners after render via setTimeout
 function setRepayFreq(idx, freq) {
   if(!S.properties[idx]) return;
   captureUndo();
@@ -3018,9 +2984,13 @@ if(!S.shownMilestones)S.shownMilestones=[];
 _shownMilestones=S.shownMilestones;
 if(S.autoApplyEnabled===undefined)S.autoApplyEnabled=true;
 updateNav();renderColorPicker();
-renderHome();
-// Run auto-apply after first paint so home screen renders immediately
-setTimeout(()=>{ runAutoApply(); if(runAutoApply._needsRefresh){renderHome();runAutoApply._needsRefresh=false;} },400);
+// Use requestAnimationFrame to ensure browser paints the shell before
+// heavy sync calculations run — fixes blank home on first open
+requestAnimationFrame(()=>{
+  renderHome();
+  // Run auto-apply after home is painted
+  setTimeout(()=>runAutoApply(), 400);
+});
 </script>
 
 <!-- INSURANCE MODAL -->
