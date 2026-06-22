@@ -477,7 +477,7 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
   <!-- SUPER -->
   <div class="panel" id="p-super">
     <div class="card"><div class="sec">Balance &amp; projection</div><div id="sup-met"></div><div class="ch"><canvas id="supChart"></canvas></div></div>
-    <div class="card"><div class="sec">Contribution caps <span class="sec-hint">— FY25/26</span></div><div id="sup-caps"></div></div>
+    <div class="card"><div class="sec">Contribution caps <span class="sec-hint" id="sup-caps-fy">— FY25/26</span></div><div id="sup-caps"></div></div>
     <div class="card"><div class="sec">Preservation age</div><div id="sup-preservation"></div></div>
     <div class="card"><div class="sec">Milestones</div><div id="sup-ms"></div></div>
     <div class="card"><div class="sec">Goals &amp; targets</div><div id="super-goals"></div></div>
@@ -2376,11 +2376,29 @@ function renderTaxEstimator() {
   let html2 = '<div class="fy-tab">' + fyKeys.map(k=>'<div class="fy-pill'+(k===_taxFY?' active':'')+'" data-fy="'+k+'" onclick="setTaxFY(this)">'+AU_TAX_YEARS[k].name.replace('FY ','').replace(' (projected)','*')+'</div>').join('') + '</div>';
   const t = calcTaxForFY(cf.grossIncome, cf.salaryPackaging, _taxFY, S.sExtra*26, S.hasHECS);
   const yr = AU_TAX_YEARS[_taxFY];
+  // Payslip-accurate take-home = what hits your bank each pay (HECS withheld by employer)
+  const payslipNett = t.takeHome - (S.hasHECS ? t.hecs : 0);
+  const fortnightlyNett = Math.round(payslipNett / 26);
   html2 += '<div class="g2" style="margin-bottom:10px">'
     +'<div class="met"><div class="ml">Taxable income</div><div class="mv" style="color:var(--am)">'+fmt(t.taxable)+'</div><div class="mss">after pkg + super sacrifice</div></div>'
-    +'<div class="met"><div class="ml">Net tax payable</div><div class="mv rd">'+fmt(t.netTax)+'</div></div>'
-    +'<div class="met"><div class="ml">Take-home (annual)</div><div class="mv gr">'+fmt(t.takeHome)+'</div></div>'
+    +'<div class="met"><div class="ml">Net tax payable</div><div class="mv rd">'+fmt(t.netTax)+'</div><div class="mss">PAYG withheld: '+fmt(Math.round(t.netTax+t.medicare+(S.hasHECS?t.hecs:0)))+'</div></div>'
+    +'<div class="met"><div class="ml">Nett take-home</div><div class="mv gr">'+fmt(Math.round(payslipNett))+'</div><div class="mss">'+fmt(fortnightlyNett)+'/fn · payslip</div></div>'
     +'<div class="met"><div class="ml">Pkg saves annually</div><div class="mv gr">'+fmt(Math.round(t.packSaving))+'</div></div>'
+    +'</div>'
+    +'<div style="background:var(--sf3);border:0.5px solid var(--bd);border-radius:var(--rs);padding:10px;margin-bottom:10px;font-size:10px;font-family:\'DM Mono\',monospace">'
+    +'<div style="color:var(--mu);font-size:9px;letter-spacing:.05em;margin-bottom:6px">PAYSLIP RECONCILIATION</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mu)">Gross income</span><span>'+fmt(Math.round(cf.grossIncome))+'</span></div>'
+    +(cf.salaryPackaging?'<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mu)">Salary packaging</span><span style="color:var(--pu)">−'+fmt(cf.salaryPackaging)+'</span></div>':'')
+    +(t.superSacrifice?'<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mu)">Super salary sacrifice</span><span style="color:var(--pu)">−'+fmt(Math.round(t.superSacrifice))+'</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mu)">Taxable income</span><span style="color:var(--am)">'+fmt(t.taxable)+'</span></div>'
+    +'<div style="border-top:0.5px solid var(--bd);margin:5px 0"></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mu)">Income tax (PAYG)</span><span style="color:var(--rd)">−'+fmt(Math.round(t.netTax))+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mu)">Medicare levy</span><span style="color:var(--rd)">−'+fmt(Math.round(t.medicare))+'</span></div>'
+    +(S.hasHECS&&t.hecs>0?'<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mu)">HECS withheld (refund at EOY)</span><span style="color:var(--am)">−'+fmt(Math.round(t.hecs))+'</span></div>':'')
+    +'<div style="border-top:0.5px solid var(--bd);margin:5px 0"></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="font-weight:700">Nett pay (annual)</span><span style="color:var(--gr);font-weight:700">'+fmt(Math.round(payslipNett))+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="color:var(--mu)">Nett pay (fortnightly)</span><span style="color:var(--gr)">'+fmt(fortnightlyNett)+'/fn</span></div>'
+    +(S.hasHECS&&t.hecs>0?'<div style="margin-top:5px;font-size:9px;color:var(--di);line-height:1.5">⚠ HECS withheld by employer each pay. Refunded at tax time if you have no debt. Your true after-tax annual income is '+fmt(Math.round(t.takeHome))+'.</div>':'')
     +'</div>';
   const colors = ['var(--gr)','var(--bl)','var(--am)','var(--rd)','#e879f9'];
   html2 += '<div>';
@@ -2548,11 +2566,20 @@ function saveNonConc(){
 
 function renderSuperCaps() {
   const el = document.getElementById('sup-caps'); if(!el) return;
-  const annualConc = Math.round((S.sExtra||0)*26 + (S.sEmployer||0)*12);
-  const concCap = 30000;
+
+  // Determine current FY cap
+  const now = new Date();
+  const fyEnd = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
+  const FY_CONC_CAPS = { 2025:30000, 2026:32500, 2027:35000 };
+  const concCap = FY_CONC_CAPS[fyEnd] || 30000;
   const nonConcCap = 130000;
+  const fyLabel = `FY${String(fyEnd-1).slice(2)}/${String(fyEnd).slice(2)}`;
+
+  // Concessional: use auto-tracked amount if available, else calculate from settings
+  const trackedConc = (S.superPlan && S.superPlan.fyConc && S.superPlan.fyConc[fyEnd]) || 0;
+  const settingsConc = Math.round((S.sExtra||0)*26 + (S.sEmployer||0)*12);
+  const annualConc = trackedConc > 0 ? Math.round(trackedConc) : settingsConc;
   const annualNonConc = Math.round(S.sNonConc||0);
-  const concPct = Math.min(100, annualConc/concCap*100);
   const concRemaining = Math.max(0, concCap - annualConc);
   const nonConcRemaining = Math.max(0, nonConcCap - annualNonConc);
   function capRow(label, used, cap, color, hint, remaining, onclick) {
@@ -2571,26 +2598,32 @@ function renderSuperCaps() {
     </div>`;
   }
   el.innerHTML =
-    capRow('Concessional cap', annualConc, concCap, 'var(--pu)', 'Employer SG + salary sacrifice + extra', concRemaining, null) +
+    capRow('Concessional cap', annualConc, concCap, 'var(--pu)', `Employer SG + salary sacrifice + extra · ${fyLabel}`, concRemaining, null) +
     capRow('Non-concessional cap', annualNonConc, nonConcCap, 'var(--bl)', 'After-tax contributions — tap to edit', nonConcRemaining, 'openNonConcModal()') +
-    `<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:6px;line-height:1.5">FY2025-26 caps: $30k concessional · $130k non-concessional. Carry-forward unused concessional caps available if balance under $500k.</div>`;
+    `<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:6px;line-height:1.5">${fyLabel} caps: ${fmtK(concCap)} concessional · ${fmtK(nonConcCap)} non-concessional. Excess concessional auto-tracks into non-concessional. Carry-forward unused concessional caps available if balance under $500k.</div>`;
   // Draw ring charts
+  const CSS_VAR_MAP = {
+    'var(--pu)':'#7f77dd', 'var(--bl)':'#378ADD', 'var(--gr)':'#1D9E75',
+    'var(--am)':'#EF9F27', 'var(--rd)':'#E24B4A'
+  };
   setTimeout(()=>{
     document.querySelectorAll('.cap-canvas').forEach(canvas=>{
       const pct=parseFloat(canvas.dataset.pct)||0;
-      const color=canvas.dataset.color;
+      const rawColor=canvas.dataset.color;
+      const color=CSS_VAR_MAP[rawColor]||rawColor;
       const ctx=canvas.getContext('2d');
-      const cx=45,cy=45,r=38;
+      const cx=45,cy=45,r=36;
+      ctx.clearRect(0,0,90,90);
       // BG ring
       ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,3*Math.PI/2);
-      ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=9;ctx.lineCap='round';ctx.stroke();
       // Fill ring
       if(pct>0){
         ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,(pct/100*2*Math.PI)-Math.PI/2);
-        ctx.strokeStyle=color;ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
+        ctx.strokeStyle=color;ctx.lineWidth=9;ctx.lineCap='round';ctx.stroke();
       }
     });
-  },60);
+  },80);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3254,7 +3287,9 @@ function showAutoApplyBanner(dcaResult, mortResult, lumpResult, superResult) {
     });
   }
   if(superResult) {
-    msgs.push(`🏦 Super +${fmt(superResult.totalAdded)} · ${superResult.periods} fortnight${superResult.periods>1?'s':''} applied`);
+    let msg = `🏦 Super +${fmt(superResult.totalAdded)} · ${superResult.periods} fortnight${superResult.periods>1?'s':''} applied`;
+    if(superResult.totalNonConc > 0) msg += ` · ${fmt(superResult.totalNonConc)} spilled to non-concessional`;
+    msgs.push(msg);
   }
   if(!msgs.length) return;
   msgs.forEach((msg, i) => {
@@ -3393,25 +3428,76 @@ function autoApplySuper() {
   const now = Date.now();
   const MS_FORT = 14 * 24 * 3600 * 1000;
   if(!S.superPlan.lastApplied) S.superPlan.lastApplied = anchor.getTime();
+
   // Collect all fortnightly dates from lastApplied+1 fortnight up to now
   const dates = [];
   let d = S.superPlan.lastApplied + MS_FORT;
   while(d <= now) { dates.push(d); d += MS_FORT; }
   if(!dates.length) return null;
-  // Employer SG per fortnight + extra voluntary
-  const empPerFort = Math.round((S.sEmployer || 0) * 12 / 26);
-  const extraPerFort = Math.round(S.sExtra || 0);
+
+  // Employer SG per fortnight (sEmployer is stored as monthly → convert)
+  const empPerFort = (S.sEmployer || 0) * 12 / 26;
+  // Extra voluntary is already per-fortnight (sExtra)
+  const extraPerFort = S.sExtra || 0;
   const totalPerFort = empPerFort + extraPerFort;
+
+  // FY concessional caps by year
+  const FY_CONC_CAPS = { 2025:30000, 2026:32500, 2027:35000 };
+  function getFYConcCap(ts) {
+    const yr = new Date(ts);
+    // AU FY: Jul 1 – Jun 30. FY ending June 2026 = 2025-26 cap
+    const fyEnd = yr.getMonth() >= 6 ? yr.getFullYear() + 1 : yr.getFullYear();
+    return FY_CONC_CAPS[fyEnd] || 30000;
+  }
+  function getFYKey(ts) {
+    const yr = new Date(ts);
+    const fyEnd = yr.getMonth() >= 6 ? yr.getFullYear() + 1 : yr.getFullYear();
+    return fyEnd;
+  }
+
+  // Initialise FY concessional tracker on state if missing
+  if(!S.superPlan.fyConc) S.superPlan.fyConc = {};
+
+  let totalConcessional = 0;
+  let totalNonConc = 0;
   let totalAdded = 0;
   const monthlyReturn = (S.sReturn || 7.5) / 100 / 12;
   const fortnightReturn = monthlyReturn / 2;
-  dates.forEach(() => {
-    S.sBalance = Math.round(S.sBalance * (1 + fortnightReturn) + totalPerFort);
+
+  dates.forEach(ts => {
+    const fyKey = getFYKey(ts);
+    const cap = getFYConcCap(ts);
+    const usedSoFar = S.superPlan.fyConc[fyKey] || 0;
+
+    // How much of this fortnight's contribution is still within the concessional cap?
+    const headroom = Math.max(0, cap - usedSoFar);
+    const concThisFort = Math.min(totalPerFort, headroom);
+    const nonConcThisFort = totalPerFort - concThisFort;
+
+    // Apply investment growth + contributions
+    S.sBalance = Math.round(S.sBalance * (1 + fortnightReturn) + concThisFort + nonConcThisFort);
     totalAdded += totalPerFort;
+
+    // Track concessional used this FY
+    S.superPlan.fyConc[fyKey] = (S.superPlan.fyConc[fyKey] || 0) + concThisFort;
+    totalConcessional += concThisFort;
+
+    // Spill non-concessional excess into sNonConc tracker
+    if(nonConcThisFort > 0) {
+      S.sNonConc = Math.round((S.sNonConc || 0) + nonConcThisFort);
+      totalNonConc += nonConcThisFort;
+    }
   });
+
   S.superPlan.lastApplied = dates[dates.length - 1];
   silentSave();
-  return { type: 'super', periods: dates.length, totalAdded: Math.round(totalAdded) };
+  return {
+    type: 'super',
+    periods: dates.length,
+    totalAdded: Math.round(totalAdded),
+    totalConcessional: Math.round(totalConcessional),
+    totalNonConc: Math.round(totalNonConc)
+  };
 }
 
 function silentSave(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}}
