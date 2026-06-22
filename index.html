@@ -211,8 +211,8 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .gr{color:var(--gr)}.bl{color:var(--bl)}.pu{color:var(--pu)}.am{color:var(--am)}.rd{color:var(--rd)}
 
 /* MILESTONE TOAST */
-.ms-toast{position:fixed;top:110px;left:50%;transform:translateX(-50%) translateY(calc(-110px - 100%));background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;border-radius:20px;padding:14px 22px;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;z-index:900;transition:transform .5s cubic-bezier(.175,.885,.32,1.275),opacity .5s ease;opacity:0;white-space:normal;max-width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center;pointer-events:none;word-break:break-word}
-.ms-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.ms-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;border-radius:20px;padding:12px 20px;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;z-index:900;transition:transform .4s cubic-bezier(.175,.885,.32,1.275);white-space:normal;max-width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center;pointer-events:none;word-break:break-word}
+.ms-toast.show{transform:translateX(-50%) translateY(0)}
 .ms-toast-sub{font-size:10px;font-weight:400;font-family:'DM Mono',monospace;opacity:.85;margin-top:2px}
 /* FIRE COUNTDOWN */
 .fire-ring{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 0 4px}
@@ -476,14 +476,13 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 
   <!-- SUPER -->
   <div class="panel" id="p-super">
-    <div class="card"><div class="sec">Balance &amp; projection</div><div class="g2" id="sup-met"></div><div class="ch"><canvas id="supChart"></canvas></div></div>
+    <div class="card"><div class="sec">Balance &amp; projection</div><div id="sup-met"></div><div class="ch"><canvas id="supChart"></canvas></div></div>
     <div class="card"><div class="sec">Contribution caps <span class="sec-hint">— FY25/26</span></div><div id="sup-caps"></div></div>
     <div class="card"><div class="sec">Preservation age</div><div id="sup-preservation"></div></div>
     <div class="card"><div class="sec">Milestones</div><div id="sup-ms"></div></div>
     <div class="card"><div class="sec">Goals &amp; targets</div><div id="super-goals"></div></div>
     <div class="card"><div class="sec">Insurance inside super <span class="sec-hint">— tap to edit</span></div><div id="sup-insurance"></div></div>
     <div class="card"><div class="sec">Options</div><div id="sup-togs"></div></div>
-    <div class="card"><div class="sec">Adjust <span class="sec-hint">— tap to edit</span></div><div id="sup-ctrl"></div></div>
   </div>
 
   <!-- HISTORY -->
@@ -742,7 +741,7 @@ function loadState(){
   return JSON.parse(JSON.stringify(DEFAULTS));
 }
 function showSave(){const b=document.getElementById('save-banner');b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1400);}
-const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,shownMilestones:[],insurances:[],goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}},cgtSettings:{marginalRate:37,discountEligible:true,discountRate:50}};
+const ZERO_STATE={appName:'Finance Dashboard',age:30,stocksEnabled:true,propertiesEnabled:true,holdings:[],nextHId:1,rebalTargets:{},geoEnabled:false,geoHoldings:{},contribPlans:[],nextPlanId:1,lumpSums:[],nextLumpId:1,properties:[],nextPropId:1,poPeriod:'fortnightly',poActivePropId:null,poExtraLump:0,poSimExtra:0,poStartDate:'',poWhatIfExtra:0,sBalance:0,sExtra:0,sEmployer:0,sReturn:7.5,sNonConc:0,superPlan:{enabled:false,anchor:'',lastApplied:null},sSalaryRise:false,sSalaryRisePct:3,cf:{grossIncome:0,salaryPackaging:0,otherIncome:0,livingExpenses:0},inflationAdj:false,inflationRate:3,scenario:0,nwHistory:[],cashSavings:0,emergency:0,shownMilestones:[],insurances:[],goals:{stocks:{targetValue:0,targetDate:'',targetMonthly:0,coreSatelliteSplit:80,notes:''},property:{},super:{targetAtRetirement:0,targetDrawdown:0,notes:''},networth:{fireNumber:0,debtFreeDate:'',notes:''}},cgtSettings:{marginalRate:37,discountEligible:true,discountRate:50}};
 function confirmReset(){if(confirm('Reset to zero — blank canvas? This cannot be undone.')){localStorage.setItem(STORE,JSON.stringify(ZERO_STATE));location.reload();}}
 
 const S=loadState();
@@ -1754,24 +1753,71 @@ function renderCashFlow(){
 
 function renderSuper(){
   const data=projSuper(30);
+  // Register EFR entries for inline tile editing
+  const balId='ef_sBalance'; EFR[balId]={key:'sBalance',label:'Current balance',cfg:{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Current super balance'},obj:null};
+  const empId='ef_sEmployer'; EFR[empId]={key:'sEmployer',label:'Employer SG (per month)',cfg:{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'Estimated monthly employer SG'},obj:null};
+  const extId='ef_sExtra'; EFR[extId]={key:'sExtra',label:'Extra fortnightly',cfg:{pre:'$',suf:'',dec:0,min:0,max:5000,hint:'Extra voluntary contributions per fortnight'},obj:null};
+  const retId='ef_sReturn'; EFR[retId]={key:'sReturn',label:'Annual return',cfg:{pre:'',suf:'%',dec:1,min:1,max:20,hint:'Expected long-run return'},obj:null};
+  const ncId='ef_sNonConc'; EFR[ncId]={key:'sNonConc',label:'Non-concessional this FY',cfg:{pre:'$',suf:'',dec:0,min:0,max:130000,hint:'After-tax contributions this financial year'},obj:null};
   document.getElementById('sup-met').innerHTML=`
-    <div class="met"><div class="ml">Now</div><div class="mv pu">${fmtK(S.sBalance)}</div></div>
-    <div class="met"><div class="ml">Age ${S.age+10}</div><div class="mv pu">${fmtK(data[10].b)}</div></div>
-    <div class="met"><div class="ml">Age ${S.age+20}</div><div class="mv pu">${fmtK(data[20].b)}</div></div>
-    <div class="met"><div class="ml">Age ${S.age+30}</div><div class="mv pu">${fmtK(data[30].b)}</div><div class="mss">4%: ${fmtK(data[30].b*0.04)}/yr</div></div>`;
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+      <div class="h-tile" style="grid-column:1/-1" onclick="openById('${balId}')">
+        <div class="h-tile-l">BALANCE</div>
+        <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--pu);letter-spacing:-.5px">${fmtK(S.sBalance)}</div>
+        <div class="h-tile-hint">tap ✎ to edit</div>
+      </div>
+      <div class="h-tile" onclick="openById('${empId}')">
+        <div class="h-tile-l">EMPLOYER SG/MO</div>
+        <div class="h-tile-v pu">${fmt(S.sEmployer)}</div>
+        <div class="h-tile-hint">tap ✎</div>
+      </div>
+      <div class="h-tile" onclick="openById('${extId}')">
+        <div class="h-tile-l">EXTRA /FN</div>
+        <div class="h-tile-v pu">${fmt(S.sExtra)}</div>
+        <div class="h-tile-hint">tap ✎</div>
+      </div>
+      <div class="h-tile" onclick="openById('${retId}')">
+        <div class="h-tile-l">RETURN</div>
+        <div class="h-tile-v am">${(S.sReturn||7.5).toFixed(1)}%</div>
+        <div class="h-tile-hint">tap ✎</div>
+      </div>
+      <div class="h-tile" onclick="openById('${ncId}')">
+        <div class="h-tile-l">NON-CONC FY</div>
+        <div class="h-tile-v bl">${fmt(S.sNonConc||0)}</div>
+        <div class="h-tile-hint">tap ✎</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      <div class="met"><div class="ml">Age ${S.age+10}</div><div class="mv pu">${fmtK(data[10].b)}</div></div>
+      <div class="met"><div class="ml">Age ${S.age+20}</div><div class="mv pu">${fmtK(data[20].b)}</div></div>
+      <div class="met"><div class="ml">Age ${S.age+30}</div><div class="mv pu">${fmtK(data[30].b)}</div><div class="mss">4%: ${fmtK(data[30].b*0.04)}/yr</div></div>
+    </div>`;
   mkChart('supChart',{type:'line',data:{labels:data.map(d=>d.y===0?'Now':''+d.y),datasets:[{label:'Super',data:data.map(d=>d.b),borderColor:'#7f77dd',backgroundColor:'rgba(127,119,221,0.09)',fill:true,tension:.4,borderWidth:2.5,...pt0}]},options:bOpts});
   document.getElementById('sup-ms').innerHTML=[{age:S.age+6,y:6,c:'var(--gr)'},{age:S.age+10,y:10,c:'var(--bl)'},{age:S.age+16,y:16,c:'var(--pu)'},{age:S.age+21,y:21,c:'var(--am)'},{age:S.age+30,y:30,c:'var(--rd)'}].map(m=>`<div class="ms-row"><div class="ms-l"><div class="ms-dot" style="background:${m.c}"></div><div><div class="ms-age" style="color:${m.c}">Age ${m.age}</div><div class="ms-desc">4% drawdown: ${fmtK(data[m.y].b*0.04)}/yr</div></div></div><div class="ms-val" style="color:${m.c}">${fmtK(data[m.y].b)}</div></div>`).join('');
-  document.getElementById('sup-togs').innerHTML=mkTog('Salary rise assumption','Apply annual pay rise to employer SG contributions','sSalaryRise');
-  document.getElementById('sup-ctrl').innerHTML=
-    ef('Current balance','sBalance',{pre:'$',suf:'',dec:0,min:0,max:2000000,hint:'Current super balance'})+
-    ef('Extra fortnightly','sExtra',{pre:'$',suf:'',dec:0,min:0,max:5000,hint:'Extra voluntary contributions per fortnight'})+
-    ef('Employer SG (per month)','sEmployer',{pre:'$',suf:'',dec:0,min:0,max:10000,hint:'Estimated monthly employer SG'})+
-    ef('Annual return','sReturn',{pre:'',suf:'%',dec:1,min:1,max:20,hint:'Expected long-run return'})+
-    (S.sSalaryRise?ef('Annual salary rise','sSalaryRisePct',{pre:'',suf:'%',dec:1,min:0,max:15,hint:'Annual pay rise applied to SG'}):'');
+  document.getElementById('sup-togs').innerHTML=
+    mkTog('Salary rise assumption','Apply annual pay rise to employer SG contributions','sSalaryRise')+
+    mkTog('Auto-apply super fortnightly','Automatically increase super balance each fortnight you open the app','autoApplyEnabled','runAutoApply();renderSuper()')+
+    `<div style="margin-top:10px">
+      <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:5px;letter-spacing:.06em">SUPER PAYDAY ANCHOR DATE</div>
+      <div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-bottom:6px;line-height:1.5">Enter the date of your first (or most recent) super payment — app will auto-apply fortnightly from that date.</div>
+      <input id="super-anchor-inp" value="${S.superPlan&&S.superPlan.anchor||''}" placeholder="DD/MM/YY — e.g. 12/06/26"
+        style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--tx);font-family:'DM Mono',monospace;box-sizing:border-box;outline:none">
+    </div>`;
   renderSuperGoals();
   renderSuperCaps();
   renderPreservation();
   renderInsurance();
+  // Wire super anchor input
+  setTimeout(()=>{
+    const inp = document.getElementById('super-anchor-inp');
+    if(inp) inp.addEventListener('change', function(){
+      if(!S.superPlan) S.superPlan={enabled:false,anchor:'',lastApplied:null};
+      S.superPlan.anchor = this.value.trim();
+      S.superPlan.enabled = !!S.superPlan.anchor;
+      S.superPlan.lastApplied = null;
+      saveState();
+    });
+  }, 100);
 }
 
 function renderHistory(){
@@ -2005,7 +2051,7 @@ function showMilestoneToast(msg, sub) {
   m.textContent = msg; s.textContent = sub;
   t.classList.add('show');
   clearTimeout(t._t);
-  t._t = setTimeout(function() { t.classList.remove('show'); }, 6000);
+  t._t = setTimeout(function() { t.classList.remove('show'); }, 4000);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2490,18 +2536,29 @@ function renderChecklist(elId) {
 // ═══════════════════════════════════════════════════════════════════════════
 // SUPER — CONTRIBUTION CAP TRACKER
 // ═══════════════════════════════════════════════════════════════════════════
+function openNonConcModal(){
+  document.getElementById('non-conc-amount').value = S.sNonConc||0;
+  document.getElementById('non-conc-modal').classList.add('open');
+}
+function closeNonConcModal(){document.getElementById('non-conc-modal').classList.remove('open');}
+function saveNonConc(){
+  const v = parseFloat(document.getElementById('non-conc-amount').value)||0;
+  captureUndo(); S.sNonConc = v; saveState(); renderSuperCaps(); closeNonConcModal();
+}
+
 function renderSuperCaps() {
   const el = document.getElementById('sup-caps'); if(!el) return;
   const annualConc = Math.round((S.sExtra||0)*26 + (S.sEmployer||0)*12);
   const concCap = 30000;
-  const nonConcCap = 130000; // corrected
-  const annualNonConc = 0; // user would enter this separately — default 0
+  const nonConcCap = 130000;
+  const annualNonConc = Math.round(S.sNonConc||0);
   const concPct = Math.min(100, annualConc/concCap*100);
   const concRemaining = Math.max(0, concCap - annualConc);
-  function capRow(label, used, cap, color, hint) {
+  const nonConcRemaining = Math.max(0, nonConcCap - annualNonConc);
+  function capRow(label, used, cap, color, hint, remaining, onclick) {
     const pct = Math.min(100, used/cap*100);
     const status = pct >= 100 ? '⚠ At cap' : pct >= 80 ? 'Near cap' : 'Utilising';
-    return `<div class="cap-row">
+    return `<div class="cap-row"${onclick?' onclick="'+onclick+'" style="cursor:pointer"':''}>
       <div class="cap-ring"><canvas class="cap-canvas" data-pct="${pct.toFixed(0)}" data-color="${color}" width="90" height="90"></canvas>
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:70px">
           <div style="font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:${color}">${pct.toFixed(0)}%</div>
@@ -2509,13 +2566,13 @@ function renderSuperCaps() {
       </div>
       <div class="cap-info">
         <div class="cap-name">${label}</div>
-        <div class="cap-sub">${fmt(used)} used of ${fmtK(cap)}/yr<br>${fmt(concRemaining)} remaining this FY<br><span style="color:${pct>=80?'var(--rd)':color}">${status}</span><br>${hint}</div>
+        <div class="cap-sub">${fmt(used)} used of ${fmtK(cap)}/yr<br>${fmt(remaining)} remaining this FY<br><span style="color:${pct>=80?'var(--rd)':color}">${status}</span><br><span style="color:${color}">${hint}</span></div>
       </div>
     </div>`;
   }
   el.innerHTML =
-    capRow('Concessional cap', annualConc, concCap, 'var(--pu)', 'Employer SG + salary sacrifice + extra') +
-    capRow('Non-concessional cap', annualNonConc, nonConcCap, 'var(--bl)', 'After-tax contributions — tap to track') +
+    capRow('Concessional cap', annualConc, concCap, 'var(--pu)', 'Employer SG + salary sacrifice + extra', concRemaining, null) +
+    capRow('Non-concessional cap', annualNonConc, nonConcCap, 'var(--bl)', 'After-tax contributions — tap to edit', nonConcRemaining, 'openNonConcModal()') +
     `<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:6px;line-height:1.5">FY2025-26 caps: $30k concessional · $130k non-concessional. Carry-forward unused concessional caps available if balance under $500k.</div>`;
   // Draw ring charts
   setTimeout(()=>{
@@ -2525,12 +2582,12 @@ function renderSuperCaps() {
       const ctx=canvas.getContext('2d');
       const cx=45,cy=45,r=38;
       // BG ring
-      ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,2*Math.PI-Math.PI/2);
-      ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=7;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,3*Math.PI/2);
+      ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
       // Fill ring
       if(pct>0){
         ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,(pct/100*2*Math.PI)-Math.PI/2);
-        ctx.strokeStyle=color;ctx.lineWidth=7;ctx.lineCap='round';ctx.stroke();
+        ctx.strokeStyle=color;ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
       }
     });
   },60);
@@ -3047,6 +3104,28 @@ function refresh(){
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTO-APPLY: DCA + MORTGAGE — runs on every app open
 // ═══════════════════════════════════════════════════════════════════════════
+function autoApplyLumps() {
+  // Permanently write past-dated lump sums into h.val and remove them from the list
+  if(!S.lumpSums||!S.lumpSums.length) return null;
+  const now = Date.now();
+  const toApply = S.lumpSums.filter(l => tsFromDMY(l.date) <= now);
+  if(!toApply.length) return null;
+  let totalAdded = 0; let changed = false;
+  toApply.forEach(l => {
+    const h = S.holdings.find(x => x.ticker === l.ticker);
+    if(!h) return;
+    h.val = Math.round(h.val + l.amount);
+    totalAdded += l.amount;
+    changed = true;
+  });
+  if(changed) {
+    S.lumpSums = S.lumpSums.filter(l => tsFromDMY(l.date) > now);
+    silentSave();
+    return {type:'lump', totalAdded: Math.round(totalAdded)};
+  }
+  return null;
+}
+
 function autoApplyDCA() {
   if(!S.autoApplyEnabled) return null;
   if(!S.contribPlans||!S.contribPlans.length) return null;
@@ -3161,8 +3240,11 @@ function autoApplyMortgage() {
   return null;
 }
 
-function showAutoApplyBanner(dcaResult, mortResult) {
+function showAutoApplyBanner(dcaResult, mortResult, lumpResult, superResult) {
   const msgs = [];
+  if(lumpResult) {
+    msgs.push(`💰 Lump sum +${fmt(lumpResult.totalAdded)} applied to holdings`);
+  }
   if(dcaResult) {
     msgs.push(`📈 DCA +${fmt(dcaResult.totalAdded)} · ${dcaResult.periods} period${dcaResult.periods>1?'s':''} applied`);
   }
@@ -3171,8 +3253,10 @@ function showAutoApplyBanner(dcaResult, mortResult) {
       msgs.push(`🏠 ${r.name} −${fmt(r.reduced)} · balance ${fmt(r.newBalance)}`);
     });
   }
+  if(superResult) {
+    msgs.push(`🏦 Super +${fmt(superResult.totalAdded)} · ${superResult.periods} fortnight${superResult.periods>1?'s':''} applied`);
+  }
   if(!msgs.length) return;
-  // Show sequentially as toasts
   msgs.forEach((msg, i) => {
     setTimeout(() => showMilestoneToast(msg, 'Auto-updated from real-world activity'), i * 4500);
   });
@@ -3301,14 +3385,44 @@ function setRepayFreq(idx, freq) {
   if(el2) renderStocks();
 }
 
+function autoApplySuper() {
+  if(!S.autoApplyEnabled) return null;
+  if(!S.superPlan || !S.superPlan.enabled) return null;
+  const anchor = parseDMY(S.superPlan.anchor);
+  if(!anchor) return null;
+  const now = Date.now();
+  const MS_FORT = 14 * 24 * 3600 * 1000;
+  if(!S.superPlan.lastApplied) S.superPlan.lastApplied = anchor.getTime();
+  // Collect all fortnightly dates from lastApplied+1 fortnight up to now
+  const dates = [];
+  let d = S.superPlan.lastApplied + MS_FORT;
+  while(d <= now) { dates.push(d); d += MS_FORT; }
+  if(!dates.length) return null;
+  // Employer SG per fortnight + extra voluntary
+  const empPerFort = Math.round((S.sEmployer || 0) * 12 / 26);
+  const extraPerFort = Math.round(S.sExtra || 0);
+  const totalPerFort = empPerFort + extraPerFort;
+  let totalAdded = 0;
+  const monthlyReturn = (S.sReturn || 7.5) / 100 / 12;
+  const fortnightReturn = monthlyReturn / 2;
+  dates.forEach(() => {
+    S.sBalance = Math.round(S.sBalance * (1 + fortnightReturn) + totalPerFort);
+    totalAdded += totalPerFort;
+  });
+  S.superPlan.lastApplied = dates[dates.length - 1];
+  silentSave();
+  return { type: 'super', periods: dates.length, totalAdded: Math.round(totalAdded) };
+}
+
 function silentSave(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}}
 
 function runAutoApply() {
+  const lumps = autoApplyLumps();
   const dca = autoApplyDCA();
   const mort = autoApplyMortgage();
-  if(dca || mort){
-    showAutoApplyBanner(dca, mort);
-    // Refresh home so updated values (loan balance, holding values) are visible
+  const sup = autoApplySuper();
+  if(lumps || dca || mort || sup){
+    showAutoApplyBanner(dca, mort, lumps, sup);
     renderHome();
   }
 }
@@ -3318,6 +3432,8 @@ if(!S.cf)S.cf={grossIncome:216000,salaryPackaging:21000,otherIncome:0,livingExpe
 if(!S.shownMilestones)S.shownMilestones=[];
 _shownMilestones=S.shownMilestones;
 if(S.autoApplyEnabled===undefined)S.autoApplyEnabled=true;
+if(S.sNonConc===undefined)S.sNonConc=0;
+if(!S.superPlan)S.superPlan={enabled:false,anchor:'',lastApplied:null};
 updateNav();renderColorPicker();
 // Use requestAnimationFrame to ensure browser paints the shell before
 // heavy sync calculations run — fixes blank home on first open
@@ -3339,6 +3455,15 @@ requestAnimationFrame(()=>{
     <div class="field"><label>Cover amount ($)</label><input id="ins-cover" type="number" inputmode="decimal" placeholder="0"></div>
     <div class="field"><label>Notes</label><input id="ins-notes" type="text" placeholder="e.g. Inside super, auto-renewed"></div>
     <div class="ma"><button class="bss" onclick="closeInsModal()">Cancel</button><button class="bp" onclick="saveInsurance()">Save</button></div>
+  </div>
+</div>
+<!-- NON-CONCESSIONAL MODAL -->
+<div class="sheet-bg" id="non-conc-modal" onclick="if(event.target===this)closeNonConcModal()">
+  <div class="sheet">
+    <div class="sheet-title">Non-concessional contributions <div class="mx" onclick="closeNonConcModal()">×</div></div>
+    <div class="field"><label>After-tax contributions this FY ($)</label><input id="non-conc-amount" type="number" inputmode="decimal" placeholder="0"></div>
+    <div style="font-size:10px;color:var(--mu);font-family:'DM Mono',monospace;padding:0 0 12px">These are contributions made from your after-tax income. The FY2025-26 cap is $130,000.</div>
+    <div class="ma"><button class="bss" onclick="closeNonConcModal()">Cancel</button><button class="bp" onclick="saveNonConc()">Save</button></div>
   </div>
 </div>
 </body>
