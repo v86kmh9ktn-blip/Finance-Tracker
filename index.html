@@ -789,7 +789,7 @@ function tsFromDMY(s){const d=parseDMY(s);return d?d.getTime():0;}
 
 // FORMAT
 const fmt=v=>'$'+Math.round(v).toLocaleString('en-AU');
-const fmtK=v=>{if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';if(v>=1000)return'$'+Math.round(v/1000)+'k';return'$'+Math.round(v);};
+const fmtK=v=>{if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';if(v>=1000){const k=v/1000;return'$'+(k%1===0?k.toFixed(0):k.toFixed(1))+'k';}return'$'+Math.round(v);};
 function getFYConcCap(){const n=new Date();const fyEnd=n.getMonth()>=6?n.getFullYear()+1:n.getFullYear();return({2025:30000,2026:32500,2027:35000}[fyEnd]||30000);}
 const real=(v,y)=>S.inflationAdj?v/Math.pow(1+S.inflationRate/100,y):v;
 
@@ -1059,19 +1059,19 @@ function mkTog(lbl,desc,key,cb){
 }
 
 function efText(label,key,placeholder,propId,goalsCtx){
-  // goalsCtx: {src: actualObjectToReadFrom, objKey: 'string for saveText routing'}
   let src, objKey='';
-  if(goalsCtx && goalsCtx.src){
-    src = goalsCtx.src;
-    objKey = goalsCtx.objKey||'';
-  } else if(propId!=null){
-    src = S.properties.find(p=>p.id===propId);
-  } else {
-    src = S;
+  if(goalsCtx && goalsCtx.src){ src=goalsCtx.src; objKey=goalsCtx.objKey||''; }
+  else if(propId!=null){ src=S.properties.find(p=>p.id===propId); }
+  else { src=S; }
+  const raw = src ? (src[key]||'') : '';
+  // Smart-display: format numeric values cleanly (keep dates/text as-is)
+  let disp = raw||'—';
+  if(raw && !isNaN(parseFloat(raw)) && !/\//.test(String(raw))) {
+    const n = parseFloat(raw);
+    disp = n >= 10000 ? fmtK(n) : n >= 1000 ? fmt(n) : raw;
   }
-  const v = src ? (src[key]||'') : '';
   return `<div class="ef" onclick="openText('${key}','${label}','${placeholder||''}',${propId!=null?propId:'null'},'${objKey}')">
-    <span class="ef-lbl">${label}</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${v||'—'}</span><span class="ef-pen">✎</span></span></div>`;
+    <span class="ef-lbl">${label}</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">${disp}</span><span class="ef-pen">✎</span></span></div>`;
 }
 function openText(key,label,placeholder,propId,objKey){
   let src;
@@ -1523,9 +1523,9 @@ function renderStockGoals(){
       '<span style="font-size:11px;font-family:DM Mono;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">'+(onTrack?'✓ On track':'⚠ Behind target')+'</span>'+
       '<span style="font-size:12px;font-weight:700;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">Proj. '+fmtK(projAtTarget)+' vs '+fmtK(g.targetValue)+'</span>'+
     '</div>'+
-    '<div class="ef" onclick="openById(\''+trid+'\')"><span class="ef-lbl">Target portfolio value</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetValue)+'</span><span class="ef-pen">✎</span></span></div>'+
+    '<div class="ef" onclick="openById(\''+trid+'\')"><span class="ef-lbl">Target portfolio value</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmtK(g.targetValue)+'</span><span class="ef-pen">✎</span></span></div>'+
     efText('Target date (DD/MM/YY)','targetDate','01/01/36',null,{src:g,objKey:'__goals_stocks'})+
-    '<div class="ef" onclick="openById(\''+tmid+'\')"><span class="ef-lbl">Target monthly contribution</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetMonthly)+'/mo</span><span class="ef-pen">✎</span></span></div>'+
+    '<div class="ef" onclick="openById(\''+tmid+'\')"><span class="ef-lbl">Target monthly contribution</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmtK(g.targetMonthly)+'/mo</span><span class="ef-pen">✎</span></span></div>'+
     '<div class="ir"><span class="ir-l">Actual monthly DCA</span><span class="ir-v '+(totalMonthly()>=(g.targetMonthly||0)?'gr':'rd')+'">'+fmt(totalMonthly())+'/mo</span></div>'+
     '<div style="margin-top:10px"><div style="font-size:9px;color:var(--mu);font-family:DM Mono;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Notes</div>'+
     '<textarea onchange="S.goals.stocks.notes=this.value;saveState()" style="width:100%;background:var(--sf2);border:0.5px solid var(--bd2);border-radius:var(--rs);padding:11px;font-size:12px;color:var(--tx);font-family:\'DM Mono\',monospace;outline:none;resize:none;min-height:70px;line-height:1.6" placeholder="e.g. Hit $500k by 40, DCA into VGS monthly...">'+(g.notes||'')+'</textarea></div>';
@@ -1545,8 +1545,8 @@ function renderSuperGoals(){
       '<span style="font-size:11px;font-family:DM Mono;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">'+(onTrack?'✓ On track':'⚠ Behind target')+'</span>'+
       '<span style="font-size:12px;font-weight:700;color:'+(onTrack?'var(--gr)':'var(--rd)')+'">Proj. '+fmtK(balAtRet)+' vs '+fmtK(g.targetAtRetirement||0)+'</span>'+
     '</div>'+
-    '<div class="ef" onclick="openById(\''+trid+'\')"><span class="ef-lbl">Target balance at retirement</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetAtRetirement||0)+'</span><span class="ef-pen">✎</span></span></div>'+
-    '<div class="ef" onclick="openById(\''+tdid+'\')"><span class="ef-lbl">Target annual drawdown</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmt(g.targetDrawdown||0)+'/yr</span><span class="ef-pen">✎</span></span></div>'+
+    '<div class="ef" onclick="openById(\''+trid+'\')"><span class="ef-lbl">Target balance at retirement</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmtK(g.targetAtRetirement||0)+'</span><span class="ef-pen">✎</span></span></div>'+
+    '<div class="ef" onclick="openById(\''+tdid+'\')"><span class="ef-lbl">Target annual drawdown</span><span style="display:flex;align-items:center;gap:5px"><span class="ef-val">'+fmtK(g.targetDrawdown||0)+'/yr</span><span class="ef-pen">✎</span></span></div>'+
     '<div class="ir"><span class="ir-l">4% drawdown on target</span><span class="ir-v gr">'+fmt((g.targetAtRetirement||0)*0.04/12)+'/mo</span></div>'+
     '<div class="ir"><span class="ir-l">Projected 4% drawdown</span><span class="ir-v '+(balAtRet*0.04/12>=(g.targetDrawdown||0)/12?'gr':'rd')+'">'+fmt(balAtRet*0.04/12)+'/mo</span></div>'+
     '<div class="ir"><span class="ir-l">Concessional cap room</span><span class="ir-v">'+fmt(Math.max(0,getFYConcCap()-S.sExtra*26-S.sEmployer*12))+'/yr</span></div>'+
@@ -1715,23 +1715,24 @@ const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
   const res=poSimulate(prop,S.poExtraLump,poPeriod);
   const sm=res.base.months-res.current.months;const si=res.base.interest-res.current.interest;
 
-  // Monthly interest schedule (next 6 months for reconciliation)
+  // Rolling 12-month interest schedule — always starts from current month
+  const SCHED_MONTHS = 12;
   const schedRows = (()=>{
     const rate = propCurrentRate(prop)/100/12;
     let bal = prop.loan;
     const offset = prop.offset||0;
     const rows = [];
     const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const startDate = new Date();
-    for(let i=0;i<6;i++){
-      const d=new Date(startDate); d.setMonth(d.getMonth()+i);
+    const now = new Date();
+    for(let i=0;i<SCHED_MONTHS;i++){
+      const d=new Date(now.getFullYear(), now.getMonth()+i, 1);
       const eff=Math.max(0,bal-offset);
       const interest=Math.round(eff*rate);
       const minMonthly=Math.round(propMin(prop,'monthly'));
       const principal=Math.max(0,minMonthly-interest);
       const extra=Math.round((S.poSimExtra||0)*26/12);
       bal=Math.max(0,bal-principal-extra);
-      rows.push({lbl:monthNames[d.getMonth()]+' '+d.getFullYear(), interest, principal, extra, bal});
+      rows.push({lbl:monthNames[d.getMonth()]+' '+d.getFullYear(), interest, principal, extra, bal, isPast: i===0});
     }
     return rows;
   })();
@@ -1750,7 +1751,8 @@ const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
     ${(S.poWhatIfExtra>0?(function(){const ppy3=poPeriod==='fortnightly'?26:12;const msPer3=poPeriod==='fortnightly'?14*24*3600*1000:30.44*24*3600*1000;const sd3=parseDMY(S.poStartDate||prop.startDate)||new Date(2023,6,1);const ye3=Math.max(0,(new Date()-sd3)/(365.25*24*3600*1000));const rt3=Math.max(1,prop.term-ye3);let b3=prop.loan;let cnt3=0;let ts3=Date.now();let co3=prop.offset;const by3=[{y:0,b:Math.round(b3)}];let py3=0;const maxP3=Math.round(rt3*ppy3*2);const wiAmt3=poPeriod==='fortnightly'?S.poWhatIfExtra:S.poWhatIfExtra*26/12;while(b3>0.01&&cnt3<maxP3){const r3=propCurrentRate(prop)/100/ppy3;co3=Math.min(co3+wiAmt3,b3);const eff3=Math.max(0,b3-co3);const ic3=eff3*r3;const pr3=propMin(prop,poPeriod)-ic3;if(pr3<=0)break;cnt3++;b3=Math.max(0,b3-pr3);ts3+=msPer3;const yr3=Math.floor(cnt3/ppy3);if(yr3>py3){by3.push({y:yr3,b:Math.round(b3)});py3=yr3;}if(b3<=0)break;}const wiMos=Math.round(cnt3/ppy3*12);const wiDate=new Date(Date.now()+cnt3*msPer3);const wiSaved=res.current.months-wiMos;return '<div class="po-box" style="border-color:rgba(127,119,221,0.3);background:rgba(127,119,221,0.1)"><div class="po-title" style="color:var(--pu)">What-if: +'+fmt(S.poWhatIfExtra)+' extra/period</div><div class="po-row"><span class="po-l">Payoff date</span><span class="po-v" style="color:var(--pu)">'+fmtDMY(wiDate)+'</span></div><div class="po-row"><span class="po-l">Duration</span><span class="po-v" style="color:var(--pu)">'+wiMos+' months</span></div><div class="po-row"><span class="po-l">vs current plan</span><span class="po-v" style="color:var(--pu)">'+wiSaved+' months faster</span></div></div>';}()):'')}
     ${S.poExtraLump>0&&res.withLump?'<div class="po-box info"><div class="po-title" style="color:var(--bl)">With '+fmt(S.poExtraLump)+' lump sum</div><div class="po-row"><span class="po-l">Payoff date</span><span class="po-v bl">'+fmtDMY(res.withLump.payoffDate)+'</span></div><div class="po-row"><span class="po-l">Time saved vs min</span><span class="po-v bl">'+(res.base.months-res.withLump.months)+' months</span></div><div class="po-row"><span class="po-l">Interest saved</span><span class="po-v bl">'+fmt(res.base.interest-res.withLump.interest)+'</span></div></div>':''}
     <div class="card" style="margin-top:10px;padding:14px">
-      <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.06em;margin-bottom:10px">MONTHLY INTEREST SCHEDULE <span style="color:var(--di)">— next 6 months estimated</span></div>
+      <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.06em;margin-bottom:2px">INTEREST SCHEDULE <span style="color:var(--gr);font-weight:700">${prop.name||'Loan'}</span></div>
+      <div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-bottom:10px">Rolling 12 months · updates each time you open</div>
       <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:0;font-size:9px;font-family:'DM Mono',monospace">
         <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd)">Month</div>
         <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd);text-align:right">Interest</div>
@@ -1758,14 +1760,41 @@ const extraPer=poPeriod==='fortnightly'?S.poSimExtra:S.poSimExtra*26/12;
         <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd);text-align:right">Extra</div>
         <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd);text-align:right">Balance</div>
         ${schedRows.map(r=>`
-        <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);color:var(--mu)">${r.lbl}</div>
+        <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);color:${r.isPast?'var(--tx)':'var(--mu)'}">${r.lbl}</div>
         <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);text-align:right;color:var(--rd)">${fmt(r.interest)}</div>
         <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);text-align:right;color:var(--gr)">${fmt(r.principal)}</div>
         <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);text-align:right;color:var(--bl)">${r.extra>0?fmt(r.extra):'—'}</div>
         <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);text-align:right">${fmtK(r.bal)}</div>`).join('')}
       </div>
-      <div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px;line-height:1.5">Offset of ${fmt(prop.offset||0)} reduces effective balance each month. Matches your bank statement: Interest is charged on (Loan − Offset). Extra contributions go direct to principal.</div>
-    </div>`;
+      <div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px;line-height:1.5">Interest = (Loan − Offset) × rate ÷ 12. Extra payments reduce principal directly.</div>
+    </div>
+    ${S.properties.length>1?S.properties.filter(p=>p.id!==prop.id).map(op=>{
+      const or=propCurrentRate(op)/100/12; let ob=op.loan; const oo=op.offset||0;
+      const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const now2=new Date();
+      const orows=Array.from({length:12},(_,i)=>{
+        const d=new Date(now2.getFullYear(),now2.getMonth()+i,1);
+        const eff=Math.max(0,ob-oo); const interest=Math.round(eff*or);
+        const mn=Math.round(propMin(op,'monthly')); const principal=Math.max(0,mn-interest);
+        ob=Math.max(0,ob-principal);
+        return {lbl:monthNames[d.getMonth()]+' '+d.getFullYear(),interest,principal,bal:ob};
+      });
+      return `<div class="card" style="margin-top:10px;padding:14px">
+        <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;letter-spacing:.06em;margin-bottom:2px">INTEREST SCHEDULE <span style="color:var(--am);font-weight:700">${op.name||'Loan'}</span></div>
+        <div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-bottom:10px">Rolling 12 months</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:0;font-size:9px;font-family:'DM Mono',monospace">
+          <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd)">Month</div>
+          <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd);text-align:right">Interest</div>
+          <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd);text-align:right">Principal</div>
+          <div style="color:var(--di);padding:4px 0;border-bottom:0.5px solid var(--bd);text-align:right">Balance</div>
+          ${orows.map(r=>`
+          <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);color:var(--mu)">${r.lbl}</div>
+          <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);text-align:right;color:var(--rd)">${fmt(r.interest)}</div>
+          <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);text-align:right;color:var(--gr)">${fmt(r.principal)}</div>
+          <div style="padding:5px 0;border-bottom:0.5px solid var(--bd2);text-align:right">${fmtK(r.bal)}</div>`).join('')}
+        </div>
+      </div>`;
+    }).join(''):''}`;
   const maxYrs=Math.max(res.base.byYear.length,res.current.byYear.length)+1;
   const cl=Array.from({length:maxYrs},(_,i)=>i===0?'Now':'+'+i+'yr');
   function byd(sim){return cl.map((_,i)=>{const pt=sim.byYear.find(p=>p.y===i);return pt?pt.b:0;});}
