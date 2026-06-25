@@ -534,46 +534,41 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
     <div class="card"><div class="sec">Options</div><div id="sup-togs"></div></div>
   </div>
 
-  <!-- HISTORY -->
+  <!-- HISTORY / PROGRESS -->
   <div class="panel" id="p-history">
 
-    <!-- HEADER SCORECARD -->
-    <div class="card" id="prog-scorecard-card">
-      <div class="sec">Financial health <span class="sec-hint" id="prog-grade-badge"></span></div>
-      <div id="prog-scorecard"></div>
-    </div>
-
-    <!-- GOAL PROGRESS DASHBOARD -->
+    <!-- TRAJECTORY CHART: Actual vs Projected vs Required -->
     <div class="card">
-      <div class="sec">Goal progress <span class="sec-hint">— ahead / behind</span></div>
-      <div id="prog-goals"></div>
-    </div>
-
-    <!-- FIXED CHART: Actual vs Projected vs Required -->
-    <div class="card">
-      <div class="sec">Net worth trajectory</div>
-      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap" id="prog-chart-legend"></div>
-      <div class="ch" style="height:220px"><canvas id="histChart"></canvas></div>
+      <div class="sec">Wealth trajectory</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="prog-chart-legend"></div>
+      <div class="ch" style="height:230px"><canvas id="histChart"></canvas></div>
       <div id="prog-divergence" style="margin-top:8px"></div>
     </div>
 
-    <!-- YoY COMPARISON -->
+    <!-- PACE SUMMARY: projected FIRE date, months ahead/behind, gap -->
+    <div class="card">
+      <div class="sec">Wealth pace</div>
+      <div id="prog-pace"></div>
+    </div>
+
+    <!-- YEAR-ON-YEAR GROWTH -->
     <div class="card">
       <div class="sec">Year-on-year growth</div>
       <div id="prog-yoy"></div>
-      <div class="ch" style="height:140px;margin-top:10px"><canvas id="yoyChart"></canvas></div>
+      <div class="ch" style="height:130px;margin-top:10px"><canvas id="yoyChart"></canvas></div>
     </div>
 
-    <!-- VELOCITY + PACE -->
+    <!-- GROWTH VELOCITY -->
     <div class="card">
       <div class="sec">Growth velocity</div>
       <div id="vel-stats"></div>
     </div>
 
-    <!-- ASSET ALLOCATION DRIFT -->
+    <!-- COMPOUND GROWTH EXPLORER -->
     <div class="card">
-      <div class="sec">Asset allocation <span class="sec-hint">— vs target</span></div>
-      <div id="prog-alloc"></div>
+      <div class="sec">Compound growth explorer <span class="sec-hint">— what-if</span></div>
+      <div id="prog-compound"></div>
+      <div class="ch" style="height:160px;margin-top:10px"><canvas id="compoundChart"></canvas></div>
     </div>
 
     <!-- MILESTONE RIBBON -->
@@ -582,9 +577,9 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       <div id="ms-ribbon-wrap"></div>
     </div>
 
-    <!-- CONTRIBUTION HEATMAP -->
+    <!-- SNAPSHOT HEATMAP -->
     <div class="card">
-      <div class="sec">Snapshot history <span class="sec-hint">— monthly activity</span></div>
+      <div class="sec">Snapshot activity <span class="sec-hint">— last 24 months</span></div>
       <div id="prog-heatmap"></div>
     </div>
 
@@ -2002,321 +1997,146 @@ function renderSuper(){
 
 function renderHistory(){
   const hist = S.nwHistory || [];
-  const now = new Date();
+  const now  = new Date();
   const nowTs = Date.now();
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────
-  function currentNW() {
-    const st=projStocks(0)[0]; const sup=projSuper(0)[0]; const pp=projAllProps(0)[0];
-    return (S.stocksEnabled?st.total:0)+(S.propertiesEnabled?pp.equity:0)+sup.b+(S.cashSavings||0)+(S.emergency||0);
-  }
-  const nw = hist.length ? hist[hist.length-1].val : currentNW();
-  const firstEntry = hist.length ? parseDMY(hist[0].date) : null;
-  const firstTs = hist.length ? hist[0].ts : nowTs;
+  // Live NW
+  const st0=projStocks(0)[0]; const sup0=projSuper(0)[0]; const pp0=projAllProps(0)[0];
+  const nw=(S.stocksEnabled?st0.total:0)+(S.propertiesEnabled?pp0.equity:0)
+          +(sup0.b||S.sBalance||0)+(S.cashSavings||0)+(S.emergency||0);
 
-  // ─── 1. FINANCIAL HEALTH SCORECARD ───────────────────────────────────────
-  (function(){
-    const el = document.getElementById('prog-scorecard'); if(!el) return;
-    const badge = document.getElementById('prog-grade-badge');
-    const cf = (typeof renderCashFlow !== 'undefined') ? calcCF() : {totalOut:1,totalInc:1,surplus:0};
-    const monthlyExp = cf.totalOut || 1;
-    const emRatio = (S.emergency||0) / monthlyExp;
-    const savingsRate = cf.totalInc > 0 ? Math.max(0,(cf.surplus||0)/cf.totalInc*100) : 0;
-    const annualConc = (S.sExtra*26)+(S.sEmployer*12);
-    const concCap = getFYConcCap();
-    const concPct = Math.min(100, annualConc/concCap*100);
-    const totalDebtV = totalDebt();
-    const totalAssets = nw + totalDebtV;
-    const dta = totalAssets > 0 ? totalDebtV/totalAssets*100 : 0;
-    const dcaMo = totalMonthly();
-    const dcaTarget = (S.goals&&S.goals.stocks&&S.goals.stocks.targetMonthly)||2000;
-    const dcaScore = Math.min(100, dcaMo/Math.max(dcaTarget,1)*100);
-    const divCount = (S.stocksEnabled&&S.holdings.length>0?1:0)+(S.sBalance>0?1:0)+(S.propertiesEnabled&&S.properties.length>0?1:0)+((S.cashSavings||0)>0?1:0);
-    const fireNum = (S.goals&&S.goals.networth&&S.goals.networth.fireNumber)||0;
-    const fireScore = fireNum > 0 ? Math.min(100, nw/fireNum*100) : 50;
-    const insScore = (S.insurances&&S.insurances.length>0) ? 100 : 0;
+  // 30yr projections
+  const st30=projStocks(30); const sup30=projSuper(30); const pp30=projAllProps(30);
+  const projPts=st30.map((s,i)=>({x:i,y:s.total+sup30[i].b+pp30[i].equity}));
 
-    const checks = [
-      {lbl:'Emergency fund',   score:Math.min(100,emRatio/6*100),          note:emRatio.toFixed(1)+'mo covered (target 6mo)'},
-      {lbl:'Savings rate',     score:Math.min(100,savingsRate/30*100),       note:savingsRate.toFixed(1)+'% of income (target 30%+)'},
-      {lbl:'Super cap usage',  score:concPct,                                note:fmtK(annualConc)+' / '+fmtK(concCap)+' concessional'},
-      {lbl:'Debt-to-assets',   score:Math.max(0,100-dta),                   note:dta.toFixed(1)+'% debt ratio (lower = better)'},
-      {lbl:'DCA consistency',  score:dcaScore,                               note:fmt(dcaMo)+'/mo vs '+fmt(dcaTarget)+'/mo target'},
-      {lbl:'Diversification',  score:divCount/4*100,                         note:divCount+' of 4 asset classes funded'},
-      {lbl:'FIRE progress',    score:fireScore,                              note:fireNum>0?fmtK(nw)+' of '+fmtK(fireNum):'Set FIRE number in Goals'},
-      {lbl:'Insurance',        score:insScore,                               note:insScore?'Coverage logged':'No insurance logged'},
-    ];
-    const overall = Math.round(checks.reduce((a,c)=>a+c.score,0)/checks.length);
-    const grade   = overall>=85?'Excellent 🌟':overall>=70?'Strong 💪':overall>=55?'Good 👍':overall>=40?'Fair ⚡':'Needs work 🔧';
-    const gc      = overall>=85?'var(--gr)':overall>=70?'var(--bl)':overall>=55?'var(--am)':'var(--rd)';
-    if(badge) badge.textContent = '— '+grade;
-    let h = `<div class="prog-score-ring">
-      <div class="prog-score-num" style="color:${gc}">${overall}</div>
-      <div class="prog-score-info">
-        <div class="prog-score-grade" style="color:${gc}">${grade}</div>
-        <div class="prog-score-sub">${checks.length} metrics · updated live</div>
-      </div>
-    </div>`;
-    checks.forEach(c=>{
-      const col = c.score>=75?'#1D9E75':c.score>=50?'#EF9F27':'#E24B4A';
-      h += `<div class="prog-bar-row">
-        <div class="prog-bar-lbl">${c.lbl}</div>
-        <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:${c.score.toFixed(0)}%;background:${col}"></div></div>
-        <div class="prog-bar-pct" style="color:${col}">${Math.round(c.score)}</div>
-      </div>
-      <div class="prog-bar-note">${c.note}</div>`;
-    });
-    el.innerHTML = h;
-  })();
-
-  // ─── 2. GOAL PROGRESS DASHBOARD ──────────────────────────────────────────
-  (function(){
-    const el = document.getElementById('prog-goals'); if(!el) return;
-    const st30 = projStocks(30); const sup30 = projSuper(30); const pp30 = projAllProps(30);
-    let cards = '';
-
-    function goalCard(name, badge, badgeColor, current, target, targetDate, projAtDate, extraRows){
-      if(!target) return '';
-      const pct    = Math.min(100, current/target*100);
-      const gap    = target - current;
-      const projOK = projAtDate >= target;
-
-      // Required linear rate
-      let statusHtml = '';
-      if(targetDate){
-        const td = parseDMY(targetDate);
-        if(td){
-          const monthsLeft = Math.max(1,(td-now)/(30.44*24*3600*1000));
-          const requiredPerMonth = gap/monthsLeft;
-          // Monthly growth from history
-          const totalDays = hist.length>=2 ? Math.max(1,(hist[hist.length-1].ts-hist[0].ts)/(86400000)) : 365;
-          const totalGain = hist.length>=2 ? hist[hist.length-1].val - hist[0].val : 0;
-          const actualPerMonth = totalDays>0 ? totalGain/totalDays*30.44 : 0;
-          const aheadBehind = actualPerMonth - requiredPerMonth;
-          const monthsAheadBehind = requiredPerMonth>0 ? aheadBehind/requiredPerMonth*monthsLeft : 0;
-          const abColor = aheadBehind >= 0 ? 'var(--gr)' : 'var(--rd)';
-          const abText  = aheadBehind >= 0
-            ? `✓ Ahead by ~${Math.abs(Math.round(monthsAheadBehind))} months`
-            : `⚠ Behind by ~${Math.abs(Math.round(monthsAheadBehind))} months`;
-          statusHtml = `<span style="color:${abColor}">${abText}</span>
-            <span style="color:var(--di)">${fmt(Math.round(Math.abs(gap)))} ${gap>=0?'to go':'over'}</span>`;
-        }
-      }
-
-      const projColor = projOK ? 'var(--gr)' : 'var(--am)';
-      const progColor = pct>=75?'#1D9E75':pct>=40?'#EF9F27':'#E24B4A';
-
-      return `<div class="goal-prog-card">
-        <div class="goal-prog-top">
-          <div class="goal-prog-name">${name}</div>
-          <div class="goal-prog-badge" style="background:${badgeColor}22;color:${badgeColor}">${badge}</div>
-        </div>
-        <div class="goal-prog-vals">
-          <div class="goal-prog-val">
-            <div class="goal-prog-val-n" style="color:${progColor}">${fmtK(current)}</div>
-            <div class="goal-prog-val-l">Current</div>
-          </div>
-          <div class="goal-prog-val">
-            <div class="goal-prog-val-n">${fmtK(target)}</div>
-            <div class="goal-prog-val-l">Target${targetDate?' · '+targetDate:''}</div>
-          </div>
-          <div class="goal-prog-val">
-            <div class="goal-prog-val-n" style="color:${projColor}">${fmtK(projAtDate)}</div>
-            <div class="goal-prog-val-l">Projected at target date</div>
-          </div>
-          <div class="goal-prog-val">
-            <div class="goal-prog-val-n" style="color:${progColor}">${pct.toFixed(1)}%</div>
-            <div class="goal-prog-val-l">Complete</div>
-          </div>
-        </div>
-        <div class="goal-prog-bar"><div class="goal-prog-fill" style="width:${Math.min(100,pct).toFixed(1)}%;background:${progColor}"></div></div>
-        <div class="goal-prog-status">${statusHtml||'<span style="color:var(--di)">Set a target date for ahead/behind tracking</span>'}<span></span></div>
-        ${extraRows||''}
-      </div>`;
-    }
-
-    // Stocks goal
-    const gs = S.goals&&S.goals.stocks ? S.goals.stocks : {};
-    const currentStocks = st30[0].total;
-    if(gs.targetValue){
-      const yr = gs.targetDate ? Math.max(1,Math.min(30,Math.round(((parseDMY(gs.targetDate)||now)-now)/(365.25*24*3600*1000)))) : 10;
-      const projAtGS = (st30[Math.min(yr,30)]||st30[30]).total;
-      cards += goalCard('ETF Portfolio','STOCKS','var(--bl)',currentStocks,gs.targetValue,gs.targetDate,projAtGS);
-    }
-
-    // Super goal
-    const gsu = S.goals&&S.goals.super ? S.goals.super : {};
-    const currentSuper = S.sBalance||0;
-    if(gsu.targetAtRetirement){
-      const retYr = Math.max(1,Math.min(30,60-S.age));
-      const projAtRet = (sup30[Math.min(retYr,30)]||sup30[30]).b;
-      cards += goalCard('Superannuation','SUPER','var(--pu)',currentSuper,gsu.targetAtRetirement,'Age 60',projAtRet);
-    }
-
-    // FIRE / Net worth goal
-    const gn = S.goals&&S.goals.networth ? S.goals.networth : {};
-    if(gn.fireNumber){
-      const yr30tot = st30[30].total + sup30[30].b + pp30[30].equity;
-      cards += goalCard('FIRE Number','FIRE','var(--gr)',nw,gn.fireNumber,gn.debtFreeDate||'',yr30tot);
-    }
-
-    // Property equity goal
-    const gp = S.goals&&S.goals.property ? S.goals.property : {};
-    if(gp.targetEquity){
-      const currentEquity = pp30[0].equity;
-      const projEquity = (pp30[10]||pp30[0]).equity;
-      cards += goalCard('Property Equity','PROP','var(--am)',currentEquity,gp.targetEquity,gp.targetDate||'',projEquity);
-    }
-
-    el.innerHTML = cards || '<div style="font-size:10px;color:var(--mu);font-family:DM Mono;padding:8px 0">Set targets in the Goals tab to track progress here.</div>';
-  })();
-
-  // ─── 3. FIXED CHART: Actual vs Projected vs Required ─────────────────────
-  (function(){
-    const legendEl = document.getElementById('prog-chart-legend');
-    const divergEl = document.getElementById('prog-divergence');
-
-    // Projection: years 0..30, x = year index (0=now)
-    const st=projStocks(30); const sup=projSuper(30); const pp=projAllProps(30);
-    const projPts = st.map((s,i)=>({x:i, y:s.total+sup[i].b+pp[i].equity}));
-
-    // Actual history: convert each entry timestamp → fractional years from NOW
-    const actualPts = hist.map(e=>{
-      const d = parseDMY(e.date)||new Date();
-      const yrsFromNow = (d.getTime()-nowTs)/(365.25*24*3600*1000);
-      return {x: yrsFromNow, y: e.val};
-    });
-
-    // Required line: straight line from current NW → FIRE number at target year
-    const fireNum = (S.goals&&S.goals.networth&&S.goals.networth.fireNumber)||0;
-    let requiredPts = [];
-    if(fireNum > nw){
-      // Find projection year that hits FIRE
-      let fireYr = 30;
-      for(let y=0;y<=30;y++){ if(projPts[y].y>=fireNum){fireYr=y;break;} }
-      requiredPts = [{x:0,y:nw},{x:fireYr,y:fireNum}];
-    }
-
-    // Divergence alert
-    if(divergEl && hist.length >= 2){
-      const lastEntry = hist[hist.length-1];
-      const lastD = parseDMY(lastEntry.date)||new Date();
-      const yrsAgo = (nowTs - lastD.getTime())/(365.25*24*3600*1000);
-      // Find projected value at that point in time
-      const projIdx = Math.max(0,Math.min(30,Math.round(-yrsAgo)));
-      // If last entry is in the past vs projection at y=0
-      const projNow = projPts[0].y;
-      const diff = lastEntry.val - projNow;
-      const diffPct = projNow>0 ? (diff/projNow*100) : 0;
-      const isAhead = diff >= 0;
-      const absMo = Math.abs(diffPct);
-      divergEl.innerHTML = `<div class="diverg-alert" style="border-color:${isAhead?'rgba(29,158,117,0.3)':'rgba(239,159,39,0.3)'}">
-        <div class="diverg-icon">${isAhead?'✅':'⚠️'}</div>
-        <div class="diverg-body">
-          <div class="diverg-title" style="color:${isAhead?'var(--gr)':'var(--am)'}">${isAhead?'Ahead of projection':'Behind projection'}</div>
-          <div class="diverg-sub">Last logged: ${fmt(lastEntry.val)} · Projection baseline: ${fmtK(projNow)}<br>${isAhead?'+':('' )}${fmt(Math.abs(Math.round(diff)))} (${diffPct>=0?'+':''}${diffPct.toFixed(1)}%) ${isAhead?'above':'below'} expected trajectory</div>
-        </div>
-      </div>`;
-    } else if(divergEl) { divergEl.innerHTML=''; }
-
-    if(legendEl){
-      const items = [
-        {color:'#1D9E75', label:'Actual logged'},
-        {color:'#378ADD', label:'Projected'},
-      ];
-      if(requiredPts.length) items.push({color:'#EF9F27', label:'Required for FIRE', dash:true});
-      legendEl.innerHTML = items.map(i=>`<div class="prog-legend-item"><div style="width:18px;height:2px;background:${i.color};border-radius:1px;flex-shrink:0;${i.dash?'border-top:2px dashed '+i.color+';background:transparent':''}"></div>${i.label}</div>`).join('');
-    }
-
-    const datasets = [
-      {label:'Projected', data:projPts, borderColor:'#378ADD', backgroundColor:'rgba(55,138,221,0.06)', fill:true, tension:.4, borderWidth:1.5, borderDash:[5,4], pointRadius:0, pointHoverRadius:4},
-      {label:'Actual',    data:actualPts, borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,0.15)', showLine:true, tension:.2, borderWidth:2.5, pointRadius:5, pointHoverRadius:7, pointBackgroundColor:'#1D9E75'},
-    ];
-    if(requiredPts.length) datasets.push({label:'Required', data:requiredPts, borderColor:'#EF9F27', backgroundColor:'transparent', showLine:true, tension:0, borderWidth:1.5, borderDash:[4,3], pointRadius:0});
-
-    mkChart('histChart',{
-      type:'line',
-      data:{datasets},
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtK(c.parsed.y)}`}}},
-        scales:{
-          x:{type:'linear', min:-2, max:30,
-             ticks:{callback:v=>v===0?'Now':(v>0?'+'+Math.round(v)+'yr':''),font:{size:9},color:'#7a7a8c',maxTicksLimit:8},
-             grid:{display:false}, border:{display:false}},
-          y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},
-             grid:{color:'rgba(255,255,255,0.04)'}, border:{display:false}}
-        }
-      }
-    });
-  })();
-
-  // ─── 4. YEAR-ON-YEAR COMPARISON ──────────────────────────────────────────
-  (function(){
-    const el = document.getElementById('prog-yoy'); if(!el) return;
-    if(hist.length < 2){ el.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono">Need at least 2 logged entries for year-on-year comparison.</div>'; return; }
-
-    // Group entries by calendar year, take last entry per year
-    const byYear = {};
-    hist.forEach(e=>{
+  // 1. TRAJECTORY CHART
+  (()=>{
+    const legendEl=document.getElementById('prog-chart-legend');
+    const divergEl=document.getElementById('prog-divergence');
+    const actualPts=hist.map(e=>{
       const d=parseDMY(e.date)||new Date();
-      const yr=d.getFullYear();
-      if(!byYear[yr]||e.ts>byYear[yr].ts) byYear[yr]={val:e.val,ts:e.ts};
+      return {x:(d.getTime()-nowTs)/(365.25*24*3600*1000),y:e.val};
     });
-    const yrs = Object.keys(byYear).map(Number).sort();
-    if(yrs.length<2){el.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono">Need entries across at least 2 different years.</div>';return;}
-
-    const rows = [];
-    const barData = [];
-    for(let i=1;i<yrs.length;i++){
-      const yr=yrs[i]; const prevYr=yrs[i-1];
-      const gain=byYear[yr].val-byYear[prevYr].val;
-      const pct=byYear[prevYr].val>0?gain/byYear[prevYr].val*100:0;
-      rows.push({yr,gain,pct,val:byYear[yr].val});
-      barData.push({yr,gain,pct});
+    const fireNum=(S.goals&&S.goals.networth&&S.goals.networth.fireNumber)||0;
+    let requiredPts=[];
+    if(fireNum>nw){
+      let fireYr=30;
+      for(let y=0;y<=30;y++){if(projPts[y].y>=fireNum){fireYr=y;break;}}
+      requiredPts=[{x:0,y:nw},{x:fireYr,y:fireNum}];
     }
-    // Also add current year vs last logged
-    const lastYr = yrs[yrs.length-1];
-    if(lastYr < now.getFullYear()){
+    if(divergEl&&hist.length>=1){
+      const last=hist[hist.length-1];
+      const diff=last.val-nw;
+      const diffPct=nw>0?diff/nw*100:0;
+      const ahead=diff>=0;
+      divergEl.innerHTML=`<div class="diverg-alert" style="border-color:${ahead?'rgba(29,158,117,0.3)':'rgba(239,159,39,0.3)'}">
+        <div class="diverg-icon">${ahead?'✅':'⚠️'}</div>
+        <div class="diverg-body">
+          <div class="diverg-title" style="color:${ahead?'var(--gr)':'var(--am)'}">${ahead?'Tracking ahead':'Check trajectory'}</div>
+          <div class="diverg-sub">Last snapshot ${fmt(last.val)} · Live baseline ${fmtK(nw)}<br>
+          ${diff>=0?'+':'-'}${fmt(Math.abs(Math.round(diff)))} (${diffPct>=0?'+':''}${diffPct.toFixed(1)}%) vs projection</div>
+        </div>
+      </div>`;
+    } else if(divergEl){divergEl.innerHTML='';}
+    if(legendEl){
+      const items=[{color:'#1D9E75',label:'Actual'},{color:'#378ADD',label:'Projected',dash:true},...(requiredPts.length?[{color:'#EF9F27',label:'FIRE required',dash:true}]:[])];
+      legendEl.innerHTML=items.map(i=>`<div class="prog-legend-item"><div style="width:20px;height:2px;${i.dash?`border-top:2px dashed ${i.color};background:transparent`:`background:${i.color}`};border-radius:1px;flex-shrink:0"></div>${i.label}</div>`).join('');
+    }
+    const datasets=[
+      {label:'Projected',data:projPts,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.06)',fill:true,tension:.4,borderWidth:1.5,borderDash:[5,4],pointRadius:0,pointHoverRadius:4},
+      {label:'Actual',data:actualPts,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.12)',showLine:true,tension:.2,borderWidth:2.5,pointRadius:5,pointHoverRadius:7,pointBackgroundColor:'#1D9E75',fill:false},
+    ];
+    if(requiredPts.length)datasets.push({label:'FIRE required',data:requiredPts,borderColor:'#EF9F27',backgroundColor:'transparent',showLine:true,tension:0,borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false});
+    mkChart('histChart',{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtK(c.parsed.y)}`}}},
+      scales:{x:{type:'linear',min:-3,max:30,ticks:{callback:v=>v===0?'Now':(v>0?'+'+Math.round(v)+'yr':''),font:{size:9},color:'#7a7a8c',maxTicksLimit:8},grid:{display:false},border:{display:false}},
+              y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}}}});
+  })();
+
+  // 2. WEALTH PACE
+  (()=>{
+    const el=document.getElementById('prog-pace'); if(!el) return;
+    const fireNum=(S.goals&&S.goals.networth&&S.goals.networth.fireNumber)||0;
+    let fireYr=-1;
+    for(let y=0;y<=30;y++){if(projPts[y].y>=fireNum&&fireNum>0){fireYr=y;break;}}
+    const fireAge=fireYr>=0?S.age+fireYr:null;
+    const hasHistory=hist.length>=2;
+    const totalDays=hasHistory?Math.max(1,(hist[hist.length-1].ts-hist[0].ts)/86400000):365;
+    const totalGain=hasHistory?hist[hist.length-1].val-hist[0].val:0;
+    const avgPerDay=hasHistory&&totalDays>0?totalGain/totalDays:0;
+    const avgPerMonth=avgPerDay*30.44;
+    const avgPerYear=avgPerDay*365.25;
+    const requiredPerYear=fireNum>0&&fireYr>0?Math.max(0,(fireNum-nw)/fireYr):null;
+    const paceRatio=requiredPerYear&&requiredPerYear>0&&hasHistory?avgPerYear/requiredPerYear:null;
+    let paceHtml='';
+    if(paceRatio!==null){
+      const ahead=paceRatio>=1;
+      const pctOff=((paceRatio-1)*100).toFixed(0);
+      const paceColor=ahead?'var(--gr)':paceRatio>=0.8?'var(--am)':'var(--rd)';
+      paceHtml=`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--sf2);border-radius:var(--rs);border:0.5px solid var(--bd);margin-bottom:10px">
+        <div style="font-size:32px;font-weight:700;font-family:'DM Mono',monospace;color:${paceColor};letter-spacing:-1px">${paceRatio.toFixed(2)}×</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:${paceColor}">${ahead?'Ahead of pace':'Behind pace'}</div>
+          <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px">Growing at ${ahead?'+':''}${pctOff}% of required rate<br>Need ${fmtK(Math.round(requiredPerYear))}/yr · tracking ${fmtK(Math.round(avgPerYear))}/yr</div>
+        </div>
+      </div>`;
+    }
+    const rows=[
+      {l:'Current net worth',v:fmtK(nw),c:'var(--gr)'},
+      ...(fireNum?[{l:'FIRE number',v:fmt(fireNum),c:'var(--bl)'}]:[]),
+      ...(fireNum?[{l:'Gap to FIRE',v:fmtK(Math.max(0,fireNum-nw)),c:nw>=fireNum?'var(--gr)':'var(--am)'}]:[]),
+      ...(fireAge!==null?[{l:'Projected FIRE age',v:'Age '+fireAge+' (+'+fireYr+'yrs)',c:'var(--pu)'}]:[]),
+      ...(hasHistory?[{l:'Avg growth/month',v:fmtK(Math.round(avgPerMonth))+'/mo',c:'var(--gr)'}]:[]),
+      ...(hasHistory?[{l:'Avg growth/year',v:fmtK(Math.round(avgPerYear))+'/yr',c:'var(--gr)'}]:[]),
+      {l:'Projected age '+(S.age+10),v:fmtK(projPts[10].y),c:'var(--bl)'},
+      {l:'Projected age '+(S.age+20),v:fmtK(projPts[20].y),c:'var(--bl)'},
+      {l:'Projected age '+(S.age+30),v:fmtK(projPts[30].y),c:'var(--bl)'},
+    ];
+    el.innerHTML=paceHtml+rows.map(r=>`<div class="ir"><span class="ir-l">${r.l}</span><span class="ir-v" style="color:${r.c}">${r.v}</span></div>`).join('')
+      +(!fireNum?`<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px">Set your FIRE number in Goals → Net worth to unlock pace tracking.</div>`:'');
+  })();
+
+  // 3. YEAR-ON-YEAR
+  (()=>{
+    const el=document.getElementById('prog-yoy'); if(!el) return;
+    if(hist.length<2){el.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono">Need at least 2 logged entries.</div>';return;}
+    const byYear={};
+    hist.forEach(e=>{const d=parseDMY(e.date)||new Date();const yr=d.getFullYear();if(!byYear[yr]||e.ts>byYear[yr].ts)byYear[yr]={val:e.val};});
+    const yrs=Object.keys(byYear).map(Number).sort();
+    if(yrs.length<2){el.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono">Need entries across 2+ years.</div>';return;}
+    const rows=[];
+    for(let i=1;i<yrs.length;i++){
+      const gain=byYear[yrs[i]].val-byYear[yrs[i-1]].val;
+      const pct=byYear[yrs[i-1]].val>0?gain/byYear[yrs[i-1]].val*100:0;
+      rows.push({yr:yrs[i],gain,pct,isCurrent:false});
+    }
+    const lastYr=yrs[yrs.length-1];
+    if(lastYr<now.getFullYear()){
       const gain=nw-byYear[lastYr].val;
       const pct=byYear[lastYr].val>0?gain/byYear[lastYr].val*100:0;
-      rows.push({yr:now.getFullYear(),gain,pct,val:nw,isCurrent:true});
-      barData.push({yr:now.getFullYear(),gain,pct});
+      rows.push({yr:now.getFullYear(),gain,pct,isCurrent:true});
     }
-
-    const maxGain = Math.max(...barData.map(r=>Math.abs(r.gain)),1);
-    let h='';
-    rows.forEach(r=>{
-      const barPct=Math.min(100,Math.abs(r.gain)/maxGain*100);
+    const maxG=Math.max(...rows.map(r=>Math.abs(r.gain)),1);
+    el.innerHTML=rows.map(r=>{
       const col=r.gain>=0?'#1D9E75':'#E24B4A';
-      h+=`<div class="yoy-row">
+      return `<div class="yoy-row">
         <div class="yoy-yr">${r.yr}${r.isCurrent?'*':''}</div>
-        <div class="yoy-bar-wrap"><div class="yoy-bar" style="width:${barPct.toFixed(0)}%;background:${col}"></div></div>
+        <div class="yoy-bar-wrap"><div class="yoy-bar" style="width:${(Math.abs(r.gain)/maxG*100).toFixed(0)}%;background:${col}"></div></div>
         <div class="yoy-val" style="color:${col}">${r.gain>=0?'+':''}${fmtK(r.gain)}</div>
         <div class="yoy-pct" style="color:${col}">${r.pct>=0?'+':''}${r.pct.toFixed(1)}%</div>
       </div>`;
-    });
-    if(rows.some(r=>r.isCurrent)) h+='<div style="font-size:8px;color:var(--di);font-family:DM Mono;margin-top:5px">* Current year uses live net worth vs last logged entry</div>';
-    el.innerHTML=h;
-
-    // Mini bar chart
-    mkChart('yoyChart',{
-      type:'bar',
-      data:{labels:barData.map(r=>String(r.yr)),datasets:[{
-        data:barData.map(r=>r.gain),
-        backgroundColor:barData.map(r=>r.gain>=0?'rgba(29,158,117,0.7)':'rgba(226,75,74,0.7)'),
-        borderRadius:4
-      }]},
+    }).join('')+(rows.some(r=>r.isCurrent)?'<div style="font-size:8px;color:var(--di);font-family:DM Mono;margin-top:5px">* Current year: live NW vs last log</div>':'');
+    mkChart('yoyChart',{type:'bar',
+      data:{labels:rows.map(r=>String(r.yr)),datasets:[{data:rows.map(r=>r.gain),backgroundColor:rows.map(r=>r.gain>=0?'rgba(29,158,117,0.7)':'rgba(226,75,74,0.7)'),borderRadius:4}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y>=0?'+':''}${fmtK(c.parsed.y)}`}}},
         scales:{x:{ticks:{font:{size:9},color:'#7a7a8c'},grid:{display:false},border:{display:false}},
-                y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}}}
-    });
+                y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}}}});
   })();
 
-  // ─── 5. GROWTH VELOCITY ──────────────────────────────────────────────────
-  const velEl = document.getElementById('vel-stats');
+  // 4. GROWTH VELOCITY
+  const velEl=document.getElementById('vel-stats');
   if(velEl){
-    if(hist.length<2){velEl.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:4px 0">Need at least 2 entries to calculate velocity.</div>';}
+    if(hist.length<2){velEl.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:4px 0">Need at least 2 entries.</div>';}
     else{
       const MSTONES=[50000,100000,200000,250000,300000,400000,500000,750000,1000000,1500000,2000000,5000000];
       const deltas=[];
@@ -2333,156 +2153,139 @@ function renderHistory(){
       const worst=deltas.reduce((a,b)=>b.rate<a.rate?b:a);
       const nextMs=MSTONES.find(m=>m>nw)||null;
       const daysToNext=nextMs&&avgPerDay>0?Math.round((nextMs-nw)/avgPerDay):null;
-      const streak=hist.length;
-
       velEl.innerHTML=`<div class="vel-grid">
         <div class="vel-card"><div class="vel-num">${fmtK(Math.round(avgPerMonth))}/mo</div><div class="vel-lbl">Avg monthly growth<br>over ${Math.round(totalDays/30)} months</div></div>
         <div class="vel-card"><div class="vel-num">${fmtK(Math.round(totalGain))}</div><div class="vel-lbl">Total gain logged<br>${hist[0].date} → now</div></div>
         <div class="vel-card"><div class="vel-num" style="font-size:12px">${fmtK(Math.round(best.gain))} / ${Math.round(best.days)}d</div><div class="vel-lbl">Best period<br>${best.fromDate} → ${best.toDate}</div></div>
-        ${worst.gain<0?`<div class="vel-card"><div class="vel-num rd" style="font-size:12px">${fmtK(Math.round(worst.gain))} / ${Math.round(worst.days)}d</div><div class="vel-lbl">Toughest period<br>${worst.fromDate} → ${worst.toDate}</div></div>`:''}
-        <div class="vel-card"><div class="vel-num">${streak}</div><div class="vel-lbl">Snapshots logged<br>first: ${hist[0].date}</div></div>
-        ${daysToNext?`<div class="vel-card"><div class="vel-num" style="font-size:13px">~${daysToNext}d</div><div class="vel-lbl">Est. to ${fmtK(nextMs)}<br>at current pace</div></div>`:'<div class="vel-card"><div class="vel-num">🎯</div><div class="vel-lbl">All milestones reached!</div></div>'}
+        ${worst.gain<0?`<div class="vel-card"><div class="vel-num" style="color:var(--rd);font-size:12px">${fmtK(Math.round(worst.gain))} / ${Math.round(worst.days)}d</div><div class="vel-lbl">Toughest period<br>${worst.fromDate} → ${worst.toDate}</div></div>`:''}
+        <div class="vel-card"><div class="vel-num">${hist.length}</div><div class="vel-lbl">Snapshots logged</div></div>
+        ${daysToNext?`<div class="vel-card"><div class="vel-num" style="font-size:13px">~${daysToNext}d</div><div class="vel-lbl">Est. to ${fmtK(nextMs)}<br>at current pace</div></div>`:'<div class="vel-card"><div class="vel-num">🎯</div><div class="vel-lbl">All milestones hit!</div></div>'}
       </div>`;
     }
   }
 
-  // ─── 6. ASSET ALLOCATION DRIFT ───────────────────────────────────────────
-  (function(){
-    const el = document.getElementById('prog-alloc'); if(!el) return;
-    const total = nw || 1;
-    const st0=projStocks(0)[0]; const sup0=projSuper(0)[0]; const pp0=projAllProps(0)[0];
-    const etfV=S.stocksEnabled?st0.total:0;
-    const superV=sup0.b||S.sBalance||0;
-    const propV=S.propertiesEnabled?pp0.equity:0;
-    const cashV=(S.cashSavings||0)+(S.emergency||0);
-    const classes=[
-      {lbl:'ETFs',     val:etfV,  color:'#378ADD', target:S.rebalTargets&&Object.keys(S.rebalTargets).length?null:60},
-      {lbl:'Super',    val:superV,color:'#7f77dd', target:null},
-      {lbl:'Property', val:propV, color:'#1D9E75', target:null},
-      {lbl:'Cash',     val:cashV, color:'#EF9F27', target:null},
-    ].filter(c=>c.val>0||c.target!=null);
-
-    const grandTotal = etfV+superV+propV+cashV||1;
-    let h='';
-    classes.forEach(c=>{
-      const actualPct=c.val/grandTotal*100;
-      const drift=c.target!=null?actualPct-c.target:null;
-      const driftColor=drift==null?'var(--mu)':Math.abs(drift)<5?'var(--gr)':Math.abs(drift)<10?'var(--am)':'var(--rd)';
-      h+=`<div class="alloc-row">
-        <div class="alloc-lbl">${c.lbl}</div>
-        <div class="alloc-bars">
-          <div style="height:5px;background:var(--sf3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${actualPct.toFixed(1)}%;background:${c.color};border-radius:3px;transition:width .6s ease"></div>
-          </div>
-          ${c.target!=null?`<div style="height:2px;background:var(--sf3);border-radius:1px;overflow:hidden"><div style="height:100%;width:${c.target}%;background:${c.color};opacity:0.3;border-radius:1px"></div></div>`:''}
-        </div>
-        <div class="alloc-pcts" style="color:${c.color}">${actualPct.toFixed(1)}%${c.target!=null?`<br><span style="font-size:7px;color:var(--di)">${c.target}% tgt</span>`:''}</div>
-        ${drift!=null?`<div class="alloc-drift" style="color:${driftColor}">${drift>=0?'+':''}${drift.toFixed(1)}%</div>`:'<div class="alloc-drift"></div>'}
-      </div>
-      <div style="font-size:8px;color:var(--di);font-family:DM Mono;padding:1px 0 3px 80px">${fmtK(c.val)} · ${(c.val/total*100).toFixed(1)}% of net worth</div>`;
+  // 5. COMPOUND GROWTH EXPLORER
+  (()=>{
+    const el=document.getElementById('prog-compound'); if(!el) return;
+    const baseReturn=7.5;
+    const baseMonthly=totalMonthly()+(S.sExtra||0)*26/12;
+    const scenarios=[
+      {lbl:'Current plan',     ret:baseReturn,   extra:0,           col:'#378ADD'},
+      {lbl:'+1% return',       ret:baseReturn+1, extra:0,           col:'#1D9E75'},
+      {lbl:'-1% return',       ret:baseReturn-1, extra:0,           col:'#EF9F27'},
+      {lbl:'2× contributions', ret:baseReturn,   extra:baseMonthly, col:'#7f77dd'},
+    ];
+    const YRS=20;
+    const compData=scenarios.map(sc=>{
+      const r=sc.ret/100/12; const mo=baseMonthly+sc.extra; let v=nw;
+      const pts=[{x:0,y:v}];
+      for(let y=1;y<=YRS;y++){for(let m=0;m<12;m++)v+=v*r+mo;pts.push({x:y,y:Math.round(v)});}
+      return {...sc,pts};
     });
-    if(!classes.length) h='<div style="font-size:10px;color:var(--mu);font-family:DM Mono">Add holdings, super balance, or property to see allocation.</div>';
-    else h += '<div style="font-size:8px;color:var(--di);font-family:DM Mono;margin-top:6px;line-height:1.5">Drift vs target (coloured bar = actual, faint = target). Set ETF targets in Stocks → Rebalance.</div>';
-    el.innerHTML=h;
+    const checkYears=[5,10,15,20];
+    el.innerHTML=`<div style="overflow-x:auto"><table class="tbl" style="font-size:9px">
+      <tr><th>Scenario</th>${checkYears.map(y=>`<th>+${y}yr</th>`).join('')}</tr>
+      ${compData.map(sc=>`<tr><td style="color:${sc.col};font-weight:700">${sc.lbl}</td>${checkYears.map(y=>`<td>${fmtK(sc.pts[y].y)}</td>`).join('')}</tr>`).join('')}
+    </table></div>
+    <div style="font-size:8px;color:var(--di);font-family:'DM Mono',monospace;margin-top:6px;line-height:1.5">From ${fmtK(nw)} · 7.5% base return · ${fmtK(Math.round(baseMonthly))}/mo contributions</div>`;
+    mkChart('compoundChart',{type:'line',
+      data:{datasets:compData.map(sc=>({label:sc.lbl,data:sc.pts,borderColor:sc.col,backgroundColor:'transparent',tension:.4,borderWidth:1.8,pointRadius:0,pointHoverRadius:4}))},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#7a7a8c',font:{size:9},boxWidth:12,padding:8}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtK(c.parsed.y)}`}}},
+        scales:{x:{type:'linear',ticks:{callback:v=>v===0?'Now':'+'+v+'yr',font:{size:9},color:'#7a7a8c',maxTicksLimit:6},grid:{display:false},border:{display:false}},
+                y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}}}});
   })();
 
-  // ─── 7. MILESTONE RIBBON ─────────────────────────────────────────────────
+  // 6. MILESTONE RIBBON
   const MSTONES=[50000,100000,200000,250000,300000,400000,500000,750000,1000000,1500000,2000000,5000000];
-  const labels=['$50k','$100k','$200k','$250k','$300k','$400k','$500k','$750k','$1M','$1.5M','$2M','$5M'];
+  const msLabels=['$50k','$100k','$200k','$250k','$300k','$400k','$500k','$750k','$1M','$1.5M','$2M','$5M'];
   const crossDates={};
   for(let i=1;i<hist.length;i++){
-    const prev=hist[i-1].val, curr=hist[i].val;
-    MSTONES.forEach(m=>{if(prev<m&&curr>=m)crossDates[m]=hist[i].date;});
+    const pv=hist[i-1].val,cv=hist[i].val;
+    MSTONES.forEach(m=>{if(pv<m&&cv>=m)crossDates[m]=hist[i].date;});
   }
-  if(hist.length){MSTONES.forEach(m=>{if(hist[0].val>=m&&!crossDates[m])crossDates[m]=hist[0].date;});}
+  if(hist.length)MSTONES.forEach(m=>{if(hist[0].val>=m&&!crossDates[m])crossDates[m]=hist[0].date;});
   const relevantMs=MSTONES.filter(m=>m<=Math.max(nw*1.5,500000));
-  const wrap=document.getElementById('ms-ribbon-wrap');
-  if(wrap){
-    if(!relevantMs.length){wrap.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:4px 0">Log entries to see milestone ribbon</div>';}
+  const ribbonEl=document.getElementById('ms-ribbon-wrap');
+  if(ribbonEl){
+    if(!relevantMs.length){ribbonEl.innerHTML='<div style="font-size:10px;color:var(--di);font-family:DM Mono;padding:4px 0">Log entries to see milestone ribbon</div>';}
     else{
       let rb='<div class="ms-ribbon">';
       relevantMs.forEach((m,i)=>{
-        const done=nw>=m;
-        const lbl=labels[MSTONES.indexOf(m)];
-        rb+='<div class="ms-node">';
-        rb+='<div style="display:flex;align-items:center;width:100%">';
-        rb+='<div class="ms-node-dot '+(done?'done':'next')+'" style="'+(done?'':'opacity:0.3')+'"></div>';
-        if(i<relevantMs.length-1)rb+='<div class="ms-node-line '+(done?'done':'')+'" style="flex:1"></div>';
-        rb+='</div>';
-        rb+='<div class="ms-node-lbl" style="color:'+(done?'var(--gr)':'var(--di)')+'">'+lbl+'</div>';
-        rb+='<div class="ms-node-date">'+(crossDates[m]?crossDates[m]:(done?'✓':'—'))+'</div>';
-        rb+='</div>';
+        const done=nw>=m; const lbl=msLabels[MSTONES.indexOf(m)];
+        rb+=`<div class="ms-node">
+          <div style="display:flex;align-items:center;width:100%">
+            <div class="ms-node-dot ${done?'done':'next'}" style="${done?'':'opacity:0.3'}"></div>
+            ${i<relevantMs.length-1?`<div class="ms-node-line ${done?'done':''}" style="flex:1"></div>`:''}
+          </div>
+          <div class="ms-node-lbl" style="color:${done?'var(--gr)':'var(--di)'}">${lbl}</div>
+          <div class="ms-node-date">${crossDates[m]?crossDates[m]:done?'✓':'—'}</div>
+        </div>`;
       });
-      rb+='</div>';
-      wrap.innerHTML=rb;
+      ribbonEl.innerHTML=rb+'</div>';
     }
   }
 
-  // ─── 8. SNAPSHOT HEATMAP ─────────────────────────────────────────────────
-  (function(){
+  // 7. SNAPSHOT HEATMAP
+  (()=>{
     const el=document.getElementById('prog-heatmap'); if(!el) return;
-    // Show last 24 months
     const MONTHS=24;
-    const monthCells=[];
+    const cells=[];
     for(let i=MONTHS-1;i>=0;i--){
       const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-      monthCells.push({yr:d.getFullYear(),mo:d.getMonth(),key:`${d.getFullYear()}-${d.getMonth()}`});
+      cells.push({yr:d.getFullYear(),mo:d.getMonth(),key:`${d.getFullYear()}-${d.getMonth()}`});
     }
     const logsByMonth={};
     hist.forEach(e=>{
       const d=parseDMY(e.date)||new Date();
-      const key=`${d.getFullYear()}-${d.getMonth()}`;
-      if(!logsByMonth[key])logsByMonth[key]=[];
-      logsByMonth[key].push(e.val);
+      const k=`${d.getFullYear()}-${d.getMonth()}`;
+      if(!logsByMonth[k])logsByMonth[k]=[];
+      logsByMonth[k].push(e.val);
     });
-    const monthNames=['J','F','M','A','M','J','J','A','S','O','N','D'];
-    let h=`<div style="font-size:9px;color:var(--di);font-family:DM Mono;margin-bottom:4px">Last 24 months — each cell = one calendar month</div>`;
-    h+=`<div class="heat-grid">`;
-    monthCells.forEach(c=>{
+    const mnms=['J','F','M','A','M','J','J','A','S','O','N','D'];
+    let h='<div class="heat-grid">';
+    cells.forEach(c=>{
       const logs=logsByMonth[c.key]||[];
       const isCurrent=c.yr===now.getFullYear()&&c.mo===now.getMonth();
-      const col=logs.length>=3?'var(--gr)':logs.length>=2?'rgba(29,158,117,0.6)':logs.length>=1?'rgba(29,158,117,0.3)':isCurrent?'rgba(55,138,221,0.2)':'var(--sf2)';
-      const border=isCurrent?'border:0.5px solid var(--bl)':'border:0.5px solid var(--bd2)';
-      h+=`<div class="heat-cell" style="background:${col};${border}" title="${monthNames[c.mo]} ${c.yr}${logs.length?' · '+logs.length+' log'+( logs.length>1?'s':''):''}"></div>`;
+      const col=logs.length>=3?'var(--gr)':logs.length===2?'rgba(29,158,117,0.55)':logs.length===1?'rgba(29,158,117,0.28)':isCurrent?'rgba(55,138,221,0.18)':'var(--sf2)';
+      h+=`<div class="heat-cell" style="background:${col};border:0.5px solid ${isCurrent?'var(--bl)':'var(--bd2)'}"></div>`;
     });
-    h+=`</div>`;
-    h+=`<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">`;
-    [{col:'var(--sf2)',lbl:'No log'},{col:'rgba(29,158,117,0.3)',lbl:'1 log'},{col:'rgba(29,158,117,0.6)',lbl:'2 logs'},{col:'var(--gr)',lbl:'3+ logs'}].forEach(item=>{
+    h+='</div><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:2px">';
+    for(let i=0;i<MONTHS;i+=2){const c=cells[i];h+=`<div class="heat-month-lbl">${mnms[c.mo]}<span style="font-size:6px"> ${String(c.yr).slice(2)}</span></div>`;}
+    h+='</div><div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">';
+    [{col:'var(--sf2)',lbl:'None'},{col:'rgba(29,158,117,0.28)',lbl:'1'},{col:'rgba(29,158,117,0.55)',lbl:'2'},{col:'var(--gr)',lbl:'3+'}].forEach(item=>{
       h+=`<div style="display:flex;align-items:center;gap:4px;font-size:8px;font-family:DM Mono;color:var(--mu)"><div style="width:10px;height:10px;border-radius:2px;background:${item.col};border:0.5px solid var(--bd2)"></div>${item.lbl}</div>`;
     });
-    h+=`</div>`;
+    h+='</div>';
     el.innerHTML=h;
   })();
 
-  // ─── 9. PROGRESS JOURNAL ────────────────────────────────────────────────
+  // 8. PROGRESS JOURNAL
   const entries=document.getElementById('nw-entries');
-  if(!entries) return;
-  if(!hist.length){entries.innerHTML='<div style="text-align:center;color:var(--mu);font-size:11px;padding:14px;font-family:DM Mono">No entries yet — tap Log below to record your first snapshot</div>';return;}
+  if(!entries)return;
+  if(!hist.length){entries.innerHTML='<div style="text-align:center;color:var(--mu);font-size:11px;padding:14px;font-family:DM Mono">No entries yet — tap Log below</div>';return;}
   const sorted=[...hist].reverse();
   entries.innerHTML=sorted.map((e,i)=>{
     const prev=sorted[i+1];
     const gain=prev?e.val-prev.val:null;
     const days=prev?Math.round((e.ts-prev.ts)/86400000):null;
-    const pct=prev&&prev.val>0?(gain/prev.val*100):null;
-    const deltaHtml=gain!=null
+    const pct=prev&&prev.val>0?gain/prev.val*100:null;
+    const delta=gain!=null
       ?`<span class="plog-delta ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${fmtK(gain)} (${pct>=0?'+':''}${pct.toFixed(1)}%) in ${days}d</span>`
       :'<span style="font-size:9px;color:var(--di);font-family:DM Mono">First entry</span>';
-    const snap=e.snap||null;
-    let mixHtml='';
+    const snap=e.snap||null; let mix='';
     if(snap){
       const t=snap.etf+snap.super+snap.prop+snap.cash||1;
-      mixHtml='<div class="plog-mix">'+[{v:snap.etf,c:'var(--bl)'},{v:snap.super,c:'var(--pu)'},{v:snap.prop,c:'var(--gr)'},{v:snap.cash,c:'var(--am)'}].map(s=>`<div class="plog-mix-seg" style="width:${(s.v/t*100).toFixed(1)}%;background:${s.c}"></div>`).join('')+'</div>';
-      mixHtml+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:3px">'+[{l:'ETFs',v:snap.etf,c:'var(--bl)'},{l:'Super',v:snap.super,c:'var(--pu)'},{l:'Property',v:snap.prop,c:'var(--gr)'},{l:'Cash',v:snap.cash,c:'var(--am)'}].filter(s=>s.v>0).map(s=>`<span style="font-size:8px;font-family:DM Mono;color:${s.c}">${s.l} ${fmtK(s.v)}</span>`).join('')+'</div>';
+      mix='<div class="plog-mix">'+[{v:snap.etf,c:'var(--bl)'},{v:snap.super,c:'var(--pu)'},{v:snap.prop,c:'var(--gr)'},{v:snap.cash,c:'var(--am)'}].map(s=>`<div class="plog-mix-seg" style="width:${(s.v/t*100).toFixed(1)}%;background:${s.c}"></div>`).join('')+'</div>';
+      mix+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:3px">'+[{l:'ETFs',v:snap.etf,c:'var(--bl)'},{l:'Super',v:snap.super,c:'var(--pu)'},{l:'Prop',v:snap.prop,c:'var(--gr)'},{l:'Cash',v:snap.cash,c:'var(--am)'}].filter(s=>s.v>0).map(s=>`<span style="font-size:8px;font-family:DM Mono;color:${s.c}">${s.l} ${fmtK(s.v)}</span>`).join('')+'</div>';
     }
-    const noteHtml=e.note
-      ?`<div class="plog-note" onclick="editNote(${e.ts})">📝 ${e.note}</div>`
-      :`<div style="font-size:9px;color:var(--di);font-family:DM Mono;cursor:pointer;margin-top:2px" onclick="editNote(${e.ts})">+ add note</div>`;
+    const note=e.note?`<div class="plog-note" onclick="editNote(${e.ts})">📝 ${e.note}</div>`:`<div style="font-size:9px;color:var(--di);font-family:DM Mono;cursor:pointer;margin-top:2px" onclick="editNote(${e.ts})">+ add note</div>`;
     return `<div class="plog-row" id="plog-${e.ts}">
       <div class="plog-top">
-        <div><div class="plog-date">${e.date}</div><div style="margin-top:3px">${deltaHtml}</div></div>
+        <div><div class="plog-date">${e.date}</div><div style="margin-top:3px">${delta}</div></div>
         <div style="display:flex;align-items:center;gap:8px"><div class="plog-val">${fmtK(e.val)}</div><span class="log-del" onclick="delNW(${e.ts})">✕</span></div>
       </div>
-      ${mixHtml}${noteHtml}
+      ${mix}${note}
       <div id="note-edit-${e.ts}" style="display:none"><input class="plog-note-inp" id="note-inp-${e.ts}" placeholder="Add a note…" value="${e.note||''}"><div style="display:flex;gap:8px;margin-top:5px"><span style="font-size:10px;color:var(--gr);cursor:pointer;font-family:DM Mono" onclick="saveNote(${e.ts})">Save</span><span style="font-size:10px;color:var(--mu);cursor:pointer;font-family:DM Mono" onclick="cancelNote(${e.ts})">Cancel</span></div></div>
     </div>`;
   }).join('');
