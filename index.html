@@ -2265,7 +2265,7 @@ function renderHistory(){
   // Initial render
   renderAssetProj('all');
 
-  // Pace badge — compute and inject into divergence block as a compact header row
+  // Pace badge — compact pill injected below chart legend
   (()=>{
     const fireNum=(S.goals&&S.goals.networth&&S.goals.networth.fireNumber)||0;
     let fireYr=-1;
@@ -2276,10 +2276,10 @@ function renderHistory(){
     const avgPerYear=hasHistory&&totalDays>0?totalGain/totalDays*365.25:0;
     const reqPerYear=fireNum>0&&fireYr>0?Math.max(0,(fireNum-nw)/fireYr):null;
     const paceRatio=reqPerYear&&reqPerYear>0&&hasHistory?avgPerYear/reqPerYear:null;
-    if(paceRatio!==null&&legendEl){
+    const legendDiv=document.getElementById('prog-chart-legend');
+    if(paceRatio!==null&&legendDiv){
       const col=paceRatio>=1?'var(--gr)':paceRatio>=0.8?'var(--am)':'var(--rd)';
-      const badge=`<div class="pace-badge" style="border-color:${col}22"><div class="pace-badge-num" style="color:${col}">${paceRatio.toFixed(2)}×</div><div class="pace-badge-lbl">${paceRatio>=1?'ahead':'behind'} FIRE pace</div></div>`;
-      legendEl.insertAdjacentHTML('afterend',badge);
+      legendDiv.insertAdjacentHTML('afterend',`<div class="pace-badge" style="border-color:${col}22"><div class="pace-badge-num" style="color:${col}">${paceRatio.toFixed(2)}×</div><div class="pace-badge-lbl">${paceRatio>=1?'ahead':'behind'} FIRE pace</div></div>`);
     }
   })();
 
