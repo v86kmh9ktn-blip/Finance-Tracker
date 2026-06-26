@@ -328,6 +328,22 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
 .diverg-title{font-size:11px;font-weight:700;margin-bottom:2px}
 .diverg-sub{font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;line-height:1.5}
 .prog-legend-item{display:flex;align-items:center;gap:4px;font-size:9px;font-family:'DM Mono',monospace;color:var(--mu)}
+.ap-tab{font-size:9px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:10px;background:var(--sf2);border:0.5px solid var(--bd);color:var(--mu);cursor:pointer;transition:all .2s}
+.ap-tab.active{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700}
+.ap-tbl{width:100%;border-collapse:collapse;font-size:9px;font-family:'DM Mono',monospace}
+.ap-tbl th{color:var(--di);font-weight:500;padding:5px 4px;border-bottom:0.5px solid var(--bd);text-align:right;font-size:8px}
+.ap-tbl th:first-child{text-align:left}
+.ap-tbl td{padding:6px 4px;border-bottom:0.5px solid var(--bd2);text-align:right}
+.ap-tbl td:first-child{text-align:left;color:var(--mu)}
+.ap-tbl tr:last-child td{border-bottom:none}
+.ap-status-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--sf2);border-radius:8px;margin-bottom:5px;border:0.5px solid var(--bd)}
+.ap-status-row:last-child{margin-bottom:0}
+.ap-status-name{font-size:10px;font-weight:700}
+.ap-status-detail{font-size:8px;font-family:'DM Mono',monospace;color:var(--mu);margin-top:2px}
+.ap-status-badge{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;text-align:right}
+.pace-badge{display:inline-flex;align-items:center;gap:6px;background:var(--sf2);border:0.5px solid var(--bd);border-radius:10px;padding:4px 10px;margin-bottom:8px}
+.pace-badge-num{font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
+.pace-badge-lbl{font-size:8px;font-family:'DM Mono',monospace;color:var(--mu)}
 
 /* TAX / CASHFLOW */
 .fy-tab{display:inline-flex;background:var(--sf2);border:0.5px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:10px}
@@ -545,10 +561,20 @@ body{display:flex;flex-direction:column;position:fixed;width:100%;inset:0}
       <div id="prog-divergence" style="margin-top:8px"></div>
     </div>
 
-    <!-- PACE SUMMARY: projected FIRE date, months ahead/behind, gap -->
+    <!-- PACE BADGE (compact, inside trajectory card footer) -->
+
+    <!-- ASSET PROJECTIONS -->
     <div class="card">
-      <div class="sec">Wealth pace</div>
-      <div id="prog-pace"></div>
+      <div class="sec">Asset projections <span class="sec-hint">— ahead / behind goals</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap" id="prog-asset-tabs">
+        <div class="ap-tab active" onclick="apTab('all',this)">All</div>
+        <div class="ap-tab" onclick="apTab('stocks',this)">Stocks</div>
+        <div class="ap-tab" onclick="apTab('super',this)">Super</div>
+        <div class="ap-tab" onclick="apTab('property',this)">Property</div>
+      </div>
+      <div class="ch" style="height:200px;margin-bottom:12px"><canvas id="assetProjChart"></canvas></div>
+      <div id="prog-asset-table"></div>
+      <div id="prog-asset-status" style="margin-top:10px"></div>
     </div>
 
     <!-- YEAR-ON-YEAR GROWTH -->
@@ -2053,47 +2079,208 @@ function renderHistory(){
               y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}}}});
   })();
 
-  // 2. WEALTH PACE
+  // 2. ASSET PROJECTIONS (replaces pace card; pace badge embedded in divergence)
+  // Store projection data globally so apTab can re-render
+  window._apData = (()=>{
+    const CHECK=[5,10,20,30];
+    const stocksColor='#378ADD', superColor='#7f77dd', propColors=['#1D9E75','#EF9F27','#e879f9','#38bdf8'];
+
+    const propProjs=S.properties.map((prop,i)=>({
+      name:prop.name||('Property '+(i+1)),
+      color:propColors[i%propColors.length],
+      pts:projProp(prop,30)
+    }));
+    const stocksPts=projStocks(30);
+    const superPts=projSuper(30);
+    const allPropPts=projAllProps(30);
+
+    const gs=(S.goals&&S.goals.stocks)||{};
+    const gsu=(S.goals&&S.goals.super)||{};
+
+    // aheadBehind uses projection model (more accurate than history velocity)
+    function aheadBehind(currentVal,targetVal,targetDate,projAtTargetDate){
+      if(!targetVal) return null;
+      const gap=targetVal-currentVal;
+      let monthsLeft=null;
+      if(targetDate&&targetDate!==''){
+        const td=parseDMY(targetDate);
+        if(td) monthsLeft=Math.max(1,(td-now)/(30.44*24*3600*1000));
+      }
+      const ratio=projAtTargetDate!=null&&targetVal>0?projAtTargetDate/targetVal:null;
+      const projGap=projAtTargetDate!=null?projAtTargetDate-targetVal:null;
+      const monthsAB=ratio!=null&&monthsLeft!=null?(ratio-1)*monthsLeft:null;
+      const onTrack=projAtTargetDate!=null?projAtTargetDate>=targetVal:null;
+      return {gap,projGap,onTrack,ratio,monthsAB,projAtTargetDate,monthsLeft};
+    }
+
+    // Stocks: project to target date year
+    const stocksTargetYr=gs.targetDate
+      ?Math.max(0,Math.min(30,Math.round(((parseDMY(gs.targetDate)||now)-now)/(365.25*24*3600*1000))))
+      :10;
+    const stocksProjAtTarget=(stocksPts[stocksTargetYr]||stocksPts[30]).total;
+
+    const statusRows=[];
+    // ETF Portfolio
+    if(S.stocksEnabled&&S.holdings.length){
+      const cur=stocksPts[0].total;
+      const ab=aheadBehind(cur,gs.targetValue,gs.targetDate,stocksProjAtTarget);
+      statusRows.push({name:'ETF Portfolio',color:stocksColor,current:cur,
+        target:gs.targetValue||null,targetDate:gs.targetDate||null,
+        proj10:stocksPts[10].total,proj20:stocksPts[20].total,proj30:stocksPts[30].total,ab});
+    }
+    // Super
+    if(S.sBalance>0){
+      const cur=S.sBalance;
+      const retYr=Math.max(0,60-S.age);
+      const projAtRet=(superPts[Math.min(retYr,30)]||superPts[30]).b;
+      const ab=aheadBehind(cur,gsu.targetAtRetirement,'Age 60',projAtRet);
+      statusRows.push({name:'Superannuation',color:superColor,current:cur,
+        target:gsu.targetAtRetirement||null,targetDate:'Age 60',
+        proj10:(superPts[10]||superPts[30]).b,proj20:(superPts[20]||superPts[30]).b,proj30:superPts[30].b,ab,projAtTarget:projAtRet});
+    }
+    // Properties
+    propProjs.forEach((pp,i)=>{
+      const prop=S.properties[i];
+      const cur=Math.max(0,prop.val-prop.loan);
+      const payoffYr=pp.pts.findIndex(pt=>pt.loan<=0);
+      statusRows.push({name:pp.name,color:pp.color,current:cur,target:null,
+        proj10:pp.pts[10].eq,proj20:pp.pts[20].eq,proj30:pp.pts[30].eq,
+        ab:null,loanPayoffYr:payoffYr});
+    });
+
+    return {stocksPts,superPts,propProjs,allPropPts,statusRows,CHECK,stocksColor,superColor,propColors};
+  })();
+
+
+  function apTab(mode,el){
+    document.querySelectorAll('.ap-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    window.renderAssetProj(mode);
+  }
+  window.apTab = apTab;
+  window.renderAssetProj = renderAssetProj;
+
+  function renderAssetProj(mode){
+    const d=window._apData; if(!d) return;
+    const tblEl=document.getElementById('prog-asset-table');
+    const statusEl=document.getElementById('prog-asset-status');
+    const CHECK=[5,10,20,30];
+    const YRS=30;
+
+    // Build datasets based on mode
+    let datasets=[], tableRows=[], title='';
+
+    if(mode==='all'||!mode){
+      title='Combined net worth projection';
+      if(S.stocksEnabled) datasets.push({label:'ETF Portfolio',data:d.stocksPts.map((p,i)=>({x:i,y:p.total})),borderColor:d.stocksColor,backgroundColor:'transparent',tension:.4,borderWidth:1.8,pointRadius:0});
+      datasets.push({label:'Super',data:d.superPts.map((p,i)=>({x:i,y:p.b})),borderColor:d.superColor,backgroundColor:'transparent',tension:.4,borderWidth:1.8,pointRadius:0});
+      d.propProjs.forEach(pp=>{
+        datasets.push({label:pp.name+' equity',data:pp.pts.map((p,i)=>({x:i,y:p.eq})),borderColor:pp.color,backgroundColor:'transparent',tension:.4,borderWidth:1.8,pointRadius:0});
+      });
+      // Table: one row per asset at check years
+      const allAssets=[
+        ...(S.stocksEnabled?[{name:'ETF Portfolio',col:d.stocksColor,pts:d.stocksPts.map(p=>p.total)}]:[]),
+        {name:'Super',col:d.superColor,pts:d.superPts.map(p=>p.b)},
+        ...d.propProjs.map(pp=>({name:pp.name+' equity',col:pp.color,pts:pp.pts.map(p=>p.eq)})),
+      ];
+      tableRows=allAssets;
+    } else if(mode==='stocks'){
+      title='ETF portfolio breakdown';
+      S.holdings.forEach(h=>{
+        const pts=projStocks(YRS).map(y=>y[h.ticker]||0);
+        datasets.push({label:h.ticker,data:pts.map((v,i)=>({x:i,y:v})),borderColor:h.color||d.stocksColor,backgroundColor:'transparent',tension:.4,borderWidth:1.8,pointRadius:0});
+        tableRows.push({name:h.ticker,col:h.color||d.stocksColor,pts});
+      });
+    } else if(mode==='super'){
+      title='Superannuation projection';
+      datasets.push({label:'Balance',data:d.superPts.map((p,i)=>({x:i,y:p.b})),borderColor:d.superColor,backgroundColor:'rgba(127,119,221,0.08)',fill:true,tension:.4,borderWidth:2,pointRadius:0});
+      tableRows=[{name:'Super balance',col:d.superColor,pts:d.superPts.map(p=>p.b)}];
+    } else if(mode==='property'){
+      title='Property projections';
+      d.propProjs.forEach(pp=>{
+        datasets.push({label:pp.name+' value',data:pp.pts.map((p,i)=>({x:i,y:p.val})),borderColor:pp.color,backgroundColor:'transparent',tension:.4,borderWidth:1.8,pointRadius:0,borderDash:[4,3]});
+        datasets.push({label:pp.name+' equity',data:pp.pts.map((p,i)=>({x:i,y:p.eq})),borderColor:pp.color,backgroundColor:'transparent',tension:.4,borderWidth:2.5,pointRadius:0});
+        tableRows.push({name:pp.name+' equity',col:pp.color,pts:pp.pts.map(p=>p.eq)});
+        tableRows.push({name:pp.name+' value',col:pp.color,pts:pp.pts.map(p=>p.val),faint:true});
+      });
+    }
+
+    mkChart('assetProjChart',{type:'line',data:{datasets},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#7a7a8c',font:{size:9},boxWidth:10,padding:8}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtK(c.parsed.y)}`}}},
+        scales:{x:{type:'linear',min:0,max:YRS,ticks:{callback:v=>v===0?'Now':'+'+v+'yr',font:{size:9},color:'#7a7a8c',maxTicksLimit:7},grid:{display:false},border:{display:false}},
+                y:{ticks:{callback:v=>fmtK(v),font:{size:9},color:'#7a7a8c'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}}}});
+
+    // Table
+    if(tblEl){
+      tblEl.innerHTML=`<table class="ap-tbl"><thead><tr>
+        <th>Asset</th>${CHECK.map(y=>`<th>+${y}yr</th>`).join('')}
+      </tr></thead><tbody>
+        ${tableRows.map(r=>`<tr>
+          <td style="color:${r.col};font-weight:${r.faint?'400':'700'};opacity:${r.faint?0.6:1}">${r.name}</td>
+          ${CHECK.map(y=>`<td style="color:${r.faint?'var(--di)':'var(--tx)'}">${fmtK(r.pts[Math.min(y,YRS)]||0)}</td>`).join('')}
+        </tr>`).join('')}
+      </tbody></table>`;
+    }
+
+    // Status / ahead-behind
+    if(statusEl){
+      const rows=d.statusRows.filter(r=>mode==='all'||r.name.toLowerCase().includes(mode==='stocks'?'etf':mode));
+      statusEl.innerHTML=rows.map(r=>{
+        let badge='', detail='';
+        if(r.ab && r.ab.ratio !== null){
+          const ratio=r.ab.ratio;
+          const col=ratio>=1?'var(--gr)':ratio>=0.8?'var(--am)':'var(--rd)';
+          const abMos=r.ab.monthsAB!==null?Math.abs(Math.round(r.ab.monthsAB)):null;
+          const projGapStr=r.ab.projGap!=null?(r.ab.projGap>=0?'+':'')+fmtK(Math.round(r.ab.projGap)):'';
+          badge=`<span style="color:${col};font-size:13px;font-weight:700;font-family:'DM Mono',monospace">${ratio.toFixed(2)}×</span><br><span style="color:${col};font-size:8px;font-family:'DM Mono',monospace">${ratio>=1?'▲ ahead':'▼ behind'}</span>`;
+          const abMoStr=abMos!==null?(ratio>=1?'~'+abMos+'mo ahead':'~'+abMos+'mo behind'):'on track';
+          const projStr=r.ab.projAtTargetDate!=null?' · Proj: '+fmtK(Math.round(r.ab.projAtTargetDate)):'';
+          detail='Projected '+projGapStr+' vs target '+(r.target?fmtK(r.target):'—')
+                +'<br>'+abMoStr+(r.targetDate?' by '+r.targetDate:'')+projStr;
+        } else if(r.ab && r.ab.ratio === null && r.target){
+          // Has target but no projection result (shouldn't happen)
+          badge=`<span style="color:var(--di);font-size:9px">Set date</span>`;
+          detail=`Target ${fmtK(r.target)} — add a target date for ahead/behind tracking`;
+        } else if(!r.ab && r.loanPayoffYr>0&&r.loanPayoffYr<=30){
+          badge=`<span style="color:var(--gr);font-size:11px;font-weight:700;font-family:'DM Mono',monospace">+${r.loanPayoffYr}yr</span><br><span style="color:var(--gr);font-size:8px">payoff</span>`;
+          detail=`Projected debt-free in ${r.loanPayoffYr} years`;
+        } else if(!r.ab && r.loanPayoffYr===0){
+          badge=`<span style="color:var(--gr);font-size:11px">✓ Paid</span>`;
+          detail='Loan already cleared';
+        } else {
+          badge=`<span style="color:var(--di);font-size:9px;font-family:'DM Mono',monospace">No target</span>`;
+          detail='Set a goal target in the Goals tab to track pace here';
+        }
+        return `<div class="ap-status-row">
+          <div><div class="ap-status-name" style="color:${r.color}">${r.name}</div>
+               <div class="ap-status-detail">${detail}<br>Now ${fmtK(r.current)} · +10yr ${fmtK(r.proj10)} · +30yr ${fmtK(r.proj30)}</div></div>
+          <div class="ap-status-badge">${badge}</div>
+        </div>`;
+      }).join('')||'<div style="font-size:10px;color:var(--di);font-family:DM Mono">Add holdings, super balance or property to see projections.</div>';
+    }
+  }
+
+  // Initial render
+  renderAssetProj('all');
+
+  // Pace badge — compute and inject into divergence block as a compact header row
   (()=>{
-    const el=document.getElementById('prog-pace'); if(!el) return;
     const fireNum=(S.goals&&S.goals.networth&&S.goals.networth.fireNumber)||0;
     let fireYr=-1;
     for(let y=0;y<=30;y++){if(projPts[y].y>=fireNum&&fireNum>0){fireYr=y;break;}}
-    const fireAge=fireYr>=0?S.age+fireYr:null;
     const hasHistory=hist.length>=2;
     const totalDays=hasHistory?Math.max(1,(hist[hist.length-1].ts-hist[0].ts)/86400000):365;
     const totalGain=hasHistory?hist[hist.length-1].val-hist[0].val:0;
-    const avgPerDay=hasHistory&&totalDays>0?totalGain/totalDays:0;
-    const avgPerMonth=avgPerDay*30.44;
-    const avgPerYear=avgPerDay*365.25;
-    const requiredPerYear=fireNum>0&&fireYr>0?Math.max(0,(fireNum-nw)/fireYr):null;
-    const paceRatio=requiredPerYear&&requiredPerYear>0&&hasHistory?avgPerYear/requiredPerYear:null;
-    let paceHtml='';
-    if(paceRatio!==null){
-      const ahead=paceRatio>=1;
-      const pctOff=((paceRatio-1)*100).toFixed(0);
-      const paceColor=ahead?'var(--gr)':paceRatio>=0.8?'var(--am)':'var(--rd)';
-      paceHtml=`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--sf2);border-radius:var(--rs);border:0.5px solid var(--bd);margin-bottom:10px">
-        <div style="font-size:32px;font-weight:700;font-family:'DM Mono',monospace;color:${paceColor};letter-spacing:-1px">${paceRatio.toFixed(2)}×</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:${paceColor}">${ahead?'Ahead of pace':'Behind pace'}</div>
-          <div style="font-size:9px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:2px">Growing at ${ahead?'+':''}${pctOff}% of required rate<br>Need ${fmtK(Math.round(requiredPerYear))}/yr · tracking ${fmtK(Math.round(avgPerYear))}/yr</div>
-        </div>
-      </div>`;
+    const avgPerYear=hasHistory&&totalDays>0?totalGain/totalDays*365.25:0;
+    const reqPerYear=fireNum>0&&fireYr>0?Math.max(0,(fireNum-nw)/fireYr):null;
+    const paceRatio=reqPerYear&&reqPerYear>0&&hasHistory?avgPerYear/reqPerYear:null;
+    if(paceRatio!==null&&legendEl){
+      const col=paceRatio>=1?'var(--gr)':paceRatio>=0.8?'var(--am)':'var(--rd)';
+      const badge=`<div class="pace-badge" style="border-color:${col}22"><div class="pace-badge-num" style="color:${col}">${paceRatio.toFixed(2)}×</div><div class="pace-badge-lbl">${paceRatio>=1?'ahead':'behind'} FIRE pace</div></div>`;
+      legendEl.insertAdjacentHTML('afterend',badge);
     }
-    const rows=[
-      {l:'Current net worth',v:fmtK(nw),c:'var(--gr)'},
-      ...(fireNum?[{l:'FIRE number',v:fmt(fireNum),c:'var(--bl)'}]:[]),
-      ...(fireNum?[{l:'Gap to FIRE',v:fmtK(Math.max(0,fireNum-nw)),c:nw>=fireNum?'var(--gr)':'var(--am)'}]:[]),
-      ...(fireAge!==null?[{l:'Projected FIRE age',v:'Age '+fireAge+' (+'+fireYr+'yrs)',c:'var(--pu)'}]:[]),
-      ...(hasHistory?[{l:'Avg growth/month',v:fmtK(Math.round(avgPerMonth))+'/mo',c:'var(--gr)'}]:[]),
-      ...(hasHistory?[{l:'Avg growth/year',v:fmtK(Math.round(avgPerYear))+'/yr',c:'var(--gr)'}]:[]),
-      {l:'Projected age '+(S.age+10),v:fmtK(projPts[10].y),c:'var(--bl)'},
-      {l:'Projected age '+(S.age+20),v:fmtK(projPts[20].y),c:'var(--bl)'},
-      {l:'Projected age '+(S.age+30),v:fmtK(projPts[30].y),c:'var(--bl)'},
-    ];
-    el.innerHTML=paceHtml+rows.map(r=>`<div class="ir"><span class="ir-l">${r.l}</span><span class="ir-v" style="color:${r.c}">${r.v}</span></div>`).join('')
-      +(!fireNum?`<div style="font-size:9px;color:var(--di);font-family:'DM Mono',monospace;margin-top:8px">Set your FIRE number in Goals → Net worth to unlock pace tracking.</div>`:'');
   })();
 
   // 3. YEAR-ON-YEAR
